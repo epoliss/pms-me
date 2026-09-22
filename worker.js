@@ -41,6 +41,54 @@ export default {
       return `${word}${number}`;
     }
 
+    async function sendRejectionEmail(email, story, moderatorNotes) {
+      if (!email) {
+        return;
+      }
+
+      const message =
+        moderatorNotes ||
+        "Your story was not approved for publication.";
+
+      const response = await fetch(
+        "https://api.resend.com/emails",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            from: "PMS-ME <onboarding@resend.dev>",
+            to: [email],
+            subject: "Your PMS-ME story was not approved",
+            text:
+`Hello,
+
+Your story submitted to PMS-ME was not approved for publication.
+
+Moderator's comment:
+
+${message}
+
+Your submitted story was:
+
+${story}
+
+Thank you,
+PMS-ME — Property Manager Stories`
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Email sending failed: ${errorText}`
+        );
+      }
+    }
+
     if (url.pathname === "/api/stories") {
 
       if (request.method === "GET") {
@@ -183,7 +231,9 @@ export default {
             SELECT
               display_name,
               anonymous_requested,
-              public_name
+              public_name,
+              email,
+              story
             FROM stories
             WHERE id = ?
           `)
@@ -255,6 +305,14 @@ export default {
               id
             )
             .run();
+
+          if (storyResult.email) {
+            await sendRejectionEmail(
+              storyResult.email,
+              storyResult.story,
+              moderatorNotes
+            );
+          }
         }
 
         return Response.json({
