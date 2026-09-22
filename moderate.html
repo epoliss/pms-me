@@ -96,18 +96,6 @@ h1{
   padding-top:16px
 }
 
-.anonymous{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-size:14px;
-  margin-bottom:12px
-}
-
-.anonymous input{
-  width:auto
-}
-
 textarea{
   width:100%;
   min-height:90px;
@@ -273,19 +261,6 @@ async function loadPendingStories() {
       const moderation = document.createElement('div');
       moderation.className = 'moderation';
 
-      const anonymousLabel = document.createElement('label');
-      anonymousLabel.className = 'anonymous';
-
-      const anonymousCheckbox = document.createElement('input');
-      anonymousCheckbox.type = 'checkbox';
-
-      const anonymousText = document.createElement('span');
-      anonymousText.textContent =
-        'Force this story to be anonymous';
-
-      anonymousLabel.appendChild(anonymousCheckbox);
-      anonymousLabel.appendChild(anonymousText);
-
       const notes = document.createElement('textarea');
       notes.placeholder =
         'Optional moderator comment / reason for rejection';
@@ -309,7 +284,7 @@ async function loadPendingStories() {
         updateStory(
           story.id,
           'published',
-          anonymousCheckbox.checked,
+          false,
           notes.value
         )
       );
@@ -327,7 +302,7 @@ async function loadPendingStories() {
         updateStory(
           story.id,
           'rejected',
-          anonymousCheckbox.checked,
+          false,
           notes.value
         )
       );
@@ -336,7 +311,6 @@ async function loadPendingStories() {
       actions.appendChild(approveAnonymous);
       actions.appendChild(reject);
 
-      moderation.appendChild(anonymousLabel);
       moderation.appendChild(notes);
       moderation.appendChild(actions);
 
