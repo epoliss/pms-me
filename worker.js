@@ -2,6 +2,45 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    function generateAnonymousName() {
+      const words = [
+        "catliver",
+        "toenail",
+        "hamster",
+        "pickle",
+        "waffle",
+        "turnip",
+        "goose",
+        "meatball",
+        "pigeon",
+        "muffin",
+        "spatula",
+        "cabbage",
+        "banjo",
+        "squirrel",
+        "potato",
+        "nacho",
+        "penguin",
+        "mustache",
+        "noodle",
+        "donut",
+        "walrus",
+        "tater",
+        "beetle",
+        "picklejuice",
+        "moose",
+        "rubberduck"
+      ];
+
+      const word =
+        words[Math.floor(Math.random() * words.length)];
+
+      const number =
+        Math.floor(Math.random() * 900) + 100;
+
+      return `${word}${number}`;
+    }
+
     if (url.pathname === "/api/stories") {
 
       if (request.method === "GET") {
@@ -51,6 +90,7 @@ export default {
           const category = String(data.category || "").trim();
           const displayName = String(data.display_name || "").trim();
           const email = String(data.email || "").trim();
+
           const anonymousRequested =
             data.anonymous_requested ? 1 : 0;
 
@@ -62,9 +102,9 @@ export default {
           }
 
           const publicName =
-            anonymousRequested || !displayName
-              ? "Anonymous"
-              : displayName;
+            anonymousRequested
+              ? generateAnonymousName()
+              : (displayName || generateAnonymousName());
 
           await env.pms_me_db
             .prepare(`
@@ -142,7 +182,8 @@ export default {
           .prepare(`
             SELECT
               display_name,
-              anonymous_requested
+              anonymous_requested,
+              public_name
             FROM stories
             WHERE id = ?
           `)
@@ -160,12 +201,18 @@ export default {
 
         if (
           forceAnonymous ||
-          storyResult.anonymous_requested ||
-          !storyResult.display_name
+          storyResult.anonymous_requested
         ) {
-          publicName = "Anonymous";
+          publicName =
+            storyResult.public_name &&
+            storyResult.public_name !== "Anonymous"
+              ? storyResult.public_name
+              : generateAnonymousName();
         } else {
-          publicName = storyResult.display_name;
+          publicName =
+            storyResult.display_name ||
+            storyResult.public_name ||
+            generateAnonymousName();
         }
 
         if (status === "published") {
