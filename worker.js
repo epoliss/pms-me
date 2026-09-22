@@ -14,7 +14,6 @@ export default {
             reaction_been_there,
             reaction_funny
           FROM stories
-          WHERE status = 'published'
           ORDER BY created_at DESC
         `)
         .all();
