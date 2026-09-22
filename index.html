@@ -5,78 +5,188 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PMS-ME — Property Manager Stories</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f3f3;color:#222}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f3f3;color:#222}
 header{background:#202020;color:#fff;text-align:center;padding:24px 20px 18px}
-.logo{font-size:42px;font-weight:800;letter-spacing:2px}.subtitle{margin-top:4px;color:#d6d6d6}
+.logo{font-size:42px;font-weight:800;letter-spacing:2px}
+.subtitle{margin-top:4px;color:#d6d6d6}
 nav{background:#fff;border-bottom:1px solid #ddd;padding:12px 10px;text-align:center;position:sticky;top:0;z-index:5;overflow-x:auto;white-space:nowrap}
 nav button{border:0;background:transparent;padding:7px 10px;margin:2px;font-size:14px;cursor:pointer;color:#555;border-radius:4px}
 nav button:hover,nav button.active{background:#222;color:#fff}
-.container{max-width:850px;margin:24px auto;padding:0 15px}.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-h1{margin:0;font-size:24px}.submit{background:#222;color:#fff;text-decoration:none;padding:11px 16px;border-radius:5px;font-weight:bold;font-size:14px}
+.container{max-width:850px;margin:24px auto;padding:0 15px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+h1{margin:0;font-size:24px}
+.submit{background:#222;color:#fff;text-decoration:none;padding:11px 16px;border-radius:5px;font-weight:bold;font-size:14px}
 .story{background:#fff;border:1px solid #ddd;border-radius:6px;padding:20px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-.meta{color:#888;font-size:12px;margin-bottom:12px}.story p{font-size:17px;line-height:1.55;margin:0 0 14px}.pms{font-weight:800;font-size:14px;letter-spacing:.5px}
-.actions{border-top:1px solid #eee;padding-top:12px;display:flex;gap:18px}.actions button{border:0;background:none;color:#666;cursor:pointer;font-size:13px;padding:0}
-.actions button:hover{color:#111}.empty{display:none;background:#fff;border:1px solid #ddd;padding:35px;text-align:center;color:#777}
+.meta{color:#888;font-size:12px;margin-bottom:12px}
+.story p{font-size:17px;line-height:1.55;margin:0 0 14px}
+.pms{font-weight:800;font-size:14px;letter-spacing:.5px}
+.actions{border-top:1px solid #eee;padding-top:12px;display:flex;gap:18px}
+.actions button{border:0;background:none;color:#666;cursor:pointer;font-size:13px;padding:0}
+.actions button:hover{color:#111}
+.empty{display:none;background:#fff;border:1px solid #ddd;padding:35px;text-align:center;color:#777}
+.loading{background:#fff;border:1px solid #ddd;padding:35px;text-align:center;color:#777}
 footer{text-align:center;color:#888;font-size:12px;padding:30px 15px 45px}
-@media(max-width:600px){.logo{font-size:34px}.topbar{align-items:flex-start;flex-direction:column;gap:12px}.submit{align-self:stretch;text-align:center}}
+@media(max-width:600px){
+  .logo{font-size:34px}
+  .topbar{align-items:flex-start;flex-direction:column;gap:12px}
+  .submit{align-self:stretch;text-align:center}
+}
 </style>
 </head>
+
 <body>
-<header><div class="logo">PMS-ME</div><div class="subtitle">Property Manager Stories</div></header>
+
+<header>
+  <div class="logo">PMS-ME</div>
+  <div class="subtitle">Property Manager Stories</div>
+</header>
+
 <nav id="categories">
-<button class="active" data-category="All">All</button>
-<button data-category="Homeowners">Homeowners</button><button data-category="Boards">Boards</button>
-<button data-category="Contractors">Contractors</button><button data-category="Vendors">Vendors</button>
-<button data-category="Tenants">Tenants</button><button data-category="Maintenance">Maintenance</button>
-<button data-category="Violations">Violations</button><button data-category="Parking">Parking</button>
-<button data-category="Pets">Pets</button><button data-category="Assessments">Assessments</button>
-<button data-category="Insurance">Insurance</button><button data-category="Legal">Legal</button><button data-category="Other">Other</button>
+  <button class="active" data-category="All">All</button>
+  <button data-category="Homeowners">Homeowners</button>
+  <button data-category="Boards">Boards</button>
+  <button data-category="Contractors">Contractors</button>
+  <button data-category="Vendors">Vendors</button>
+  <button data-category="Tenants">Tenants</button>
+  <button data-category="Maintenance">Maintenance</button>
+  <button data-category="Violations">Violations</button>
+  <button data-category="Parking">Parking</button>
+  <button data-category="Pets">Pets</button>
+  <button data-category="Assessments">Assessments</button>
+  <button data-category="Insurance">Insurance</button>
+  <button data-category="Legal">Legal</button>
+  <button data-category="Other">Other</button>
 </nav>
+
 <main class="container">
-<div class="topbar"><h1>The Tops</h1><a class="submit" href="#">Submit a Story</a></div>
-<section id="stories">
-<article class="story" data-category="Homeowners">
-<div class="meta">Today · Homeowners · Anonymous</div>
-<p>Today, a homeowner called to complain that the pool was closed during a thunderstorm. She said she understood that lightning was dangerous, but wanted to know why we couldn't just ask the lightning to stop for five minutes.</p>
-<div class="pms">PMS-ME.</div>
-<div class="actions"><button>👍 I've been there (24)</button><button>😂 That's a good one (17)</button></div>
-</article>
-<article class="story" data-category="Contractors">
-<div class="meta">Today · Contractors · PropertyManager42</div>
-<p>Today, a contractor emailed me a picture of a broken sprinkler head and asked me where the sprinkler head was located. The picture was taken six inches from the sprinkler head.</p>
-<div class="pms">PMS-ME.</div>
-<div class="actions"><button>👍 I've been there (31)</button><button>😂 That's a good one (22)</button></div>
-</article>
-<article class="story" data-category="Boards">
-<div class="meta">Today · Boards · Anonymous</div>
-<p>Today, a board member asked me why the association had not received the annual financial report yet. I reminded him that the report was due next month. He replied, “Yes, but shouldn't we have it by now?”</p>
-<div class="pms">PMS-ME.</div>
-<div class="actions"><button>👍 I've been there (18)</button><button>😂 That's a good one (29)</button></div>
-</article>
-<article class="story" data-category="Pets">
-<div class="meta">Yesterday · Pets · CondoGuy</div>
-<p>Today, I received a complaint that someone's dog had been barking continuously for three hours. I asked the homeowner what time it started. She said, “About an hour ago, when my dog heard another dog barking.”</p>
-<div class="pms">PMS-ME.</div>
-<div class="actions"><button>👍 I've been there (42)</button><button>😂 That's a good one (36)</button></div>
-</article>
-<article class="story" data-category="Parking">
-<div class="meta">Yesterday · Parking · Anonymous</div>
-<p>Today, a resident complained that someone had parked in her assigned space. The vehicle belonged to her. She had forgotten that she had driven to work that morning and parked in a different space.</p>
-<div class="pms">PMS-ME.</div>
-<div class="actions"><button>👍 I've been there (27)</button><button>😂 That's a good one (41)</button></div>
-</article>
-</section>
-<div class="empty" id="empty">No stories in this category yet.</div>
+
+  <div class="topbar">
+    <h1>The Tops</h1>
+    <a class="submit" href="#">Submit a Story</a>
+  </div>
+
+  <section id="stories">
+    <div class="loading" id="loading">Loading stories...</div>
+  </section>
+
+  <div class="empty" id="empty">No stories in this category yet.</div>
+
 </main>
-<footer>Property Manager Stories · PMS-ME<br>Because sometimes you just have to laugh.</footer>
+
+<footer>
+  Property Manager Stories · PMS-ME<br>
+  Because sometimes you just have to laugh.
+</footer>
+
 <script>
-const buttons=document.querySelectorAll('#categories button'),stories=document.querySelectorAll('.story'),empty=document.getElementById('empty');
-buttons.forEach(button=>button.addEventListener('click',()=>{
- buttons.forEach(b=>b.classList.remove('active'));button.classList.add('active');
- const category=button.dataset.category;let visible=0;
- stories.forEach(story=>{const show=category==='All'||story.dataset.category===category;story.style.display=show?'block':'none';if(show)visible++});
- empty.style.display=visible?'none':'block';
-}));
+const buttons = document.querySelectorAll('#categories button');
+const storiesContainer = document.getElementById('stories');
+const empty = document.getElementById('empty');
+let stories = [];
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const storyDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const difference = Math.round((today - storyDay) / 86400000);
+
+  if (difference === 0) return 'Today';
+  if (difference === 1) return 'Yesterday';
+
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+  });
+}
+
+function renderStories(category = 'All') {
+  storiesContainer.innerHTML = '';
+
+  const filtered = category === 'All'
+    ? stories
+    : stories.filter(story => story.category === category);
+
+  if (!filtered.length) {
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  filtered.forEach(story => {
+    const article = document.createElement('article');
+    article.className = 'story';
+    article.dataset.category = story.category;
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent =
+      `${formatDate(story.created_at)} · ${story.category} · ${story.public_name || 'Anonymous'}`;
+
+    const text = document.createElement('p');
+    text.textContent = story.story;
+
+    const pms = document.createElement('div');
+    pms.className = 'pms';
+    pms.textContent = 'PMS-ME.';
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    const beenThere = document.createElement('button');
+    beenThere.textContent =
+      `👍 I've been there (${story.reaction_been_there || 0})`;
+
+    const funny = document.createElement('button');
+    funny.textContent =
+      `😂 That's a good one (${story.reaction_funny || 0})`;
+
+    actions.appendChild(beenThere);
+    actions.appendChild(funny);
+
+    article.appendChild(meta);
+    article.appendChild(text);
+    article.appendChild(pms);
+    article.appendChild(actions);
+
+    storiesContainer.appendChild(article);
+  });
+}
+
+async function loadStories() {
+  try {
+    const response = await fetch('/api/stories');
+
+    if (!response.ok) {
+      throw new Error('Unable to load stories');
+    }
+
+    stories = await response.json();
+    renderStories('All');
+
+  } catch (error) {
+    storiesContainer.innerHTML =
+      '<div class="loading">Unable to load stories right now.</div>';
+    console.error(error);
+  }
+}
+
+buttons.forEach(button => {
+  button.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.remove('active'));
+    button.classList.add('active');
+
+    renderStories(button.dataset.category);
+  });
+});
+
+loadStories();
 </script>
+
 </body>
 </html>
