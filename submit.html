@@ -1,1 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PMS-ME — Submit a Story</title>
 
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f3f3f3;
+  color:#222
+}
+
+header{
+  background:#202020;
+  color:#fff;
+  text-align:center;
+  padding:24px 20px 18px
+}
+
+.logo{
+  font-size:42px;
+  font-weight:800;
+  letter-spacing:2px
+}
+
+.subtitle{
+  margin-top:4px;
+  color:#d6d6d6
+}
+
+.container{
+  max-width:700px;
+  margin:30px auto;
+  padding:0 15px
+}
+
+.card{
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:6px;
+  padding:24px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04)
+}
+
+h1{
+  margin:0 0 22px;
+  font-size:24px
+}
+
+label{
+  display:block;
+  font-weight:bold;
+  font-size:14px;
+  margin:18px 0 7px
+}
+
+textarea,
+input,
+select{
+  width:100%;
+  border:1px solid #ccc;
+  border-radius:4px;
+  padding:11px;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:15px
+}
+
+textarea{
+  min-height:180px;
+  resize:vertical
+}
+
+.help{
+  color:#777;
+  font-size:12px;
+  margin-top:5px
+}
+
+.checkbox{
+  display:flex;
+  align-items:flex-start;
+  gap:9px;
+  margin-top:18px
+}
+
+.checkbox input{
+  width:auto;
+  margin-top:2px
+}
+
+.checkbox label{
+  margin:0;
+  font-weight:normal;
+  line-height:1.4
+}
+
+.buttons{
+  display:flex;
+  gap:10px;
+  margin-top:24px
+}
+
+button,
+.back{
+  border:0;
+  border-radius:5px;
+  padding:11px 16px;
+  font-size:14px;
+  font-weight:bold;
+  cursor:pointer;
+  text-decoration:none
+}
+
+button{
+  background:#222;
+  color:#fff
+}
+
+.back{
+  background:#eee;
+  color:#333
+}
+
+button:hover{
+  background:#000
+}
+
+.back:hover{
+  background:#ddd
+}
+
+.message{
+  display:none;
+  margin-top:18px;
+  padding:12px;
+  border-radius:4px;
+  font-size:14px
+}
+
+footer{
+  text-align:center;
+  color:#888;
+  font-size:12px;
+  padding:30px 15px 45px
+}
+
+@media(max-width:600px){
+  .logo{font-size:34px}
+  .card{padding:18px}
+  .buttons{flex-direction:column}
+  button,.back{text-align:center}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">PMS-ME</div>
+  <div class="subtitle">Property Manager Stories</div>
+</header>
+
+<main class="container">
+
+  <div class="card">
+
+    <h1>Submit a Story</h1>
+
+    <form id="storyForm">
+
+      <label for="story">Your Story</label>
+      <textarea id="story" required maxlength="2000"
+        placeholder="Tell us what happened..."></textarea>
+      <div class="help">Maximum 2,000 characters.</div>
+
+      <label for="category">Category</label>
+      <select id="category" required>
+        <option value="">Select a category</option>
+        <option>Homeowners</option>
+        <option>Boards</option>
+        <option>Contractors</option>
+        <option>Vendors</option>
+        <option>Tenants</option>
+        <option>Maintenance</option>
+        <option>Violations</option>
+        <option>Parking</option>
+        <option>Pets</option>
+        <option>Assessments</option>
+        <option>Insurance</option>
+        <option>Legal</option>
+        <option>Other</option>
+      </select>
+
+      <label for="name">Display Name</label>
+      <input id="name" maxlength="50"
+        placeholder="How should your name appear?">
+
+      <div class="checkbox">
+        <input type="checkbox" id="anonymous">
+        <label for="anonymous">
+          Publish this story anonymously
+        </label>
+      </div>
+
+      <label for="email">Email</label>
+      <input id="email" type="email" maxlength="200"
+        placeholder="Your email address">
+
+      <div class="help">
+        Your email will not be displayed publicly.
+      </div>
+
+      <div class="buttons">
+        <a class="back" href="/">Back to Stories</a>
+        <button type="submit">Submit Story</button>
+      </div>
+
+      <div class="message" id="message"></div>
+
+    </form>
+
+  </div>
+
+</main>
+
+<footer>
+  Property Manager Stories · PMS-ME<br>
+  Because sometimes you just have to laugh.
+</footer>
+
+<script>
+const form = document.getElementById('storyForm');
+const message = document.getElementById('message');
+
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+
+  const story = document.getElementById('story').value.trim();
+  const category = document.getElementById('category').value;
+  const displayName = document.getElementById('name').value.trim();
+  const anonymous = document.getElementById('anonymous').checked;
+  const email = document.getElementById('email').value.trim();
+
+  if (!story || !category) {
+    message.style.display = 'block';
+    message.textContent = 'Please enter your story and select a category.';
+    return;
+  }
+
+  message.style.display = 'block';
+  message.textContent = 'Submitting...';
+
+  try {
+    const response = await fetch('/api/stories', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        story,
+        category,
+        display_name: displayName,
+        email,
+        anonymous_requested: anonymous
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Submission failed');
+    }
+
+    message.textContent =
+      'Thank you! Your story has been submitted for review.';
+
+    form.reset();
+
+  } catch (error) {
+    message.textContent =
+      error.message || 'Something went wrong. Please try again.';
+  }
+});
+</script>
+
+</body>
+</html>
