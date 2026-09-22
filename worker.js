@@ -19,7 +19,7 @@ export default {
         `)
         .all();
 
-      return Response.json(result.results);
+      return Response.json(result);
     }
 
     return env.ASSETS.fetch(request);
