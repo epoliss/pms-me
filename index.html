@@ -166,7 +166,8 @@ async function loadStories() {
       throw new Error('Unable to load stories');
     }
 
-    stories = await response.json();
+const data = await response.json();
+    stories = data.results;
     renderStories('All');
 
   } catch (error) {
