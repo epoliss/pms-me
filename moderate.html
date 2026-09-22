@@ -1,1 +1,306 @@
 
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PMS-ME — Moderation</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f3f3f3;
+  color:#222
+}
+
+header{
+  background:#202020;
+  color:#fff;
+  text-align:center;
+  padding:24px 20px 18px
+}
+
+.logo{
+  font-size:42px;
+  font-weight:800;
+  letter-spacing:2px
+}
+
+.subtitle{
+  margin-top:4px;
+  color:#d6d6d6
+}
+
+.container{
+  max-width:850px;
+  margin:30px auto;
+  padding:0 15px
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:18px
+}
+
+h1{
+  margin:0;
+  font-size:24px
+}
+
+.back{
+  background:#222;
+  color:#fff;
+  text-decoration:none;
+  padding:10px 15px;
+  border-radius:5px;
+  font-weight:bold;
+  font-size:14px
+}
+
+.story{
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:6px;
+  padding:20px;
+  margin-bottom:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04)
+}
+
+.meta{
+  color:#888;
+  font-size:12px;
+  margin-bottom:12px
+}
+
+.story p{
+  font-size:17px;
+  line-height:1.55;
+  margin:0 0 14px
+}
+
+.details{
+  border-top:1px solid #eee;
+  padding-top:12px;
+  color:#666;
+  font-size:13px;
+  line-height:1.6
+}
+
+.actions{
+  margin-top:16px;
+  display:flex;
+  gap:10px
+}
+
+button{
+  border:0;
+  border-radius:5px;
+  padding:10px 15px;
+  font-size:14px;
+  font-weight:bold;
+  cursor:pointer
+}
+
+.approve{
+  background:#222;
+  color:#fff
+}
+
+.reject{
+  background:#eee;
+  color:#333
+}
+
+button:hover{
+  opacity:.85
+}
+
+.empty{
+  background:#fff;
+  border:1px solid #ddd;
+  padding:35px;
+  text-align:center;
+  color:#777
+}
+
+.message{
+  display:none;
+  background:#fff;
+  border:1px solid #ddd;
+  padding:14px;
+  margin-bottom:15px;
+  border-radius:5px
+}
+
+footer{
+  text-align:center;
+  color:#888;
+  font-size:12px;
+  padding:30px 15px 45px
+}
+
+@media(max-width:600px){
+  .logo{font-size:34px}
+  .topbar{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:12px
+  }
+  .actions{
+    flex-direction:column
+  }
+  button{
+    width:100%
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">PMS-ME</div>
+  <div class="subtitle">Moderation</div>
+</header>
+
+<main class="container">
+
+  <div class="topbar">
+    <h1>Pending Stories</h1>
+    <a class="back" href="/">Back to Stories</a>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <section id="stories">
+    <div class="empty">Loading...</div>
+  </section>
+
+</main>
+
+<footer>
+  Property Manager Stories · PMS-ME
+</footer>
+
+<script>
+const storiesContainer = document.getElementById('stories');
+const message = document.getElementById('message');
+
+async function loadPendingStories() {
+  try {
+    const response = await fetch('/api/stories?status=pending');
+
+    if (!response.ok) {
+      throw new Error('Unable to load pending stories.');
+    }
+
+    const data = await response.json();
+    const stories = data.results || [];
+
+    storiesContainer.innerHTML = '';
+
+    if (!stories.length) {
+      storiesContainer.innerHTML =
+        '<div class="empty">There are no pending stories.</div>';
+      return;
+    }
+
+    stories.forEach(story => {
+      const article = document.createElement('article');
+      article.className = 'story';
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent =
+        `#${story.id} · ${story.category} · ${story.created_at}`;
+
+      const text = document.createElement('p');
+      text.textContent = story.story;
+
+      const details = document.createElement('div');
+      details.className = 'details';
+      details.innerHTML =
+        `<strong>Display name:</strong> ${story.display_name || '(none)'}<br>` +
+        `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
+        `<strong>Anonymous requested:</strong> ${story.anonymous_requested ? 'Yes' : 'No'}<br>` +
+        `<strong>Email:</strong> ${story.email || '(none)'}`;
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      const approve = document.createElement('button');
+      approve.className = 'approve';
+      approve.textContent = 'Approve';
+
+      const reject = document.createElement('button');
+      reject.className = 'reject';
+      reject.textContent = 'Reject';
+
+      approve.addEventListener('click', () =>
+        updateStory(story.id, 'published')
+      );
+
+      reject.addEventListener('click', () =>
+        updateStory(story.id, 'rejected')
+      );
+
+      actions.appendChild(approve);
+      actions.appendChild(reject);
+
+      article.appendChild(meta);
+      article.appendChild(text);
+      article.appendChild(details);
+      article.appendChild(actions);
+
+      storiesContainer.appendChild(article);
+    });
+
+  } catch (error) {
+    storiesContainer.innerHTML =
+      '<div class="empty">Unable to load pending stories.</div>';
+    console.error(error);
+  }
+}
+
+async function updateStory(id, status) {
+  message.style.display = 'block';
+  message.textContent = 'Saving...';
+
+  try {
+    const response = await fetch('/api/stories/' + id, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Update failed.');
+    }
+
+    message.textContent =
+      status === 'published'
+        ? 'Story approved.'
+        : 'Story rejected.';
+
+    loadPendingStories();
+
+  } catch (error) {
+    message.textContent =
+      error.message || 'Something went wrong.';
+  }
+}
+
+loadPendingStories();
+</script>
+
+</body>
+</html>
