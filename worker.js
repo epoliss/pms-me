@@ -4,7 +4,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-       function generateAnonymousName() {
+    function generateAnonymousName() {
       const words = [
         "catliver",
         "toenail",
@@ -43,7 +43,12 @@ export default {
       return `${word}${number}`;
     }
 
-    async function sendRejectionEmail(email, story, moderatorNotes) {
+    async function sendRejectionEmail(
+      email,
+      displayName,
+      story,
+      moderatorNotes
+    ) {
       if (!email) {
         return;
       }
@@ -51,6 +56,9 @@ export default {
       const message =
         moderatorNotes ||
         "Your story was not approved for publication.";
+
+      const greetingName =
+        displayName || "there";
 
       const response = await fetch(
         "https://api.resend.com/emails",
@@ -65,19 +73,20 @@ export default {
             to: [email],
             subject: "Your PMS-ME story was not approved",
             text:
-`Hello,
+`Hello ${greetingName},
 
 Your story submitted to PMS-ME was not approved for publication.
 
 Moderator's comment:
 
-${message}
+    ${message}
 
-Your submitted story was:
+Your submitted story:
 
-${story}
+    ${story}
 
 Thank you,
+
 PMS-ME — Property Manager Stories`
           })
         }
@@ -312,6 +321,7 @@ PMS-ME — Property Manager Stories`
           if (storyResult.email) {
             await sendRejectionEmail(
               storyResult.email,
+              storyResult.display_name,
               storyResult.story,
               moderatorNotes
             );
