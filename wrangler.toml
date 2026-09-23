@@ -10,3 +10,6 @@ database_id = "7061bed5-7be8-4ee9-b4b3-3b7c75ae53f0"
 [assets]
 directory = "."
 binding = "ASSETS"
+
+[secrets]
+required = ["RESEND_API_KEY"]
