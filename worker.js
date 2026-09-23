@@ -4,17 +4,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // TEMPORARY RESEND SECRET TEST
-    if (url.pathname === "/api/test-resend-secret") {
-      return Response.json({
-        resend_secret_present: !!env.RESEND_API_KEY,
-        resend_secret_length: env.RESEND_API_KEY
-          ? env.RESEND_API_KEY.length
-          : 0
-      });
-    }
-
-    function generateAnonymousName() {
+       function generateAnonymousName() {
       const words = [
         "catliver",
         "toenail",
