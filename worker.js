@@ -1,5 +1,7 @@
+```javascript
 // Trigger deployment
 // Resend secret deployment
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -43,6 +45,15 @@ export default {
       return `${word}${number}`;
     }
 
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     async function sendRejectionEmail(
       email,
       displayName,
@@ -57,8 +68,125 @@ export default {
         moderatorNotes ||
         "Your story was not approved for publication.";
 
-      const greetingName =
-        displayName || "there";
+      const greetingName = displayName || "there";
+
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Your PMS-ME story was not approved</title>
+</head>
+
+<body style="
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #222222;
+">
+
+  <div style="
+    max-width: 680px;
+    margin: 30px auto;
+    background-color: #ffffff;
+    padding: 32px;
+    border: 1px solid #dddddd;
+  ">
+
+    <p style="
+      margin: 0 0 22px 0;
+      font-size: 16px;
+      line-height: 1.5;
+    ">
+      Hello <strong>${escapeHtml(greetingName)}</strong>,
+    </p>
+
+    <p style="
+      margin: 0 0 24px 0;
+      font-size: 16px;
+      line-height: 1.5;
+    ">
+      Your story submitted to PMS-ME was not approved for publication.
+    </p>
+
+    <p style="
+      margin: 0 0 8px 0;
+      font-size: 15px;
+      font-weight: bold;
+    ">
+      Moderator's comment
+    </p>
+
+    <div style="
+      margin: 0 0 26px 18px;
+      padding: 14px 18px;
+      background-color: #f3f3f3;
+      border-left: 4px solid #777777;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 16px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    ">${escapeHtml(message)}</div>
+
+    <p style="
+      margin: 0 0 8px 0;
+      font-size: 15px;
+      font-weight: bold;
+    ">
+      Your submitted story
+    </p>
+
+    <div style="
+      margin: 0 0 28px 18px;
+      padding: 14px 18px;
+      background-color: #f3f3f3;
+      border-left: 4px solid #777777;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 16px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    ">${escapeHtml(story)}</div>
+
+    <p style="
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.5;
+    ">
+      Thank you,
+    </p>
+
+    <p style="
+      margin: 4px 0 0 0;
+      font-size: 16px;
+      line-height: 1.5;
+      font-weight: bold;
+    ">
+      PMS-ME — Property Manager Stories
+    </p>
+
+  </div>
+
+</body>
+</html>
+`;
+
+      const text =
+`Hello ${greetingName},
+
+Your story submitted to PMS-ME was not approved for publication.
+
+MODERATOR'S COMMENT:
+
+    ${message}
+
+YOUR SUBMITTED STORY:
+
+    ${story}
+
+Thank you,
+
+PMS-ME — Property Manager Stories`;
 
       const response = await fetch(
         "https://api.resend.com/emails",
@@ -72,22 +200,8 @@ export default {
             from: "PMS-ME <onboarding@resend.dev>",
             to: [email],
             subject: "Your PMS-ME story was not approved",
-            text:
-`Hello ${greetingName},
-
-Your story submitted to PMS-ME was not approved for publication.
-
-Moderator's comment:
-
-    ${message}
-
-Your submitted story:
-
-    ${story}
-
-Thank you,
-
-PMS-ME — Property Manager Stories`
+            html: html,
+            text: text
           })
         }
       );
@@ -347,3 +461,4 @@ PMS-ME — Property Manager Stories`
     return env.ASSETS.fetch(request);
   }
 };
+```
