@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "pms-me-site",
+  "main": "./worker.mjs",
+  "compatibility_date": "2026-09-21",
+
+  "d1_databases": [
+    {
+      "binding": "pms_me_db",
+      "database_name": "pms-me-db",
+      "database_id": "7061bed5-7be8-4ee9-b4b3-3b7c75ae53f0"
+    }
+  ],
+
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+
+  "secrets": {
+    "required": ["RESEND_API_KEY"]
+  }
+}
