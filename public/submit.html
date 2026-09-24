@@ -99,6 +99,48 @@ textarea{
   line-height:1.4
 }
 
+.terms-box{
+  margin-top:20px;
+  padding:14px;
+  background:#f7f7f7;
+  border:1px solid #ddd;
+  border-radius:5px
+}
+
+.terms-box a{
+  color:#333;
+  font-weight:bold
+}
+
+.terms-agreement{
+  display:flex;
+  align-items:flex-start;
+  gap:9px;
+  margin-top:12px
+}
+
+.terms-agreement input{
+  width:auto;
+  margin-top:3px
+}
+
+.terms-agreement label{
+  margin:0;
+  font-weight:normal;
+  line-height:1.4
+}
+
+.guidelines-button{
+  margin-top:16px;
+  background:#eee;
+  color:#333;
+  border:1px solid #ccc
+}
+
+.guidelines-button:hover{
+  background:#ddd
+}
+
 .buttons{
   display:flex;
   gap:10px;
@@ -142,11 +184,56 @@ button:hover{
   font-size:14px
 }
 
-footer{
-  text-align:center;
-  color:#888;
-  font-size:12px;
-  padding:30px 15px 45px
+/* Guidelines modal */
+
+.modal{
+  display:none;
+  position:fixed;
+  z-index:1000;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,.55);
+  padding:20px;
+  overflow:auto
+}
+
+.modal-content{
+  background:#fff;
+  max-width:650px;
+  margin:7vh auto;
+  border-radius:7px;
+  padding:25px;
+  position:relative;
+  box-shadow:0 8px 30px rgba(0,0,0,.25)
+}
+
+.modal-content h2{
+  margin:0 35px 18px 0;
+  font-size:22px
+}
+
+.modal-content p{
+  line-height:1.55;
+  margin:0 0 15px
+}
+
+.close{
+  position:absolute;
+  top:12px;
+  right:15px;
+  background:transparent;
+  color:#333;
+  border:0;
+  font-size:28px;
+  line-height:1;
+  padding:4px 8px
+}
+
+.close:hover{
+  background:transparent;
+  color:#000
 }
 
 @media(max-width:600px){
@@ -154,6 +241,7 @@ footer{
   .card{padding:18px}
   .buttons{flex-direction:column}
   button,.back{text-align:center}
+  .modal-content{margin:3vh auto}
 }
 </style>
 </head>
@@ -174,11 +262,20 @@ footer{
     <form id="storyForm">
 
       <label for="story">Your Story</label>
-      <textarea id="story" required maxlength="2000"
-        placeholder="Tell us what happened..."></textarea>
-      <div class="help">Maximum 2,000 characters.</div>
+
+      <textarea
+        id="story"
+        required
+        maxlength="2000"
+        placeholder="Tell us what happened..."
+      ></textarea>
+
+      <div class="help">
+        Maximum 2,000 characters.
+      </div>
 
       <label for="category">Category</label>
+
       <select id="category" required>
         <option value="">Select a category</option>
         <option>Homeowner of the Year</option>
@@ -189,30 +286,99 @@ footer{
       </select>
 
       <label for="name">Display Name</label>
-      <input id="name" maxlength="50"
-        placeholder="How should your name appear?">
+
+      <input
+        id="name"
+        maxlength="50"
+        placeholder="How should your name appear?"
+      >
 
       <div class="checkbox">
-        <input type="checkbox" id="anonymous">
+
+        <input
+          type="checkbox"
+          id="anonymous"
+        >
+
         <label for="anonymous">
           Publish this story anonymously
         </label>
+
       </div>
 
       <label for="email">Email</label>
-      <input id="email" type="email" maxlength="200"
-        placeholder="Your email address">
+
+      <input
+        id="email"
+        type="email"
+        maxlength="200"
+        placeholder="Your email address"
+      >
 
       <div class="help">
         Your email will not be displayed publicly.
       </div>
 
-      <div class="buttons">
-        <a class="back" href="/">Back to Stories</a>
-        <button type="submit">Submit Story</button>
+      <!-- GUIDELINES -->
+
+      <button
+        type="button"
+        class="guidelines-button"
+        id="guidelinesButton"
+      >
+        Guidelines for Submitting Content
+      </button>
+
+      <!-- TERMS -->
+
+      <div class="terms-box">
+
+        <div>
+          Before submitting, please read the
+          <a
+            href="/terms-of-service.pdf"
+            target="_blank"
+            rel="noopener"
+          >
+            PMS-ME Terms of Service
+          </a>.
+        </div>
+
+        <div class="terms-agreement">
+
+          <input
+            type="checkbox"
+            id="termsAgreement"
+            required
+          >
+
+          <label for="termsAgreement">
+            I have read and agree to the PMS-ME Terms of Service.
+          </label>
+
+        </div>
+
       </div>
 
-      <div class="message" id="message"></div>
+      <div class="buttons">
+
+        <a
+          class="back"
+          href="/"
+        >
+          Back to Stories
+        </a>
+
+        <button type="submit">
+          Submit Story
+        </button>
+
+      </div>
+
+      <div
+        class="message"
+        id="message"
+      ></div>
 
     </form>
 
@@ -225,59 +391,241 @@ footer{
   Because sometimes you just have to laugh.
 </footer>
 
+
+<!-- GUIDELINES MODAL -->
+
+<div
+  class="modal"
+  id="guidelinesModal"
+>
+
+  <div class="modal-content">
+
+    <button
+      type="button"
+      class="close"
+      id="closeGuidelines"
+      aria-label="Close"
+    >
+      ×
+    </button>
+
+    <h2>
+      Guidelines for Submitting Content
+    </h2>
+
+    <p>
+      This website is intended to be a safe space for property managers to blow off steam. If you are a homeowner, you guys already have plenty other social media forums to bitch about your management company - go back to those forums and reviews to spew your venom and don't do that here... but you are welcome to hang out here, and you might learn a thing or two of how the other half sees you.
+    </p>
+
+    <p>
+      Don't use this space to spam or sell or advertise services. Defamatory statements will be weeded out, but so will eager promotion of somebody, so anonymize the names and places.
+    </p>
+
+  </div>
+
+</div>
+
+
 <script>
-const form = document.getElementById('storyForm');
-const message = document.getElementById('message');
 
-form.addEventListener('submit', async event => {
-  event.preventDefault();
+const form =
+  document.getElementById('storyForm');
 
-  const story = document.getElementById('story').value.trim();
-  const category = document.getElementById('category').value;
-  const displayName = document.getElementById('name').value.trim();
-  const anonymous = document.getElementById('anonymous').checked;
-  const email = document.getElementById('email').value.trim();
+const message =
+  document.getElementById('message');
 
-  if (!story || !category) {
-    message.style.display = 'block';
-    message.textContent = 'Please enter your story and select a category.';
-    return;
+const guidelinesButton =
+  document.getElementById('guidelinesButton');
+
+const guidelinesModal =
+  document.getElementById('guidelinesModal');
+
+const closeGuidelines =
+  document.getElementById('closeGuidelines');
+
+
+// Open guidelines
+
+guidelinesButton.addEventListener(
+  'click',
+  () => {
+    guidelinesModal.style.display = 'block';
   }
+);
 
-  message.style.display = 'block';
-  message.textContent = 'Submitting...';
 
-  try {
-    const response = await fetch('/api/stories', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        story,
-        category,
-        display_name: displayName,
-        email,
-        anonymous_requested: anonymous
-      })
-    });
+// Close guidelines
 
-    const result = await response.json();
+closeGuidelines.addEventListener(
+  'click',
+  () => {
+    guidelinesModal.style.display = 'none';
+  }
+);
 
-    if (!response.ok) {
-      throw new Error(result.error || 'Submission failed');
+
+// Close by clicking outside the modal
+
+guidelinesModal.addEventListener(
+  'click',
+  event => {
+
+    if (
+      event.target ===
+      guidelinesModal
+    ) {
+      guidelinesModal.style.display = 'none';
     }
 
-    message.textContent =
-      'Thank you! Your story has been submitted for review.';
-
-    form.reset();
-
-  } catch (error) {
-    message.textContent =
-      error.message || 'Something went wrong. Please try again.';
   }
-});
+);
+
+
+// Submit story
+
+form.addEventListener(
+  'submit',
+  async event => {
+
+    event.preventDefault();
+
+    const story =
+      document
+        .getElementById('story')
+        .value
+        .trim();
+
+    const category =
+      document
+        .getElementById('category')
+        .value;
+
+    const displayName =
+      document
+        .getElementById('name')
+        .value
+        .trim();
+
+    const anonymous =
+      document
+        .getElementById('anonymous')
+        .checked;
+
+    const email =
+      document
+        .getElementById('email')
+        .value
+        .trim();
+
+    const termsAgreement =
+      document
+        .getElementById('termsAgreement')
+        .checked;
+
+
+    if (!story || !category) {
+
+      message.style.display =
+        'block';
+
+      message.textContent =
+        'Please enter your story and select a category.';
+
+      return;
+
+    }
+
+
+    if (!termsAgreement) {
+
+      message.style.display =
+        'block';
+
+      message.textContent =
+        'Please read and agree to the Terms of Service before submitting.';
+
+      return;
+
+    }
+
+
+    message.style.display =
+      'block';
+
+    message.textContent =
+      'Submitting...';
+
+
+    try {
+
+      const response =
+        await fetch(
+          '/api/stories',
+          {
+            method:'POST',
+
+            headers:{
+              'Content-Type':
+                'application/json'
+            },
+
+            body:
+              JSON.stringify({
+
+                story,
+
+                category,
+
+                display_name:
+                  displayName,
+
+                email,
+
+                anonymous_requested:
+                  anonymous,
+
+                terms_accepted:
+                  true
+
+              })
+
+          }
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          result.error ||
+          'Submission failed'
+        );
+
+      }
+
+
+      message.textContent =
+        'Thank you! Your story has been submitted for review.';
+
+
+      form.reset();
+
+
+    } catch(error) {
+
+      message.textContent =
+        error.message ||
+        'Something went wrong. Please try again.';
+
+    }
+
+  }
+);
+
 </script>
 
 </body>
