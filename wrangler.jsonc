@@ -17,6 +17,10 @@
     "binding": "ASSETS"
   },
 
+  "triggers": {
+    "crons": ["0 13 * * *"]
+  },
+
   "secrets": {
     "required": ["RESEND_API_KEY"]
   }
