@@ -44,26 +44,19 @@ footer{text-align:center;color:#888;font-size:12px;padding:30px 15px 45px}
 
 <nav id="categories">
   <button class="active" data-category="All">All</button>
-  <button data-category="Homeowners">Homeowners</button>
-  <button data-category="Boards">Boards</button>
-  <button data-category="Contractors">Contractors</button>
-  <button data-category="Vendors">Vendors</button>
-  <button data-category="Tenants">Tenants</button>
-  <button data-category="Maintenance">Maintenance</button>
-  <button data-category="Violations">Violations</button>
-  <button data-category="Parking">Parking</button>
-  <button data-category="Pets">Pets</button>
-  <button data-category="Assessments">Assessments</button>
-  <button data-category="Insurance">Insurance</button>
-  <button data-category="Legal">Legal</button>
-  <button data-category="Other">Other</button>
+  <button data-category="Homeowner of the Year">Homeowner of the Year</button>
+  <button data-category="Vendor Blues">Vendor Blues</button>
+  <button data-category="Legally Blunt">Legally Blunt</button>
+  <button data-category="Board to Tears">Board to Tears</button>
+  <button data-category="Audit This">Audit This</button>
 </nav>
 
 <main class="container">
 
   <div class="topbar">
     <h1>The Tops</h1>
-    <a class="submit" href="/submit.html">Submit a Story</a>  </div>
+    <a class="submit" href="/submit.html">Submit a Story</a>
+  </div>
 
   <section id="stories">
     <div class="loading" id="loading">Loading stories...</div>
@@ -165,7 +158,7 @@ async function loadStories() {
       throw new Error('Unable to load stories');
     }
 
-const data = await response.json();
+    const data = await response.json();
     stories = data.results;
     renderStories('All');
 
