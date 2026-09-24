@@ -13,3 +13,8 @@ binding = "ASSETS"
 
 [secrets]
 required = ["RESEND_API_KEY"]
+
+[[rules]]
+type = "ESModule"
+globs = ["worker.js"]
+fallthrough = true
