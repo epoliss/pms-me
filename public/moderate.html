@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -49,6 +50,11 @@ header{
 h1{
   margin:0;
   font-size:24px
+}
+
+h2{
+  margin:0 0 14px;
+  font-size:20px
 }
 
 .back{
@@ -201,6 +207,11 @@ button{
   color:#333
 }
 
+.delete{
+  background:#8b0000;
+  color:#fff
+}
+
 button:hover{
   opacity:.85
 }
@@ -220,6 +231,17 @@ button:hover{
   padding:14px;
   margin-bottom:15px;
   border-radius:5px
+}
+
+.published-section{
+  margin-top:40px
+}
+
+.published-intro{
+  color:#666;
+  font-size:13px;
+  line-height:1.5;
+  margin:0 0 16px
 }
 
 footer{
@@ -301,6 +323,18 @@ footer{
     <div class="empty">Loading...</div>
   </section>
 
+  <section class="published-section">
+    <h2>Published Stories</h2>
+
+    <p class="published-intro">
+      These stories have already been published. Deleting a story permanently removes it from PMS-ME.
+    </p>
+
+    <section id="publishedStories">
+      <div class="empty">Loading...</div>
+    </section>
+  </section>
+
 </main>
 
 <footer>
@@ -308,8 +342,14 @@ footer{
 </footer>
 
 <script>
-const storiesContainer = document.getElementById('stories');
-const message = document.getElementById('message');
+const storiesContainer =
+  document.getElementById('stories');
+
+const publishedStoriesContainer =
+  document.getElementById('publishedStories');
+
+const message =
+  document.getElementById('message');
 
 const notificationFrequency =
   document.getElementById('notificationFrequency');
@@ -325,90 +365,138 @@ const settingsStatus =
 
 async function loadPendingStories() {
   try {
-    const response = await fetch('/api/stories?status=pending');
+    const response =
+      await fetch('/api/stories?status=pending');
 
     if (!response.ok) {
-      throw new Error('Unable to load pending stories.');
+      throw new Error(
+        'Unable to load pending stories.'
+      );
     }
 
-    const data = await response.json();
-    const stories = data.results || [];
+    const data =
+      await response.json();
+
+    const stories =
+      data.results || [];
 
     storiesContainer.innerHTML = '';
 
     if (!stories.length) {
       storiesContainer.innerHTML =
         '<div class="empty">There are no pending stories.</div>';
+
       return;
     }
 
     stories.forEach(story => {
-      const article = document.createElement('article');
+
+      const article =
+        document.createElement('article');
+
       article.className = 'story';
 
-      const meta = document.createElement('div');
+      const meta =
+        document.createElement('div');
+
       meta.className = 'meta';
+
       meta.textContent =
         `#${story.id} · ${story.category} · ${story.created_at}`;
 
-      const text = document.createElement('p');
-      text.textContent = story.story;
+      const text =
+        document.createElement('p');
 
-      const details = document.createElement('div');
+      text.textContent =
+        story.story;
+
+      const details =
+        document.createElement('div');
+
       details.className = 'details';
+
       details.innerHTML =
         `<strong>Display name:</strong> ${story.display_name || '(none)'}<br>` +
         `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
         `<strong>Anonymous requested:</strong> ${story.anonymous_requested ? 'Yes' : 'No'}<br>` +
         `<strong>Email:</strong> ${story.email || '(none)'}`;
 
-      const moderation = document.createElement('div');
-      moderation.className = 'moderation';
+      const moderation =
+        document.createElement('div');
 
-      const notes = document.createElement('textarea');
+      moderation.className =
+        'moderation';
+
+      const notes =
+        document.createElement('textarea');
+
       notes.placeholder =
         'Optional moderator comment / reason for rejection';
 
-      const actions = document.createElement('div');
-      actions.className = 'actions';
+      const actions =
+        document.createElement('div');
 
-      const approve = document.createElement('button');
-      approve.className = 'approve';
-      approve.textContent = 'Approve';
+      actions.className =
+        'actions';
 
-      const approveAnonymous = document.createElement('button');
-      approveAnonymous.className = 'approve-anonymous';
-      approveAnonymous.textContent = 'Approve Anonymously';
+      const approve =
+        document.createElement('button');
 
-      const reject = document.createElement('button');
-      reject.className = 'reject';
-      reject.textContent = 'Reject';
+      approve.className =
+        'approve';
 
-      approve.addEventListener('click', () =>
-        updateStory(
-          story.id,
-          'published',
-          false,
-          notes.value
-        )
+      approve.textContent =
+        'Approve';
+
+      const approveAnonymous =
+        document.createElement('button');
+
+      approveAnonymous.className =
+        'approve-anonymous';
+
+      approveAnonymous.textContent =
+        'Approve Anonymously';
+
+      const reject =
+        document.createElement('button');
+
+      reject.className =
+        'reject';
+
+      reject.textContent =
+        'Reject';
+
+      approve.addEventListener(
+        'click',
+        () =>
+          updateStory(
+            story.id,
+            'published',
+            false,
+            notes.value
+          )
       );
 
-      approveAnonymous.addEventListener('click', () =>
-        updateStory(
-          story.id,
-          'published',
-          true,
-          notes.value
-        )
+      approveAnonymous.addEventListener(
+        'click',
+        () =>
+          updateStory(
+            story.id,
+            'published',
+            true,
+            notes.value
+          )
       );
 
-      reject.addEventListener('click', () =>
-        updateStory(
-          story.id,
-          'rejected',
-          false,
-          notes.value
-        )
+      reject.addEventListener(
+        'click',
+        () =>
+          updateStory(
+            story.id,
+            'rejected',
+            false,
+            notes.value
+          )
       );
 
       actions.appendChild(approve);
@@ -427,9 +515,181 @@ async function loadPendingStories() {
     });
 
   } catch (error) {
+
     storiesContainer.innerHTML =
       '<div class="empty">Unable to load pending stories.</div>';
+
     console.error(error);
+  }
+}
+
+async function loadPublishedStories() {
+  try {
+
+    const response =
+      await fetch('/api/stories?status=published');
+
+    if (!response.ok) {
+      throw new Error(
+        'Unable to load published stories.'
+      );
+    }
+
+    const data =
+      await response.json();
+
+    const stories =
+      data.results || [];
+
+    publishedStoriesContainer.innerHTML = '';
+
+    if (!stories.length) {
+
+      publishedStoriesContainer.innerHTML =
+        '<div class="empty">There are no published stories.</div>';
+
+      return;
+    }
+
+    stories.forEach(story => {
+
+      const article =
+        document.createElement('article');
+
+      article.className =
+        'story';
+
+      const meta =
+        document.createElement('div');
+
+      meta.className =
+        'meta';
+
+      meta.textContent =
+        `#${story.id} · ${story.category} · Published ${story.published_at || story.created_at}`;
+
+      const text =
+        document.createElement('p');
+
+      text.textContent =
+        story.story;
+
+      const details =
+        document.createElement('div');
+
+      details.className =
+        'details';
+
+      details.innerHTML =
+        `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
+        `<strong>Display name:</strong> ${story.display_name || '(none)'}<br>` +
+        `<strong>Anonymous:</strong> ${
+          story.force_anonymous || story.anonymous_requested
+            ? 'Yes'
+            : 'No'
+        }`;
+
+      const moderation =
+        document.createElement('div');
+
+      moderation.className =
+        'moderation';
+
+      const actions =
+        document.createElement('div');
+
+      actions.className =
+        'actions';
+
+      const deleteButton =
+        document.createElement('button');
+
+      deleteButton.className =
+        'delete';
+
+      deleteButton.textContent =
+        'Delete Story';
+
+      deleteButton.addEventListener(
+        'click',
+        () =>
+          deletePublishedStory(story.id)
+      );
+
+      actions.appendChild(
+        deleteButton
+      );
+
+      moderation.appendChild(
+        actions
+      );
+
+      article.appendChild(meta);
+      article.appendChild(text);
+      article.appendChild(details);
+      article.appendChild(moderation);
+
+      publishedStoriesContainer.appendChild(
+        article
+      );
+    });
+
+  } catch (error) {
+
+    publishedStoriesContainer.innerHTML =
+      '<div class="empty">Unable to load published stories.</div>';
+
+    console.error(error);
+  }
+}
+
+async function deletePublishedStory(id) {
+
+  const confirmed =
+    window.confirm(
+      'Are you sure you want to permanently delete this published story? This cannot be undone.'
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  message.style.display =
+    'block';
+
+  message.textContent =
+    'Deleting story...';
+
+  try {
+
+    const response =
+      await fetch(
+        '/api/stories/' + id,
+        {
+          method: 'DELETE'
+        }
+      );
+
+    const result =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error ||
+        'Delete failed.'
+      );
+    }
+
+    message.textContent =
+      'Story deleted.';
+
+    loadPublishedStories();
+
+  } catch (error) {
+
+    message.textContent =
+      error.message ||
+      'Something went wrong.';
   }
 }
 
@@ -439,26 +699,42 @@ async function updateStory(
   forceAnonymous,
   moderatorNotes
 ) {
-  message.style.display = 'block';
-  message.textContent = 'Saving...';
+  message.style.display =
+    'block';
+
+  message.textContent =
+    'Saving...';
 
   try {
-    const response = await fetch('/api/stories/' + id, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        status,
-        force_anonymous: forceAnonymous,
-        moderator_notes: moderatorNotes
-      })
-    });
 
-    const result = await response.json();
+    const response =
+      await fetch(
+        '/api/stories/' + id,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+          body:
+            JSON.stringify({
+              status,
+              force_anonymous:
+                forceAnonymous,
+              moderator_notes:
+                moderatorNotes
+            })
+        }
+      );
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.error || 'Update failed.');
+      throw new Error(
+        result.error ||
+        'Update failed.'
+      );
     }
 
     message.textContent =
@@ -468,57 +744,92 @@ async function updateStory(
 
     loadPendingStories();
 
+    if (
+      status === 'published'
+    ) {
+      loadPublishedStories();
+    }
+
   } catch (error) {
+
     message.textContent =
-      error.message || 'Something went wrong.';
+      error.message ||
+      'Something went wrong.';
   }
 }
 
 async function loadNotificationSettings() {
+
   try {
-    const response = await fetch('/api/notification-settings');
+
+    const response =
+      await fetch(
+        '/api/notification-settings'
+      );
 
     if (!response.ok) {
-      throw new Error('Unable to load notification settings.');
+      throw new Error(
+        'Unable to load notification settings.'
+      );
     }
 
-    const settings = await response.json();
+    const settings =
+      await response.json();
 
     notificationFrequency.value =
-      settings.frequency || 'off';
+      settings.frequency ||
+      'off';
 
     notificationEmail.value =
-      settings.email || '';
+      settings.email ||
+      '';
 
   } catch (error) {
+
     console.error(error);
   }
 }
 
 async function saveNotificationSettings() {
-  const frequency = notificationFrequency.value;
-  const email = notificationEmail.value.trim();
 
-  settingsStatus.style.display = 'block';
-  settingsStatus.textContent = 'Saving...';
+  const frequency =
+    notificationFrequency.value;
+
+  const email =
+    notificationEmail.value.trim();
+
+  settingsStatus.style.display =
+    'block';
+
+  settingsStatus.textContent =
+    'Saving...';
 
   try {
-    const response = await fetch('/api/notification-settings', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        frequency,
-        email
-      })
-    });
 
-    const result = await response.json();
+    const response =
+      await fetch(
+        '/api/notification-settings',
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+          body:
+            JSON.stringify({
+              frequency,
+              email
+            })
+        }
+      );
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
       throw new Error(
-        result.error || 'Unable to save notification settings.'
+        result.error ||
+        'Unable to save notification settings.'
       );
     }
 
@@ -528,8 +839,10 @@ async function saveNotificationSettings() {
         : 'Notification settings saved.';
 
   } catch (error) {
+
     settingsStatus.textContent =
-      error.message || 'Unable to save notification settings.';
+      error.message ||
+      'Unable to save notification settings.';
   }
 }
 
@@ -540,6 +853,7 @@ saveSettingsButton.addEventListener(
 
 loadNotificationSettings();
 loadPendingStories();
+loadPublishedStories();
 
 setInterval(() => {
 
@@ -548,7 +862,8 @@ setInterval(() => {
    * This prevents the 30-second refresh from
    * erasing an unfinished moderator comment.
    */
-  const activeElement = document.activeElement;
+  const activeElement =
+    document.activeElement;
 
   if (
     activeElement &&
@@ -558,9 +873,11 @@ setInterval(() => {
   }
 
   loadPendingStories();
+  loadPublishedStories();
 
 }, 30000);
 </script>
 
 </body>
 </html>
+```
