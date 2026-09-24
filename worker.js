@@ -42,7 +42,7 @@ export default {
       const number =
         Math.floor(Math.random() * 900) + 100;
 
-      return `${word}${number}`;
+      return word + number;
     }
 
     function escapeHtml(value) {
@@ -70,130 +70,76 @@ export default {
 
       const greetingName = displayName || "there";
 
-      const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Your PMS-ME story was not approved</title>
-</head>
+      const safeGreetingName = escapeHtml(greetingName);
+      const safeMessage = escapeHtml(message);
+      const safeStory = escapeHtml(story);
 
-<body style="
-  margin: 0;
-  padding: 0;
-  background-color: #f4f4f4;
-  font-family: Arial, Helvetica, sans-serif;
-  color: #222222;
-">
+      const html =
+        "<!DOCTYPE html>" +
+        "<html>" +
+        "<head>" +
+        '<meta charset="UTF-8">' +
+        "<title>Your PMS-ME story was not approved</title>" +
+        "</head>" +
 
-  <div style="
-    max-width: 680px;
-    margin: 30px auto;
-    background-color: #ffffff;
-    padding: 32px;
-    border: 1px solid #dddddd;
-  ">
+        '<body style="margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#222222;">' +
 
-    <p style="
-      margin: 0 0 22px 0;
-      font-size: 16px;
-      line-height: 1.5;
-    ">
-      Hello <strong>${escapeHtml(greetingName)}</strong>,
-    </p>
+        '<div style="max-width:680px;margin:30px auto;background-color:#ffffff;padding:32px;border:1px solid #dddddd;">' +
 
-    <p style="
-      margin: 0 0 24px 0;
-      font-size: 16px;
-      line-height: 1.5;
-    ">
-      Your story submitted to PMS-ME was not approved for publication.
-    </p>
+        '<p style="margin:0 0 22px 0;font-size:16px;line-height:1.5;">' +
+        "Hello <strong>" +
+        safeGreetingName +
+        "</strong>," +
+        "</p>" +
 
-    <p style="
-      margin: 0 0 8px 0;
-      font-size: 15px;
-      font-weight: bold;
-    ">
-      Moderator's comment
-    </p>
+        '<p style="margin:0 0 24px 0;font-size:16px;line-height:1.5;">' +
+        "Your story submitted to PMS-ME was not approved for publication." +
+        "</p>" +
 
-    <div style="
-      margin: 0 0 26px 18px;
-      padding: 14px 18px;
-      background-color: #f3f3f3;
-      border-left: 4px solid #777777;
-      font-family: Georgia, 'Times New Roman', serif;
-      font-size: 16px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    ">${escapeHtml(message)}</div>
+        '<p style="margin:0 0 8px 0;font-size:15px;font-weight:bold;">' +
+        "Moderator's comment" +
+        "</p>" +
 
-    <p style="
-      margin: 0 0 8px 0;
-      font-size: 15px;
-      font-weight: bold;
-    ">
-      Your submitted story
-    </p>
+        '<div style="margin:0 0 26px 18px;padding:14px 18px;background-color:#f3f3f3;border-left:4px solid #777777;font-family:Georgia,Times New Roman,serif;font-size:16px;line-height:1.6;white-space:pre-wrap;">' +
+        safeMessage +
+        "</div>" +
 
-    <div style="
-      margin: 0 0 28px 18px;
-      padding: 14px 18px;
-      background-color: #f3f3f3;
-      border-left: 4px solid #777777;
-      font-family: Georgia, 'Times New Roman', serif;
-      font-size: 16px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    ">${escapeHtml(story)}</div>
+        '<p style="margin:0 0 8px 0;font-size:15px;font-weight:bold;">' +
+        "Your submitted story" +
+        "</p>" +
 
-    <p style="
-      margin: 0;
-      font-size: 16px;
-      line-height: 1.5;
-    ">
-      Thank you,
-    </p>
+        '<div style="margin:0 0 28px 18px;padding:14px 18px;background-color:#f3f3f3;border-left:4px solid #777777;font-family:Georgia,Times New Roman,serif;font-size:16px;line-height:1.6;white-space:pre-wrap;">' +
+        safeStory +
+        "</div>" +
 
-    <p style="
-      margin: 4px 0 0 0;
-      font-size: 16px;
-      line-height: 1.5;
-      font-weight: bold;
-    ">
-      PMS-ME — Property Manager Stories
-    </p>
+        '<p style="margin:0;font-size:16px;line-height:1.5;">' +
+        "Thank you," +
+        "</p>" +
 
-  </div>
+        '<p style="margin:4px 0 0 0;font-size:16px;line-height:1.5;font-weight:bold;">' +
+        "PMS-ME — Property Manager Stories" +
+        "</p>" +
 
-</body>
-</html>
-`;
+        "</div>" +
+        "</body>" +
+        "</html>";
 
       const text =
-`Hello ${greetingName},
-
-Your story submitted to PMS-ME was not approved for publication.
-
-MODERATOR'S COMMENT:
-
-    ${message}
-
-YOUR SUBMITTED STORY:
-
-    ${story}
-
-Thank you,
-
-PMS-ME — Property Manager Stories`;
+        "Hello " + greetingName + ",\n\n" +
+        "Your story submitted to PMS-ME was not approved for publication.\n\n" +
+        "MODERATOR'S COMMENT:\n\n" +
+        "    " + message + "\n\n" +
+        "YOUR SUBMITTED STORY:\n\n" +
+        "    " + story + "\n\n" +
+        "Thank you,\n\n" +
+        "PMS-ME — Property Manager Stories";
 
       const response = await fetch(
         "https://api.resend.com/emails",
         {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+            "Authorization": "Bearer " + env.RESEND_API_KEY,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
@@ -210,7 +156,7 @@ PMS-ME — Property Manager Stories`;
         const errorText = await response.text();
 
         throw new Error(
-          `Email sending failed: ${errorText}`
+          "Email sending failed: " + errorText
         );
       }
     }
@@ -240,12 +186,12 @@ PMS-ME — Property Manager Stories`;
         `;
 
         if (status) {
-          query += ` WHERE status = ?`;
+          query += " WHERE status = ?";
         } else {
-          query += ` WHERE status = 'published'`;
+          query += " WHERE status = 'published'";
         }
 
-        query += ` ORDER BY created_at DESC`;
+        query += " ORDER BY created_at DESC";
 
         const statement = status
           ? env.pms_me_db.prepare(query).bind(status)
@@ -262,15 +208,20 @@ PMS-ME — Property Manager Stories`;
 
           const story = String(data.story || "").trim();
           const category = String(data.category || "").trim();
-          const displayName = String(data.display_name || "").trim();
-          const email = String(data.email || "").trim();
+          const displayName =
+            String(data.display_name || "").trim();
+          const email =
+            String(data.email || "").trim();
 
           const anonymousRequested =
             data.anonymous_requested ? 1 : 0;
 
           if (!story || !category) {
             return Response.json(
-              { error: "Story and category are required." },
+              {
+                error:
+                  "Story and category are required."
+              },
               { status: 400 }
             );
           }
@@ -278,7 +229,10 @@ PMS-ME — Property Manager Stories`;
           const publicName =
             anonymousRequested
               ? generateAnonymousName()
-              : (displayName || generateAnonymousName());
+              : (
+                  displayName ||
+                  generateAnonymousName()
+                );
 
           await env.pms_me_db
             .prepare(`
@@ -307,12 +261,17 @@ PMS-ME — Property Manager Stories`;
 
           return Response.json({
             success: true,
-            message: "Story submitted for review."
+            message:
+              "Story submitted for review."
           });
 
         } catch (error) {
           return Response.json(
-            { error: error.message || "Submission failed." },
+            {
+              error:
+                error.message ||
+                "Submission failed."
+            },
             { status: 500 }
           );
         }
@@ -330,18 +289,25 @@ PMS-ME — Property Manager Stories`;
 
         if (!Number.isInteger(id)) {
           return Response.json(
-            { error: "Invalid story ID." },
+            {
+              error: "Invalid story ID."
+            },
             { status: 400 }
           );
         }
 
         const data = await request.json();
 
-        const status = String(data.status || "").trim();
+        const status =
+          String(data.status || "").trim();
 
-        if (!["published", "rejected"].includes(status)) {
+        if (
+          !["published", "rejected"].includes(status)
+        ) {
           return Response.json(
-            { error: "Invalid status." },
+            {
+              error: "Invalid status."
+            },
             { status: 400 }
           );
         }
@@ -350,25 +316,30 @@ PMS-ME — Property Manager Stories`;
           data.force_anonymous ? 1 : 0;
 
         const moderatorNotes =
-          String(data.moderator_notes || "").trim();
+          String(
+            data.moderator_notes || ""
+          ).trim();
 
-        const storyResult = await env.pms_me_db
-          .prepare(`
-            SELECT
-              display_name,
-              anonymous_requested,
-              public_name,
-              email,
-              story
-            FROM stories
-            WHERE id = ?
-          `)
-          .bind(id)
-          .first();
+        const storyResult =
+          await env.pms_me_db
+            .prepare(`
+              SELECT
+                display_name,
+                anonymous_requested,
+                public_name,
+                email,
+                story
+              FROM stories
+              WHERE id = ?
+            `)
+            .bind(id)
+            .first();
 
         if (!storyResult) {
           return Response.json(
-            { error: "Story not found." },
+            {
+              error: "Story not found."
+            },
             { status: 404 }
           );
         }
@@ -452,7 +423,11 @@ PMS-ME — Property Manager Stories`;
 
       } catch (error) {
         return Response.json(
-          { error: error.message || "Update failed." },
+          {
+            error:
+              error.message ||
+              "Update failed."
+          },
           { status: 500 }
         );
       }
