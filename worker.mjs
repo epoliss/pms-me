@@ -1,3 +1,4 @@
+// PMS-ME deployment trigger
 function generateAnonymousName() {
   const words = [
     "catliver",
