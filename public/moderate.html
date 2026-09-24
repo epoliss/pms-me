@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -248,7 +247,6 @@ footer{
   }
 }
 </style>
-
 </head>
 
 <body>
@@ -268,36 +266,33 @@ footer{
   <section class="settings">
     <h2>Notification Settings</h2>
 
-```
-<p class="settings-description">
-  Choose whether you want to receive an email when stories are submitted.
-</p>
+    <p class="settings-description">
+      Choose whether you want to receive an email when stories are submitted.
+    </p>
 
-<div class="setting-row">
-  <label for="notificationFrequency">Notifications</label>
-  <select id="notificationFrequency">
-    <option value="off">Off</option>
-    <option value="immediate">Immediately — one email per new story</option>
-    <option value="daily">Daily digest — one email per day</option>
-  </select>
-</div>
+    <div class="setting-row">
+      <label for="notificationFrequency">Notifications</label>
+      <select id="notificationFrequency">
+        <option value="off">Off</option>
+        <option value="immediate">Immediately — one email per new story</option>
+        <option value="daily">Daily digest — one email per day</option>
+      </select>
+    </div>
 
-<div class="setting-row">
-  <label for="notificationEmail">Email address</label>
-  <input
-    type="email"
-    id="notificationEmail"
-    placeholder="you@example.com"
-  >
-</div>
+    <div class="setting-row">
+      <label for="notificationEmail">Email address</label>
+      <input
+        type="email"
+        id="notificationEmail"
+        placeholder="you@example.com"
+      >
+    </div>
 
-<button class="save-settings" id="saveSettings">
-  Save Notification Settings
-</button>
+    <button class="save-settings" id="saveSettings">
+      Save Notification Settings
+    </button>
 
-<div class="settings-status" id="settingsStatus"></div>
-```
-
+    <div class="settings-status" id="settingsStatus"></div>
   </section>
 
   <div class="message" id="message"></div>
