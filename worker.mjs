@@ -635,24 +635,23 @@ export default {
         const password =
           body.password || "";
 
-        if (
-          !env.MODERATOR_PASSWORD ||
-          !env.MODERATOR_SESS_SEC
-        ) {
-          return new Response(
-            JSON.stringify({
-              error:
-                "Moderator authentication is not configured."
-            }),
-            {
-              status: 500,
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
-          );
-        }
+        if (!env.MODERATOR_PASSWORD) {
+  return new Response(
+    JSON.stringify({
+      error: "MODERATOR_PASSWORD is missing"
+    }),
+    { status: 500, headers: { "Content-Type": "application/json" } }
+  );
+}
+
+if (!env.MODERATOR_SESS_SEC) {
+  return new Response(
+    JSON.stringify({
+      error: "MODERATOR_SESS_SEC is missing"
+    }),
+    { status: 500, headers: { "Content-Type": "application/json" } }
+  );
+}
 
         if (
           password !==
