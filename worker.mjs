@@ -46,11 +46,9 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-/*
- * =========================================================
- * MODERATOR AUTHENTICATION
- * =========================================================
- */
+/* =========================================================
+   MODERATOR AUTHENTICATION
+   ========================================================= */
 
 function base64UrlEncode(bytes) {
   let binary = "";
@@ -67,22 +65,19 @@ function base64UrlEncode(bytes) {
 
 function base64UrlDecode(value) {
   const padded =
-    value.replace(/-/g, "+").replace(/_/g, "/") +
-    "===".slice(
-      (value.length + 3) % 4
+    value
+      .replace(/-/g, "+")
+      .replace(/_/g, "/") +
+    "=".repeat(
+      (4 - (value.length % 4)) % 4
     );
 
-  const binary =
-    atob(padded);
+  const binary = atob(padded);
 
   const bytes =
     new Uint8Array(binary.length);
 
-  for (
-    let i = 0;
-    i < binary.length;
-    i++
-  ) {
+  for (let i = 0; i < binary.length; i++) {
     bytes[i] =
       binary.charCodeAt(i);
   }
@@ -90,22 +85,16 @@ function base64UrlDecode(value) {
   return bytes;
 }
 
-async function sha256(text) {
-  const data =
-    new TextEncoder().encode(text);
-
+async function sha256(value) {
   return new Uint8Array(
     await crypto.subtle.digest(
       "SHA-256",
-      data
+      new TextEncoder().encode(value)
     )
   );
 }
 
-async function hmacSign(
-  text,
-  secret
-) {
+async function hmacSign(value, secret) {
   const key =
     await crypto.subtle.importKey(
       "raw",
@@ -118,57 +107,55 @@ async function hmacSign(
       ["sign"]
     );
 
-  return new Uint8Array(
-    await crypto.subtle.sign(
-      "HMAC",
-      key,
-      new TextEncoder().encode(text)
-    )
-  );
+  const signature =
+    new Uint8Array(
+      await crypto.subtle.sign(
+        "HMAC",
+        key,
+        new TextEncoder().encode(value)
+      )
+    );
+
+  return base64UrlEncode(signature);
 }
 
 async function createModeratorSession(env) {
-  const expires =
-    Date.now() +
-    8 * 60 * 60 * 1000;
+  const timestamp =
+    Date.now().toString();
+
+  const randomBytes =
+    crypto.getRandomValues(
+      new Uint8Array(32)
+    );
+
+  const randomPart =
+    base64UrlEncode(randomBytes);
 
   const payload =
-    JSON.stringify({
-      exp: expires
-    });
-
-  const encodedPayload =
-    base64UrlEncode(
-      new TextEncoder().encode(
-        payload
-      )
-    );
+    timestamp + "." + randomPart;
 
   const signature =
-    base64UrlEncode(
-      await hmacSign(
-        encodedPayload,
-        env.MODERATOR_SESSION_SECRET
-      )
+    await hmacSign(
+      payload,
+      env.MODERATOR_SESSION_SECRET
     );
 
-  return (
-    encodedPayload +
-    "." +
-    signature
-  );
+  return payload + "." + signature;
 }
 
 async function isModeratorAuthenticated(
   request,
   env
 ) {
-  const cookie =
-    request.headers.get("Cookie") ||
-    "";
+  if (!env.MODERATOR_SESSION_SECRET) {
+    return false;
+  }
+
+  const cookieHeader =
+    request.headers.get("Cookie") || "";
 
   const match =
-    cookie.match(
+    cookieHeader.match(
       /(?:^|;\s*)pms_me_moderator=([^;]+)/
     );
 
@@ -182,77 +169,79 @@ async function isModeratorAuthenticated(
   const parts =
     token.split(".");
 
-  if (parts.length !== 2) {
+  if (parts.length !== 3) {
     return false;
   }
 
-  const [
-    encodedPayload,
-    suppliedSignature
-  ] = parts;
+  const payload =
+    parts[0] + "." + parts[1];
 
-  try {
-    const payload =
-      JSON.parse(
-        new TextDecoder().decode(
-          base64UrlDecode(
-            encodedPayload
-          )
-        )
-      );
+  const suppliedSignature =
+    parts[2];
 
-    if (
-      !payload.exp ||
-      Date.now() >= payload.exp
-    ) {
-      return false;
-    }
+  const expectedSignature =
+    await hmacSign(
+      payload,
+      env.MODERATOR_SESSION_SECRET
+    );
 
-    const expectedSignature =
-      base64UrlEncode(
-        await hmacSign(
-          encodedPayload,
-          env.MODERATOR_SESSION_SECRET
-        )
-      );
-
-    if (
-      suppliedSignature.length !==
-      expectedSignature.length
-    ) {
-      return false;
-    }
-
-    let difference = 0;
-
-    for (
-      let i = 0;
-      i < expectedSignature.length;
-      i++
-    ) {
-      difference |=
-        suppliedSignature.charCodeAt(i) ^
-        expectedSignature.charCodeAt(i);
-    }
-
-    return difference === 0;
-
-  } catch {
+  if (
+    suppliedSignature.length !==
+    expectedSignature.length
+  ) {
     return false;
   }
+
+  let validSignature = true;
+
+  for (
+    let i = 0;
+    i < expectedSignature.length;
+    i++
+  ) {
+    if (
+      suppliedSignature.charCodeAt(i) !==
+      expectedSignature.charCodeAt(i)
+    ) {
+      validSignature = false;
+    }
+  }
+
+  if (!validSignature) {
+    return false;
+  }
+
+  const timestamp =
+    Number(parts[0]);
+
+  if (!Number.isFinite(timestamp)) {
+    return false;
+  }
+
+  const age =
+    Date.now() - timestamp;
+
+  if (
+    age < 0 ||
+    age > 8 * 60 * 60 * 1000
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 function unauthorizedResponse() {
-  return Response.json(
-    {
+  return new Response(
+    JSON.stringify({
       error:
         "Moderator authentication required."
-    },
+    }),
     {
       status: 401,
       headers: {
-        "Cache-Control":
-          "no-store"
+        "Content-Type":
+          "application/json"
       }
     }
   );
@@ -260,189 +249,158 @@ function unauthorizedResponse() {
 
 function moderatorLoginPage() {
   return new Response(
-`<!doctype html>
-<html lang="en">
+    `<!DOCTYPE html>
+<html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PMS-ME — Moderator Login</title>
-<style>
-* {
-  box-sizing: border-box;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PMS-ME Moderator Login</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f4f4f4;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #222;
+    }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f3f3f3;
-  font-family: Arial, Helvetica, sans-serif;
-  color: #222;
-}
+    .login-box {
+      width: 360px;
+      max-width: calc(100% - 40px);
+      background: white;
+      border: 1px solid #ddd;
+      padding: 30px;
+      box-sizing: border-box;
+    }
 
-.login {
-  width: min(420px, calc(100% - 30px));
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 7px;
-  padding: 30px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.08);
-}
+    h1 {
+      margin: 0 0 10px;
+      font-size: 24px;
+    }
 
-.logo {
-  text-align: center;
-  font-size: 38px;
-  font-weight: 800;
-  letter-spacing: 2px;
-}
+    p {
+      margin: 0 0 22px;
+      color: #666;
+    }
 
-.subtitle {
-  text-align: center;
-  color: #777;
-  margin: 5px 0 25px;
-}
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: bold;
+    }
 
-label {
-  display: block;
-  font-weight: bold;
-  font-size: 14px;
-  margin-bottom: 7px;
-}
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px;
+      font-size: 16px;
+      border: 1px solid #bbb;
+      margin-bottom: 15px;
+    }
 
-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
-}
+    button {
+      width: 100%;
+      padding: 11px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #222;
+      color: white;
+      border: 0;
+    }
 
-button {
-  width: 100%;
-  margin-top: 15px;
-  padding: 12px;
-  border: 0;
-  border-radius: 5px;
-  background: #222;
-  color: #fff;
-  font-size: 15px;
-  font-weight: bold;
-  cursor: pointer;
-}
+    button:hover {
+      background: #444;
+    }
 
-.error {
-  display: none;
-  margin-top: 15px;
-  color: #8b0000;
-  font-size: 14px;
-  line-height: 1.4;
-}
-</style>
+    #error {
+      color: #b00020;
+      margin-top: 15px;
+      min-height: 20px;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="login">
+  <div class="login-box">
+    <h1>PMS-ME Moderator Login</h1>
+    <p>Moderator access is restricted.</p>
 
-  <div class="logo">
-    PMS-ME
+    <form id="loginForm">
+      <label for="password">Password</label>
+
+      <input
+        type="password"
+        id="password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button type="submit">
+        Log In
+      </button>
+
+      <div id="error"></div>
+    </form>
   </div>
 
-  <div class="subtitle">
-    Moderator Login
-  </div>
+  <script>
+    document
+      .getElementById("loginForm")
+      .addEventListener("submit", async function(event) {
+        event.preventDefault();
 
-  <form id="loginForm">
+        const password =
+          document.getElementById("password").value;
 
-    <label for="password">
-      Moderator Password
-    </label>
+        const error =
+          document.getElementById("error");
 
-    <input
-      id="password"
-      type="password"
-      autocomplete="current-password"
-      required
-    >
+        error.textContent = "";
 
-    <button type="submit">
-      Log In
-    </button>
-
-    <div class="error" id="error">
-      Incorrect password.
-    </div>
-
-  </form>
-
-</div>
-
-<script>
-document
-  .getElementById("loginForm")
-  .addEventListener(
-    "submit",
-    async function(event) {
-
-      event.preventDefault();
-
-      const password =
-        document
-          .getElementById("password")
-          .value;
-
-      const error =
-        document
-          .getElementById("error");
-
-      error.style.display =
-        "none";
-
-      try {
-
-        const response =
-          await fetch(
-            "/api/moderator-login",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-              body:
-                JSON.stringify({
+        try {
+          const response =
+            await fetch(
+              "/api/moderator-login",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+                body: JSON.stringify({
                   password: password
                 })
-            }
-          );
+              }
+            );
 
-        if (!response.ok) {
-          error.style.display =
-            "block";
-          return;
+          const data =
+            await response.json();
+
+          if (!response.ok) {
+            error.textContent =
+              data.error ||
+              "Login failed.";
+
+            return;
+          }
+
+          window.location.href =
+            "/moderate.html";
+
+        } catch (err) {
+          error.textContent =
+            "Unable to connect to the server.";
         }
-
-        window.location.href =
-          "/moderate.html";
-
-      } catch (err) {
-
-        error.textContent =
-          "Unable to log in. Please try again.";
-
-        error.style.display =
-          "block";
-      }
-    }
-  );
-</script>
+      });
+  </script>
 
 </body>
 </html>`,
     {
-      status: 401,
+      status: 200,
       headers: {
         "Content-Type":
           "text/html; charset=UTF-8",
@@ -452,6 +410,10 @@ document
     }
   );
 }
+
+/* =========================================================
+   EMAIL
+   ========================================================= */
 
 async function sendEmail(env, emailData) {
   const response = await fetch(
@@ -900,11 +862,9 @@ export default {
     const url =
       new URL(request.url);
 
-    /*
-     * =====================================================
-     * MODERATOR LOGIN
-     * =====================================================
-     */
+    /* =====================================================
+       MODERATOR LOGIN
+       ===================================================== */
 
     if (
       url.pathname ===
@@ -921,65 +881,21 @@ export default {
           );
 
         if (
-          !password ||
           !env.MODERATOR_PASSWORD ||
-          !env.MODERATOR_SESSION_SECRET
-        ) {
-          return Response.json(
-            {
-              error:
-                "Invalid login."
-            },
-            {
-              status: 401,
-              headers: {
-                "Cache-Control":
-                  "no-store"
-              }
-            }
-          );
-        }
-
-        const suppliedHash =
-          await sha256(password);
-
-        const storedHash =
-          await sha256(
+          password !==
             env.MODERATOR_PASSWORD
-          );
-
-        let difference = 0;
-
-        for (
-          let i = 0;
-          i < suppliedHash.length;
-          i++
         ) {
-          difference |=
-            suppliedHash[i] ^
-            storedHash[i];
-        }
-
-        if (difference !== 0) {
           return Response.json(
             {
               error:
-                "Invalid login."
+                "Incorrect password."
             },
-            {
-              status: 401,
-              headers: {
-                "Cache-Control":
-                  "no-store"
-              }
-            }
+            { status: 401 }
           );
         }
 
         const session =
-          await createModeratorSession(
-            env
-          );
+          await createModeratorSession(env);
 
         return new Response(
           JSON.stringify({
@@ -990,8 +906,6 @@ export default {
             headers: {
               "Content-Type":
                 "application/json",
-              "Cache-Control":
-                "no-store",
               "Set-Cookie":
                 "pms_me_moderator=" +
                 session +
@@ -1004,24 +918,16 @@ export default {
         return Response.json(
           {
             error:
-              "Invalid login request."
+              "Login failed."
           },
-          {
-            status: 400,
-            headers: {
-              "Cache-Control":
-                "no-store"
-            }
-          }
+          { status: 500 }
         );
       }
     }
 
-    /*
-     * =====================================================
-     * MODERATOR LOGOUT
-     * =====================================================
-     */
+    /* =====================================================
+       MODERATOR LOGOUT
+       ===================================================== */
 
     if (
       url.pathname ===
@@ -1037,8 +943,6 @@ export default {
           headers: {
             "Content-Type":
               "application/json",
-            "Cache-Control":
-              "no-store",
             "Set-Cookie":
               "pms_me_moderator=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict"
           }
@@ -1046,11 +950,9 @@ export default {
       );
     }
 
-    /*
-     * =====================================================
-     * PROTECT MODERATOR PAGE
-     * =====================================================
-     */
+    /* =====================================================
+       PROTECT MODERATOR PAGE
+       ===================================================== */
 
     if (
       url.pathname ===
@@ -1067,25 +969,57 @@ export default {
       }
     }
 
-    /*
-     * =====================================================
-     * NOTIFICATION SETTINGS
-     * =====================================================
-     */
+    /* =====================================================
+       PROTECT MODERATOR API
+       ===================================================== */
+
+    const isNotificationSettings =
+      url.pathname ===
+      "/api/notification-settings";
+
+    const isModeratorStoriesGet =
+      url.pathname ===
+        "/api/stories" &&
+      request.method === "GET" &&
+      url.searchParams.has("status");
+
+    const isStoryDelete =
+      url.pathname.startsWith(
+        "/api/stories/"
+      ) &&
+      request.method === "DELETE";
+
+    const isStoryPatch =
+      url.pathname.startsWith(
+        "/api/stories/"
+      ) &&
+      request.method === "PATCH";
+
+    if (
+      isNotificationSettings ||
+      isModeratorStoriesGet ||
+      isStoryDelete ||
+      isStoryPatch
+    ) {
+      const authenticated =
+        await isModeratorAuthenticated(
+          request,
+          env
+        );
+
+      if (!authenticated) {
+        return unauthorizedResponse();
+      }
+    }
+
+    /* =====================================================
+       NOTIFICATION SETTINGS
+       ===================================================== */
 
     if (
       url.pathname ===
       "/api/notification-settings"
     ) {
-
-      if (
-        !(await isModeratorAuthenticated(
-          request,
-          env
-        ))
-      ) {
-        return unauthorizedResponse();
-      }
 
       if (request.method === "GET") {
         try {
@@ -1229,11 +1163,9 @@ export default {
       }
     }
 
-    /*
-     * =====================================================
-     * STORIES
-     * =====================================================
-     */
+    /* =====================================================
+       STORIES
+       ===================================================== */
 
     if (
       url.pathname ===
@@ -1243,28 +1175,6 @@ export default {
       if (request.method === "GET") {
         const status =
           url.searchParams.get("status");
-
-        /*
-         * Only the moderator can request
-         * specific statuses such as pending
-         * or published.
-         *
-         * The public feed uses no status
-         * parameter and remains public.
-         */
-        if (
-          status === "pending" ||
-          status === "published"
-        ) {
-          if (
-            !(await isModeratorAuthenticated(
-              request,
-              env
-            ))
-          ) {
-            return unauthorizedResponse();
-          }
-        }
 
         let query =
           "SELECT " +
@@ -1414,11 +1324,9 @@ export default {
       }
     }
 
-    /*
-     * =====================================================
-     * DELETE A PUBLISHED STORY
-     * =====================================================
-     */
+    /* =====================================================
+       DELETE A PUBLISHED STORY
+       ===================================================== */
 
     if (
       url.pathname.startsWith(
@@ -1426,16 +1334,6 @@ export default {
       ) &&
       request.method === "DELETE"
     ) {
-
-      if (
-        !(await isModeratorAuthenticated(
-          request,
-          env
-        ))
-      ) {
-        return unauthorizedResponse();
-      }
-
       try {
         const id =
           Number(
@@ -1515,11 +1413,9 @@ export default {
       }
     }
 
-    /*
-     * =====================================================
-     * APPROVE / REJECT STORY
-     * =====================================================
-     */
+    /* =====================================================
+       MODERATE A STORY
+       ===================================================== */
 
     if (
       url.pathname.startsWith(
@@ -1527,16 +1423,6 @@ export default {
       ) &&
       request.method === "PATCH"
     ) {
-
-      if (
-        !(await isModeratorAuthenticated(
-          request,
-          env
-        ))
-      ) {
-        return unauthorizedResponse();
-      }
-
       try {
         const id =
           Number(
