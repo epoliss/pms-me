@@ -161,6 +161,27 @@ input[type="email"]{
   padding-top:16px
 }
 
+.category-row{
+  margin-bottom:14px
+}
+
+.category-row label{
+  display:block;
+  font-weight:bold;
+  font-size:13px;
+  margin-bottom:6px
+}
+
+.category-select{
+  width:100%;
+  border:1px solid #ccc;
+  border-radius:4px;
+  padding:10px;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:14px;
+  background:#fff
+}
+
 textarea{
   width:100%;
   min-height:90px;
@@ -295,7 +316,7 @@ footer{
       <label for="notificationFrequency">Notifications</label>
       <select id="notificationFrequency">
         <option value="off">Off</option>
-        <option value="immediately">Immediately — one email per new story</option>
+        <option value="immediate">Immediately — one email per new story</option>
         <option value="daily">Daily digest — one email per day</option>
       </select>
     </div>
@@ -362,13 +383,18 @@ const saveSettingsButton =
 const settingsStatus =
   document.getElementById('settingsStatus');
 
+const categories = [
+  "Homeowner of the Year",
+  "Vendor Blues",
+  "Legally Blunt",
+  "Board to Tears",
+  "Audit This"
+];
 
 async function loadPendingStories() {
   try {
     const response =
-      await fetch('/api/stories?status=pending', {
-        credentials: 'same-origin'
-      });
+      await fetch('/api/stories?status=pending');
 
     if (!response.ok) {
       throw new Error(
@@ -379,13 +405,8 @@ async function loadPendingStories() {
     const data =
       await response.json();
 
-    /*
-     * The Worker returns the stories array directly.
-     */
     const stories =
-      Array.isArray(data)
-        ? data
-        : (data.results || []);
+      data.results || [];
 
     storiesContainer.innerHTML = '';
 
@@ -434,6 +455,50 @@ async function loadPendingStories() {
       moderation.className =
         'moderation';
 
+      const categoryRow =
+        document.createElement('div');
+
+      categoryRow.className =
+        'category-row';
+
+      const categoryLabel =
+        document.createElement('label');
+
+      categoryLabel.textContent =
+        'Category';
+
+      const categorySelect =
+        document.createElement('select');
+
+      categorySelect.className =
+        'category-select';
+
+      categories.forEach(category => {
+
+        const option =
+          document.createElement('option');
+
+        option.value =
+          category;
+
+        option.textContent =
+          category;
+
+        if (category === story.category) {
+          option.selected = true;
+        }
+
+        categorySelect.appendChild(option);
+      });
+
+      categoryRow.appendChild(
+        categoryLabel
+      );
+
+      categoryRow.appendChild(
+        categorySelect
+      );
+
       const notes =
         document.createElement('textarea');
 
@@ -479,7 +544,9 @@ async function loadPendingStories() {
           updateStory(
             story.id,
             'approve',
-            notes.value
+            false,
+            notes.value,
+            categorySelect.value
           )
       );
 
@@ -489,7 +556,9 @@ async function loadPendingStories() {
           updateStory(
             story.id,
             'approve_anonymously',
-            notes.value
+            true,
+            notes.value,
+            categorySelect.value
           )
       );
 
@@ -499,7 +568,9 @@ async function loadPendingStories() {
           updateStory(
             story.id,
             'reject',
-            notes.value
+            false,
+            notes.value,
+            story.category
           )
       );
 
@@ -507,6 +578,7 @@ async function loadPendingStories() {
       actions.appendChild(approveAnonymous);
       actions.appendChild(reject);
 
+      moderation.appendChild(categoryRow);
       moderation.appendChild(notes);
       moderation.appendChild(actions);
 
@@ -527,14 +599,11 @@ async function loadPendingStories() {
   }
 }
 
-
 async function loadPublishedStories() {
   try {
 
     const response =
-      await fetch('/api/stories?status=published', {
-        credentials: 'same-origin'
-      });
+      await fetch('/api/stories?status=published');
 
     if (!response.ok) {
       throw new Error(
@@ -545,13 +614,8 @@ async function loadPublishedStories() {
     const data =
       await response.json();
 
-    /*
-     * The Worker returns the stories array directly.
-     */
     const stories =
-      Array.isArray(data)
-        ? data
-        : (data.results || []);
+      data.results || [];
 
     publishedStoriesContainer.innerHTML = '';
 
@@ -655,7 +719,6 @@ async function loadPublishedStories() {
   }
 }
 
-
 async function deletePublishedStory(id) {
 
   const confirmed =
@@ -679,8 +742,7 @@ async function deletePublishedStory(id) {
       await fetch(
         '/api/stories/' + id,
         {
-          method: 'DELETE',
-          credentials: 'same-origin'
+          method: 'DELETE'
         }
       );
 
@@ -707,11 +769,12 @@ async function deletePublishedStory(id) {
   }
 }
 
-
 async function updateStory(
   id,
   action,
-  moderatorNotes
+  forceAnonymous,
+  moderatorNotes,
+  category
 ) {
   message.style.display =
     'block';
@@ -726,7 +789,6 @@ async function updateStory(
         '/api/stories/' + id,
         {
           method: 'PATCH',
-          credentials: 'same-origin',
           headers: {
             'Content-Type':
               'application/json'
@@ -734,8 +796,11 @@ async function updateStory(
           body:
             JSON.stringify({
               action,
+              force_anonymous:
+                forceAnonymous,
               moderator_notes:
-                moderatorNotes
+                moderatorNotes,
+              category
             })
         }
       );
@@ -750,21 +815,26 @@ async function updateStory(
       );
     }
 
-    if (action === 'approve') {
+    if (action === 'approve' ||
+        action === 'approve_anonymously') {
+
       message.textContent =
         'Story approved.';
-    } else if (
-      action === 'approve_anonymously'
-    ) {
-      message.textContent =
-        'Story approved anonymously.';
+
     } else {
+
       message.textContent =
         'Story rejected.';
     }
 
-    await loadPendingStories();
-    await loadPublishedStories();
+    loadPendingStories();
+
+    if (
+      action === 'approve' ||
+      action === 'approve_anonymously'
+    ) {
+      loadPublishedStories();
+    }
 
   } catch (error) {
 
@@ -774,17 +844,13 @@ async function updateStory(
   }
 }
 
-
 async function loadNotificationSettings() {
 
   try {
 
     const response =
       await fetch(
-        '/api/notification-settings',
-        {
-          credentials: 'same-origin'
-        }
+        '/api/notification-settings'
       );
 
     if (!response.ok) {
@@ -810,7 +876,6 @@ async function loadNotificationSettings() {
   }
 }
 
-
 async function saveNotificationSettings() {
 
   const frequency =
@@ -832,7 +897,6 @@ async function saveNotificationSettings() {
         '/api/notification-settings',
         {
           method: 'PUT',
-          credentials: 'same-origin',
           headers: {
             'Content-Type':
               'application/json'
@@ -868,31 +932,30 @@ async function saveNotificationSettings() {
   }
 }
 
-
 saveSettingsButton.addEventListener(
   'click',
   saveNotificationSettings
 );
 
-
 loadNotificationSettings();
 loadPendingStories();
 loadPublishedStories();
 
-
 setInterval(() => {
 
   /*
-   * Do not refresh while the moderator is typing.
-   * This prevents the 30-second refresh from
-   * erasing an unfinished moderator comment.
+   * Do not refresh while the moderator is typing
+   * or selecting a category.
    */
   const activeElement =
     document.activeElement;
 
   if (
     activeElement &&
-    activeElement.tagName === 'TEXTAREA'
+    (
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT'
+    )
   ) {
     return;
   }
