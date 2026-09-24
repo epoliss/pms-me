@@ -118,7 +118,7 @@ function renderStories(category = 'All') {
     const meta = document.createElement('div');
     meta.className = 'meta';
     meta.textContent =
-      `${formatDate(story.created_at)} · ${story.category} · ${story.public_name || 'Anonymous'}`;
+      `${formatDate(story.published_at)} · ${story.category} · ${story.public_name || 'Anonymous'}`;
 
     const text = document.createElement('p');
     text.textContent = story.story;
@@ -159,7 +159,11 @@ async function loadStories() {
     }
 
     const data = await response.json();
-    stories = data.results;
+
+    stories = Array.isArray(data)
+      ? data
+      : data.results || [];
+
     renderStories('All');
 
   } catch (error) {
