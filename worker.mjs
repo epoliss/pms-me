@@ -1,12 +1,3 @@
-// ============================================================
-// PMS-ME — Property Manager Stories
-// worker.mjs
-// ============================================================
-
-// ============================================================
-// ANONYMOUS NAME GENERATOR
-// ============================================================
-
 function generateAnonymousName() {
   const words = [
     "catliver",
@@ -40,11 +31,6 @@ function generateAnonymousName() {
   return `${word}${number}`;
 }
 
-
-// ============================================================
-// HTML ESCAPING
-// ============================================================
-
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -53,11 +39,6 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
-
-// ============================================================
-// EMAIL
-// ============================================================
 
 async function sendEmail(env, { to, subject, html }) {
   const response = await fetch(
@@ -79,19 +60,11 @@ async function sendEmail(env, { to, subject, html }) {
 
   if (!response.ok) {
     const text = await response.text();
-
-    throw new Error(
-      `Email sending failed: ${text}`
-    );
+    throw new Error(`Email sending failed: ${text}`);
   }
 
   return response.json();
 }
-
-
-// ============================================================
-// NOTIFICATION SETTINGS
-// ============================================================
 
 async function getNotificationSettings(env) {
   let result =
@@ -123,25 +96,10 @@ async function getNotificationSettings(env) {
   return result;
 }
 
-
-// ============================================================
-// REJECTION EMAIL
-// ============================================================
-
-async function sendRejectionEmail(
-  env,
-  story,
-  reason
-) {
+async function sendRejectionEmail(env, story, reason) {
   if (!story.email) {
     return;
   }
-
-  const safeReason =
-    escapeHtml(reason || "No specific reason was provided.");
-
-  const safeStory =
-    escapeHtml(story.story);
 
   await sendEmail(env, {
     to: story.email,
@@ -161,32 +119,20 @@ async function sendRejectionEmail(
 
         <p>
           <strong>Moderator note:</strong><br>
-          ${safeReason}
+          ${escapeHtml(reason || "No specific reason was provided.")}
         </p>
 
         <hr>
 
-        <p>
-          <strong>Your submitted story:</strong>
-        </p>
+        <p><strong>Your submitted story:</strong></p>
 
-        <p>
-          ${safeStory}
-        </p>
+        <p>${escapeHtml(story.story)}</p>
       </div>
     `
   });
 }
 
-
-// ============================================================
-// NEW STORY NOTIFICATION
-// ============================================================
-
-async function sendNewStoryNotification(
-  env,
-  story
-) {
+async function sendNewStoryNotification(env, story) {
   const settings =
     await getNotificationSettings(env);
 
@@ -197,15 +143,6 @@ async function sendNewStoryNotification(
     return;
   }
 
-  const safeStory =
-    escapeHtml(story.story);
-
-  const safeCategory =
-    escapeHtml(story.category);
-
-  const safeName =
-    escapeHtml(story.display_name || "");
-
   await sendEmail(env, {
     to: settings.email,
     subject: "New PMS-ME story submitted",
@@ -215,19 +152,17 @@ async function sendNewStoryNotification(
 
         <p>
           <strong>Category:</strong>
-          ${safeCategory}
+          ${escapeHtml(story.category)}
         </p>
 
         <p>
           <strong>Submitted by:</strong>
-          ${safeName || "Not provided"}
+          ${escapeHtml(story.display_name || "Not provided")}
         </p>
 
         <hr>
 
-        <p>
-          ${safeStory}
-        </p>
+        <p>${escapeHtml(story.story)}</p>
 
         <p>
           Log in to the PMS-ME moderator page to review
@@ -237,11 +172,6 @@ async function sendNewStoryNotification(
     `
   });
 }
-
-
-// ============================================================
-// DAILY DIGEST
-// ============================================================
 
 async function sendDailyDigest(env) {
   const settings =
@@ -278,14 +208,10 @@ async function sendDailyDigest(env) {
         border-bottom:1px solid #ddd;
       ">
         <p>
-          <strong>
-            ${escapeHtml(story.category)}
-          </strong>
+          <strong>${escapeHtml(story.category)}</strong>
         </p>
 
-        <p>
-          ${escapeHtml(story.story)}
-        </p>
+        <p>${escapeHtml(story.story)}</p>
 
         <p style="color:#666;font-size:13px;">
           Submitted by:
@@ -297,7 +223,8 @@ async function sendDailyDigest(env) {
 
   await sendEmail(env, {
     to: settings.email,
-    subject: `PMS-ME daily digest — ${stories.results.length} pending`,
+    subject:
+      `PMS-ME daily digest — ${stories.results.length} pending`,
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.5;">
         <h2>PMS-ME Daily Digest</h2>
@@ -340,7 +267,6 @@ function base64UrlEncode(bytes) {
     .replace(/=+$/g, "");
 }
 
-
 function base64UrlDecode(value) {
   const padded =
     value
@@ -352,7 +278,6 @@ function base64UrlDecode(value) {
       );
 
   const binary = atob(padded);
-
   const bytes = new Uint8Array(binary.length);
 
   for (let i = 0; i < binary.length; i++) {
@@ -361,7 +286,6 @@ function base64UrlDecode(value) {
 
   return bytes;
 }
-
 
 async function hmacSign(secret, value) {
   const keyData =
@@ -391,7 +315,6 @@ async function hmacSign(secret, value) {
   );
 }
 
-
 async function createModeratorSession(env) {
   const payload = {
     role: "moderator",
@@ -408,13 +331,12 @@ async function createModeratorSession(env) {
 
   const signature =
     await hmacSign(
-      env.MODERATOR_SESSION_SECRET,
+      env.MODERATOR_SESS_SEC,
       encoded
     );
 
   return `${encoded}.${signature}`;
 }
-
 
 async function isModeratorAuthenticated(
   request,
@@ -433,7 +355,6 @@ async function isModeratorAuthenticated(
   }
 
   const token = match[1];
-
   const parts = token.split(".");
 
   if (parts.length !== 2) {
@@ -446,7 +367,7 @@ async function isModeratorAuthenticated(
   try {
     const expectedSignature =
       await hmacSign(
-        env.MODERATOR_SESSION_SECRET,
+        env.MODERATOR_SESS_SEC,
         encoded
       );
 
@@ -500,11 +421,11 @@ async function isModeratorAuthenticated(
     }
 
     return true;
+
   } catch {
     return false;
   }
 }
-
 
 function unauthorizedResponse() {
   return new Response(
@@ -532,8 +453,7 @@ function moderatorLoginPage() {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PMS-ME Moderator Login</title>
 
 <style>
@@ -696,6 +616,7 @@ export default {
     const url =
       new URL(request.url);
 
+
     // ========================================================
     // MODERATOR LOGIN
     // ========================================================
@@ -716,7 +637,7 @@ export default {
 
         if (
           !env.MODERATOR_PASSWORD ||
-          !env.MODERATOR_SESSION_SECRET
+          !env.MODERATOR_SESS_SEC
         ) {
           return new Response(
             JSON.stringify({
@@ -876,7 +797,6 @@ export default {
         );
       }
 
-
       if (request.method === "PUT") {
 
         const body =
@@ -950,10 +870,6 @@ export default {
       "/api/stories"
     ) {
 
-      // ------------------------------------------------------
-      // GET STORIES
-      // ------------------------------------------------------
-
       if (request.method === "GET") {
 
         const status =
@@ -961,8 +877,6 @@ export default {
             "status"
           );
 
-        // Public site:
-        // /api/stories
         if (!status) {
 
           const results =
@@ -997,8 +911,6 @@ export default {
           );
         }
 
-        // Moderator:
-        // /api/stories?status=pending
         const authenticated =
           await isModeratorAuthenticated(
             request,
@@ -1033,10 +945,6 @@ export default {
         );
       }
 
-
-      // ------------------------------------------------------
-      // SUBMIT STORY
-      // ------------------------------------------------------
 
       if (request.method === "POST") {
 
@@ -1302,9 +1210,6 @@ export default {
       const moderatorNotes =
         body.moderator_notes || "";
 
-      // ------------------------------------------------------
-      // APPROVE
-      // ------------------------------------------------------
 
       if (
         action === "approve"
@@ -1380,10 +1285,6 @@ export default {
       }
 
 
-      // ------------------------------------------------------
-      // APPROVE ANONYMOUSLY
-      // ------------------------------------------------------
-
       if (
         action ===
         "approve_anonymously"
@@ -1450,10 +1351,6 @@ export default {
         );
       }
 
-
-      // ------------------------------------------------------
-      // REJECT
-      // ------------------------------------------------------
 
       if (
         action === "reject"
@@ -1543,7 +1440,7 @@ export default {
 
 
     // ========================================================
-    // EVERYTHING ELSE — STATIC ASSETS
+    // STATIC ASSETS
     // ========================================================
 
     return env.ASSETS.fetch(
@@ -1551,10 +1448,6 @@ export default {
     );
   },
 
-
-  // ==========================================================
-  // DAILY CRON
-  // ==========================================================
 
   async scheduled(
     event,
