@@ -1,265 +1,63 @@
 // PMS-ME deployment trigger 2
+
 function generateAnonymousName() {
   const words = [
     "catliver",
-    "toejam",
-    "moldyspoon",
-    "parkingcone",
-    "leakyfaucet",
-    "poolnoodle",
-    "trashpanda",
-    "grassclippings",
-    "ducttape",
-    "sprinklerhead",
-    "mailbox",
-    "guttergoblin",
-    "hoaferret",
-    "sidewalkwizard",
-    "assessmentbat",
-    "roofpickle",
-    "budgetgremlin",
-    "boardbanana",
-    "vendorwaffle",
-    "condopirate"
+    "squirrel",
+    "toenail",
+    "pigeon",
+    "hamster",
+    "pickle",
+    "waffle",
+    "muffin",
+    "turnip",
+    "goose",
+    "banjo",
+    "potato",
+    "meatloaf",
+    "crouton",
+    "picklejuice",
+    "cheeseball",
+    "spatula",
+    "cabbage",
+    "tater",
+    "noodle"
   ];
 
-  const word =
-    words[Math.floor(Math.random() * words.length)];
-
-  const number =
-    Math.floor(Math.random() * 900) + 100;
+  const word = words[Math.floor(Math.random() * words.length)];
+  const number = Math.floor(100 + Math.random() * 900);
 
   return `${word}${number}`;
 }
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-async function sendEmail(env, { to, subject, html }) {
-  const response = await fetch(
-    "https://api.resend.com/emails",
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${env.RESEND_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from: "PMS-ME <onboarding@resend.dev>",
-        to: [to],
-        subject,
-        html
-      })
+function jsonResponse(data, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      ...extraHeaders
     }
-  );
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Email sending failed: ${text}`);
-  }
-
-  return response.json();
-}
-
-async function getNotificationSettings(env) {
-  let result =
-    await env.pms_me_db
-      .prepare(
-        `SELECT id, email, frequency, last_digest_at
-         FROM notification_settings
-         WHERE id = 1`
-      )
-      .first();
-
-  if (!result) {
-    await env.pms_me_db
-      .prepare(
-        `INSERT INTO notification_settings
-         (id, email, frequency, last_digest_at)
-         VALUES (1, NULL, 'off', NULL)`
-      )
-      .run();
-
-    result = {
-      id: 1,
-      email: null,
-      frequency: "off",
-      last_digest_at: null
-    };
-  }
-
-  return result;
-}
-
-async function sendRejectionEmail(env, story, reason) {
-  if (!story.email) {
-    return;
-  }
-
-  await sendEmail(env, {
-    to: story.email,
-    subject: "Your PMS-ME story was not published",
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.5;">
-        <h2>PMS-ME</h2>
-
-        <p>
-          Thank you for submitting a story to PMS-ME.
-        </p>
-
-        <p>
-          After review, your submission was not approved
-          for publication.
-        </p>
-
-        <p>
-          <strong>Moderator note:</strong><br>
-          ${escapeHtml(reason || "No specific reason was provided.")}
-        </p>
-
-        <hr>
-
-        <p><strong>Your submitted story:</strong></p>
-
-        <p>${escapeHtml(story.story)}</p>
-      </div>
-    `
   });
 }
 
-async function sendNewStoryNotification(env, story) {
-  const settings =
-    await getNotificationSettings(env);
-
-  if (
-    settings.frequency !== "immediate" ||
-    !settings.email
-  ) {
-    return;
-  }
-
-  await sendEmail(env, {
-    to: settings.email,
-    subject: "New PMS-ME story submitted",
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.5;">
-        <h2>New PMS-ME Story</h2>
-
-        <p>
-          <strong>Category:</strong>
-          ${escapeHtml(story.category)}
-        </p>
-
-        <p>
-          <strong>Submitted by:</strong>
-          ${escapeHtml(story.display_name || "Not provided")}
-        </p>
-
-        <hr>
-
-        <p>${escapeHtml(story.story)}</p>
-
-        <p>
-          Log in to the PMS-ME moderator page to review
-          this submission.
-        </p>
-      </div>
-    `
+function htmlResponse(html, status = 200, extraHeaders = {}) {
+  return new Response(html, {
+    status,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      ...extraHeaders
+    }
   });
 }
-
-async function sendDailyDigest(env) {
-  const settings =
-    await getNotificationSettings(env);
-
-  if (
-    settings.frequency !== "daily" ||
-    !settings.email
-  ) {
-    return;
-  }
-
-  const stories =
-    await env.pms_me_db
-      .prepare(
-        `SELECT id, story, category, display_name, created_at
-         FROM stories
-         WHERE status = 'pending'
-         ORDER BY created_at ASC`
-      )
-      .all();
-
-  if (!stories.results.length) {
-    return;
-  }
-
-  let storyHtml = "";
-
-  for (const story of stories.results) {
-    storyHtml += `
-      <div style="
-        margin-bottom:24px;
-        padding-bottom:18px;
-        border-bottom:1px solid #ddd;
-      ">
-        <p>
-          <strong>${escapeHtml(story.category)}</strong>
-        </p>
-
-        <p>${escapeHtml(story.story)}</p>
-
-        <p style="color:#666;font-size:13px;">
-          Submitted by:
-          ${escapeHtml(story.display_name || "Not provided")}
-        </p>
-      </div>
-    `;
-  }
-
-  await sendEmail(env, {
-    to: settings.email,
-    subject:
-      `PMS-ME daily digest — ${stories.results.length} pending`,
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.5;">
-        <h2>PMS-ME Daily Digest</h2>
-
-        <p>
-          You have
-          <strong>${stories.results.length}</strong>
-          pending story submission(s).
-        </p>
-
-        ${storyHtml}
-      </div>
-    `
-  });
-
-  await env.pms_me_db
-    .prepare(
-      `UPDATE notification_settings
-       SET last_digest_at = CURRENT_TIMESTAMP
-       WHERE id = 1`
-    )
-    .run();
-}
-
-
-// ============================================================
-// MODERATOR AUTHENTICATION
-// ============================================================
 
 function base64UrlEncode(bytes) {
   let binary = "";
+  const chunkSize = 0x8000;
 
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(
+      ...bytes.subarray(i, i + chunkSize)
+    );
   }
 
   return btoa(binary)
@@ -270,13 +68,8 @@ function base64UrlEncode(bytes) {
 
 function base64UrlDecode(value) {
   const padded =
-    value
-      .replace(/-/g, "+")
-      .replace(/_/g, "/")
-      .padEnd(
-        value.length + (4 - value.length % 4) % 4,
-        "="
-      );
+    value.replace(/-/g, "+").replace(/_/g, "/") +
+    "=".repeat((4 - (value.length % 4)) % 4);
 
   const binary = atob(padded);
   const bytes = new Uint8Array(binary.length);
@@ -288,68 +81,54 @@ function base64UrlDecode(value) {
   return bytes;
 }
 
-async function hmacSign(secret, value) {
-  const keyData =
-    new TextEncoder().encode(secret);
+async function hmacSign(value, secret) {
+  const keyData = new TextEncoder().encode(secret);
 
-  const key =
-    await crypto.subtle.importKey(
-      "raw",
-      keyData,
-      {
-        name: "HMAC",
-        hash: "SHA-256"
-      },
-      false,
-      ["sign"]
-    );
-
-  const signature =
-    await crypto.subtle.sign(
-      "HMAC",
-      key,
-      new TextEncoder().encode(value)
-    );
-
-  return base64UrlEncode(
-    new Uint8Array(signature)
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    {
+      name: "HMAC",
+      hash: "SHA-256"
+    },
+    false,
+    ["sign"]
   );
+
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(value)
+  );
+
+  return base64UrlEncode(new Uint8Array(signature));
 }
 
 async function createModeratorSession(env) {
-  const payload = {
-    role: "moderator",
-    expires:
-      Date.now() + 8 * 60 * 60 * 1000
-  };
+  const expiresAt = Date.now() + 8 * 60 * 60 * 1000;
 
-  const encoded =
-    base64UrlEncode(
-      new TextEncoder().encode(
-        JSON.stringify(payload)
-      )
-    );
+  const payload = base64UrlEncode(
+    new TextEncoder().encode(String(expiresAt))
+  );
 
-  const signature =
-    await hmacSign(
-      env.MODERATOR_SESS_SEC,
-      encoded
-    );
+  const signature = await hmacSign(
+    payload,
+    env.MODERATOR_SESS_SEC
+  );
 
-  return `${encoded}.${signature}`;
+  return `${payload}.${signature}`;
 }
 
-async function isModeratorAuthenticated(
-  request,
-  env
-) {
-  const cookie =
-    request.headers.get("Cookie") || "";
+async function isModeratorAuthenticated(request, env) {
+  if (!env.MODERATOR_SESS_SEC) {
+    return false;
+  }
 
-  const match =
-    cookie.match(
-      /(?:^|;\s*)pms_me_moderator=([^;]+)/
-    );
+  const cookieHeader = request.headers.get("Cookie") || "";
+
+  const match = cookieHeader.match(
+    /(?:^|;\s*)pms_me_moderator=([^;]+)/
+  );
 
   if (!match) {
     return false;
@@ -362,482 +141,593 @@ async function isModeratorAuthenticated(
     return false;
   }
 
-  const encoded = parts[0];
-  const signature = parts[1];
+  const [payload, suppliedSignature] = parts;
+
+  let expectedSignature;
 
   try {
-    const expectedSignature =
-      await hmacSign(
-        env.MODERATOR_SESS_SEC,
-        encoded
-      );
-
-    if (
-      signature.length !==
-      expectedSignature.length
-    ) {
-      return false;
-    }
-
-    const signatureBytes =
-      new TextEncoder().encode(signature);
-
-    const expectedBytes =
-      new TextEncoder().encode(
-        expectedSignature
-      );
-
-    let difference = 0;
-
-    for (
-      let i = 0;
-      i < signatureBytes.length;
-      i++
-    ) {
-      difference |=
-        signatureBytes[i] ^
-        expectedBytes[i];
-    }
-
-    if (difference !== 0) {
-      return false;
-    }
-
-    const payload =
-      JSON.parse(
-        new TextDecoder().decode(
-          base64UrlDecode(encoded)
-        )
-      );
-
-    if (payload.role !== "moderator") {
-      return false;
-    }
-
-    if (
-      !payload.expires ||
-      Date.now() > payload.expires
-    ) {
-      return false;
-    }
-
-    return true;
-
+    expectedSignature = await hmacSign(
+      payload,
+      env.MODERATOR_SESS_SEC
+    );
   } catch {
     return false;
   }
+
+  if (expectedSignature !== suppliedSignature) {
+    return false;
+  }
+
+  let expiresAt;
+
+  try {
+    expiresAt = Number(
+      new TextDecoder().decode(
+        base64UrlDecode(payload)
+      )
+    );
+  } catch {
+    return false;
+  }
+
+  if (!Number.isFinite(expiresAt)) {
+    return false;
+  }
+
+  return Date.now() < expiresAt;
 }
 
 function unauthorizedResponse() {
-  return new Response(
-    JSON.stringify({
-      error: "Unauthorized"
-    }),
+  return jsonResponse(
+    { error: "Unauthorized" },
+    401,
     {
-      status: 401,
-      headers: {
-        "Content-Type":
-          "application/json"
-      }
+      "Cache-Control": "no-store"
     }
   );
 }
 
-
-// ============================================================
-// MODERATOR LOGIN PAGE
-// ============================================================
-
 function moderatorLoginPage() {
-  return new Response(
-    `<!DOCTYPE html>
+  return htmlResponse(
+    `<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PMS-ME Moderator Login</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PMS-ME — Moderator Login</title>
 
 <style>
-body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f4f4f4;
-  font-family: Arial, sans-serif;
-}
+  * {
+    box-sizing: border-box;
+  }
 
-.login-box {
-  width: 100%;
-  max-width: 380px;
-  background: white;
-  padding: 32px;
-  box-sizing: border-box;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.12);
-}
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f4f4f4;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #222;
+  }
 
-h1 {
-  margin-top: 0;
-  text-align: center;
-}
+  .login-box {
+    width: min(420px, calc(100% - 32px));
+    background: white;
+    padding: 32px;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.12);
+  }
 
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: bold;
-}
+  h1 {
+    margin: 0 0 10px;
+    font-size: 28px;
+  }
 
-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px;
-  font-size: 16px;
-  margin-bottom: 16px;
-}
+  p {
+    margin: 0 0 24px;
+    color: #666;
+    line-height: 1.5;
+  }
 
-button {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  cursor: pointer;
-}
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
 
-#error {
-  color: #b00020;
-  margin-top: 15px;
-  text-align: center;
-}
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+
+  button {
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-radius: 6px;
+    background: #222;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #444;
+  }
+
+  #error {
+    display: none;
+    margin-bottom: 16px;
+    padding: 10px;
+    border-radius: 6px;
+    background: #fbe9e7;
+    color: #b71c1c;
+  }
 </style>
 </head>
 
 <body>
 
 <div class="login-box">
+  <h1>Moderator Login</h1>
 
-  <h1>PMS-ME Moderator Login</h1>
+  <p>
+    Enter the moderator password to access the PMS-ME moderation dashboard.
+  </p>
+
+  <div id="error"></div>
 
   <form id="loginForm">
-
-    <label for="password">
-      Moderator Password
-    </label>
+    <label for="password">Password</label>
 
     <input
       id="password"
+      name="password"
       type="password"
       autocomplete="current-password"
       required
+      autofocus
     >
 
-    <button type="submit">
-      Log In
-    </button>
-
-    <div id="error"></div>
-
+    <button type="submit">Log In</button>
   </form>
-
 </div>
 
 <script>
-document
-  .getElementById("loginForm")
-  .addEventListener("submit", async function(event) {
+const form = document.getElementById("loginForm");
+const password = document.getElementById("password");
+const error = document.getElementById("error");
 
-    event.preventDefault();
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-    const error =
-      document.getElementById("error");
+  error.style.display = "none";
 
-    error.textContent = "";
+  try {
+    const response = await fetch("/api/moderator-login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        password: password.value
+      })
+    });
 
-    try {
+    const data = await response.json();
 
-      const response =
-        await fetch(
-          "/api/moderator-login",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-            body:
-              JSON.stringify({
-                password:
-                  document.getElementById(
-                    "password"
-                  ).value
-              })
-          }
-        );
-
-      if (!response.ok) {
-        error.textContent =
-          "Incorrect password.";
-        return;
-      }
-
-      window.location.href =
-        "/moderate.html";
-
-    } catch (err) {
-
+    if (!response.ok) {
       error.textContent =
-        "Unable to log in. Please try again.";
+        data.error || "Login failed.";
+
+      error.style.display = "block";
+      password.select();
+      return;
     }
-  });
+
+    window.location.href = "/moderate.html";
+
+  } catch (err) {
+    error.textContent =
+      "Unable to contact the server.";
+
+    error.style.display = "block";
+  }
+});
 </script>
 
 </body>
 </html>`,
+    401,
     {
-      status: 200,
-      headers: {
-        "Content-Type":
-          "text/html; charset=UTF-8",
-        "Cache-Control":
-          "no-store"
-      }
+      "Cache-Control": "no-store"
     }
   );
 }
 
+async function sendEmail(env, to, subject, text) {
+  if (!env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is missing");
+  }
 
-// ============================================================
-// WORKER
-// ============================================================
+  const response = await fetch(
+    "https://api.resend.com/emails",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: "PMS-ME <onboarding@resend.dev>",
+        to: [to],
+        subject,
+        text
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Email sending failed: ${body}`
+    );
+  }
+
+  return response.json();
+}
+
+async function sendNewStoryNotification(env, story) {
+  const settings = await env.pms_me_db
+    .prepare(
+      `SELECT email, frequency
+       FROM notification_settings
+       WHERE id = 1`
+    )
+    .first();
+
+  if (!settings || !settings.email) {
+    return;
+  }
+
+  if (settings.frequency !== "immediately") {
+    return;
+  }
+
+  const subject =
+    "PMS-ME — New Story Submitted";
+
+  const text =
+`A new story has been submitted to PMS-ME.
+
+Category: ${story.category}
+
+Display Name: ${story.display_name || "(not provided)"}
+
+Anonymous Requested: ${
+  story.anonymous_requested ? "Yes" : "No"
+}
+
+Story:
+
+${story.story}
+
+Review it in the moderator dashboard:
+https://pms-me-site.epoliss.workers.dev/moderate.html`;
+
+  await sendEmail(
+    env,
+    settings.email,
+    subject,
+    text
+  );
+}
+
+async function sendRejectionEmail(env, story, reason) {
+  if (!story.email) {
+    return;
+  }
+
+  const subject =
+    "PMS-ME — Story Submission Update";
+
+  const text =
+`Your PMS-ME story submission was not approved for publication.
+
+Category: ${story.category}
+
+Reason from the moderator:
+
+${reason || "The submission did not meet the site's submission guidelines."}
+
+You are welcome to submit another story that complies with the site's guidelines.`;
+
+  await sendEmail(
+    env,
+    story.email,
+    subject,
+    text
+  );
+}
+
+async function sendDailyDigest(env) {
+  const settings = await env.pms_me_db
+    .prepare(
+      `SELECT email, frequency, last_digest_at
+       FROM notification_settings
+       WHERE id = 1`
+    )
+    .first();
+
+  if (
+    !settings ||
+    !settings.email ||
+    settings.frequency !== "daily"
+  ) {
+    return;
+  }
+
+  const stories = await env.pms_me_db
+    .prepare(
+      `SELECT id, story, category, display_name,
+              anonymous_requested, created_at
+       FROM stories
+       WHERE status = 'pending'
+       ORDER BY created_at ASC`
+    )
+    .all();
+
+  if (!stories.results || stories.results.length === 0) {
+    return;
+  }
+
+  const lines = [];
+
+  lines.push(
+    "The following PMS-ME stories are awaiting moderation."
+  );
+  lines.push("");
+
+  for (const story of stories.results) {
+    lines.push(`ID: ${story.id}`);
+    lines.push(`Category: ${story.category}`);
+    lines.push(
+      `Display Name: ${story.display_name || "(not provided)"}`
+    );
+    lines.push(
+      `Anonymous Requested: ${
+        story.anonymous_requested ? "Yes" : "No"
+      }`
+    );
+    lines.push("");
+    lines.push(story.story);
+    lines.push("");
+    lines.push("------------------------------");
+    lines.push("");
+  }
+
+  lines.push(
+    "Moderator dashboard:"
+  );
+  lines.push(
+    "https://pms-me-site.epoliss.workers.dev/moderate.html"
+  );
+
+  await sendEmail(
+    env,
+    settings.email,
+    "PMS-ME — Daily Story Digest",
+    lines.join("\n")
+  );
+
+  await env.pms_me_db
+    .prepare(
+      `UPDATE notification_settings
+       SET last_digest_at = CURRENT_TIMESTAMP
+       WHERE id = 1`
+    )
+    .run();
+}
 
 export default {
-
   async fetch(request, env) {
+    const url = new URL(request.url);
 
-    const url =
-      new URL(request.url);
-    // Protect moderator page before static assets are served
+    /*
+     * =========================================================
+     * MODERATOR PAGE
+     * =========================================================
+     *
+     * IMPORTANT:
+     * Unauthenticated requests must receive the login page,
+     * not the generic JSON Unauthorized response.
+     */
     if (url.pathname === "/moderate.html") {
       if (!(await isModeratorAuthenticated(request, env))) {
-        return unauthorizedResponse();
-      }
-    }
-
-    // ========================================================
-    // MODERATOR LOGIN
-    // ========================================================
-
-    if (
-      url.pathname ===
-      "/api/moderator-login" &&
-      request.method === "POST"
-    ) {
-
-      try {
-
-        const body =
-          await request.json();
-
-        const password =
-          body.password || "";
-
-        if (!env.MODERATOR_PASSWORD) {
-  return new Response(
-    JSON.stringify({
-      error: "MODERATOR_PASSWORD is missing"
-    }),
-    { status: 500, headers: { "Content-Type": "application/json" } }
-  );
-}
-
-if (!env.MODERATOR_SESS_SEC) {
-  return new Response(
-    JSON.stringify({
-      error: "MODERATOR_SESS_SEC is missing"
-    }),
-    { status: 500, headers: { "Content-Type": "application/json" } }
-  );
-}
-
-        if (
-          password !==
-          env.MODERATOR_PASSWORD
-        ) {
-          return new Response(
-            JSON.stringify({
-              error:
-                "Invalid password"
-            }),
-            {
-              status: 401,
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
-          );
-        }
-
-        const session =
-          await createModeratorSession(
-            env
-          );
-
-        return new Response(
-          JSON.stringify({
-            success: true
-          }),
-          {
-            status: 200,
-            headers: {
-              "Content-Type":
-                "application/json",
-              "Set-Cookie":
-                `pms_me_moderator=${session}; Path=/; Max-Age=28800; HttpOnly; Secure; SameSite=Strict`
-            }
-          }
-        );
-
-      } catch (error) {
-
-        return new Response(
-          JSON.stringify({
-            error:
-              "Invalid login request"
-          }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type":
-                "application/json"
-            }
-          }
-        );
-      }
-    }
-
-
-    // ========================================================
-    // MODERATOR LOGOUT
-    // ========================================================
-
-    if (
-      url.pathname ===
-      "/api/moderator-logout" &&
-      request.method === "POST"
-    ) {
-
-      return new Response(
-        JSON.stringify({
-          success: true
-        }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type":
-              "application/json",
-            "Set-Cookie":
-              "pms_me_moderator=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict"
-          }
-        }
-      );
-    }
-
-
-    // ========================================================
-    // MODERATOR PAGE
-    // ========================================================
-
-    if (
-      url.pathname ===
-      "/moderate.html"
-    ) {
-
-      const authenticated =
-        await isModeratorAuthenticated(
-          request,
-          env
-        );
-
-      if (!authenticated) {
         return moderatorLoginPage();
       }
     }
 
-
-    // ========================================================
-    // NOTIFICATION SETTINGS
-    // ========================================================
-
+    /*
+     * =========================================================
+     * MODERATOR LOGIN
+     * =========================================================
+     */
     if (
-      url.pathname ===
-      "/api/notification-settings"
+      url.pathname === "/api/moderator-login" &&
+      request.method === "POST"
     ) {
-
-      const authenticated =
-        await isModeratorAuthenticated(
-          request,
-          env
+      if (!env.MODERATOR_PASSWORD) {
+        return jsonResponse(
+          {
+            error: "MODERATOR_PASSWORD is missing"
+          },
+          500
         );
-
-      if (!authenticated) {
-        return unauthorizedResponse();
       }
 
-      if (request.method === "GET") {
-
-        const settings =
-          await getNotificationSettings(
-            env
-          );
-
-        return new Response(
-          JSON.stringify(settings),
+      if (!env.MODERATOR_SESS_SEC) {
+        return jsonResponse(
           {
-            headers: {
-              "Content-Type":
-                "application/json"
-            }
+            error: "MODERATOR_SESS_SEC is missing"
+          },
+          500
+        );
+      }
+
+      let body;
+
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse(
+          { error: "Invalid request body" },
+          400
+        );
+      }
+
+      if (
+        !body ||
+        typeof body.password !== "string"
+      ) {
+        return jsonResponse(
+          { error: "Password is required" },
+          400
+        );
+      }
+
+      if (body.password !== env.MODERATOR_PASSWORD) {
+        return jsonResponse(
+          { error: "Invalid password" },
+          401
+        );
+      }
+
+      const session =
+        await createModeratorSession(env);
+
+      return jsonResponse(
+        { ok: true },
+        200,
+        {
+          "Set-Cookie":
+            `pms_me_moderator=${session}; ` +
+            "Path=/; " +
+            "HttpOnly; " +
+            "Secure; " +
+            "SameSite=Strict; " +
+            "Max-Age=28800",
+          "Cache-Control": "no-store"
+        }
+      );
+    }
+
+    /*
+     * =========================================================
+     * MODERATOR LOGOUT
+     * =========================================================
+     */
+    if (
+      url.pathname === "/api/moderator-logout" &&
+      request.method === "POST"
+    ) {
+      return jsonResponse(
+        { ok: true },
+        200,
+        {
+          "Set-Cookie":
+            "pms_me_moderator=; " +
+            "Path=/; " +
+            "HttpOnly; " +
+            "Secure; " +
+            "SameSite=Strict; " +
+            "Max-Age=0",
+          "Cache-Control": "no-store"
+        }
+      );
+    }
+
+    /*
+     * =========================================================
+     * MODERATOR API AUTHENTICATION
+     * =========================================================
+     */
+    const isModeratorApi =
+      url.pathname === "/api/notification-settings" ||
+      (
+        url.pathname.startsWith("/api/stories") &&
+        (
+          url.searchParams.has("status") ||
+          request.method === "PATCH" ||
+          request.method === "DELETE"
+        )
+      );
+
+    if (isModeratorApi) {
+      if (
+        !(await isModeratorAuthenticated(request, env))
+      ) {
+        return unauthorizedResponse();
+      }
+    }
+
+    /*
+     * =========================================================
+     * NOTIFICATION SETTINGS
+     * =========================================================
+     */
+    if (
+      url.pathname === "/api/notification-settings"
+    ) {
+      if (request.method === "GET") {
+        const settings =
+          await env.pms_me_db
+            .prepare(
+              `SELECT email, frequency, last_digest_at
+               FROM notification_settings
+               WHERE id = 1`
+            )
+            .first();
+
+        return jsonResponse(
+          settings || {
+            email: "",
+            frequency: "off",
+            last_digest_at: null
           }
         );
       }
 
       if (request.method === "PUT") {
+        let body;
 
-        const body =
-          await request.json();
-
-        const email =
-          body.email || null;
-
-        const frequency =
-          body.frequency || "off";
-
-        const validFrequencies = [
-          "off",
-          "immediate",
-          "daily"
-        ];
-
-        if (
-          !validFrequencies.includes(
-            frequency
-          )
-        ) {
-          return new Response(
-            JSON.stringify({
-              error:
-                "Invalid notification frequency"
-            }),
-            {
-              status: 400,
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
+        try {
+          body = await request.json();
+        } catch {
+          return jsonResponse(
+            { error: "Invalid request body" },
+            400
           );
         }
+
+        const email =
+          typeof body.email === "string"
+            ? body.email.trim()
+            : "";
+
+        const frequency =
+          ["off", "immediately", "daily"].includes(
+            body.frequency
+          )
+            ? body.frequency
+            : "off";
 
         await env.pms_me_db
           .prepare(
@@ -845,558 +735,302 @@ if (!env.MODERATOR_SESS_SEC) {
              SET email = ?, frequency = ?
              WHERE id = 1`
           )
-          .bind(
-            email,
-            frequency
-          )
+          .bind(email || null, frequency)
           .run();
 
-        return new Response(
-          JSON.stringify({
-            success: true
-          }),
-          {
-            headers: {
-              "Content-Type":
-                "application/json"
-            }
-          }
-        );
+        return jsonResponse({
+          ok: true,
+          email,
+          frequency
+        });
       }
+
+      return jsonResponse(
+        { error: "Method not allowed" },
+        405
+      );
     }
 
-
-    // ========================================================
-    // STORIES
-    // ========================================================
-
+    /*
+     * =========================================================
+     * STORIES — GET
+     * =========================================================
+     */
     if (
-      url.pathname ===
-      "/api/stories"
+      url.pathname === "/api/stories" &&
+      request.method === "GET"
     ) {
+      const status =
+        url.searchParams.get("status");
 
-      if (request.method === "GET") {
-
-        const status =
-          url.searchParams.get(
-            "status"
-          );
-
-        if (!status) {
-
-          const results =
-            await env.pms_me_db
-              .prepare(
-                `SELECT
-                   id,
-                   story,
-                   category,
-                   public_name,
-                   published_at,
-                   reaction_been_there,
-                   reaction_funny
-                 FROM stories
-                 WHERE status = 'published'
-                 ORDER BY
-                   published_at DESC,
-                   id DESC`
-              )
-              .all();
-
-          return new Response(
-            JSON.stringify(
-              results.results
-            ),
-            {
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
-          );
-        }
-
-        const authenticated =
-          await isModeratorAuthenticated(
-            request,
-            env
-          );
-
-        if (!authenticated) {
-          return unauthorizedResponse();
-        }
-
-        const results =
+      if (status) {
+        const result =
           await env.pms_me_db
             .prepare(
-              `SELECT *
+              `SELECT
+                 id,
+                 story,
+                 category,
+                 display_name,
+                 email,
+                 anonymous_requested,
+                 force_anonymous,
+                 public_name,
+                 status,
+                 moderator_notes,
+                 created_at,
+                 published_at,
+                 reaction_been_there,
+                 reaction_funny
                FROM stories
                WHERE status = ?
-               ORDER BY created_at ASC`
+               ORDER BY created_at DESC`
             )
             .bind(status)
             .all();
 
-        return new Response(
-          JSON.stringify(
-            results.results
-          ),
-          {
-            headers: {
-              "Content-Type":
-                "application/json"
-            }
-          }
+        return jsonResponse(
+          result.results || []
         );
       }
 
+      const result =
+        await env.pms_me_db
+          .prepare(
+            `SELECT
+               id,
+               story,
+               category,
+               public_name,
+               published_at,
+               reaction_been_there,
+               reaction_funny
+             FROM stories
+             WHERE status = 'published'
+             ORDER BY published_at DESC`
+          )
+          .all();
 
-      if (request.method === "POST") {
-
-        try {
-
-          const body =
-            await request.json();
-
-          const story =
-            String(
-              body.story || ""
-            ).trim();
-
-          const category =
-            String(
-              body.category || ""
-            ).trim();
-
-          const displayName =
-            String(
-              body.display_name || ""
-            ).trim();
-
-          const email =
-            String(
-              body.email || ""
-            ).trim();
-
-          const anonymousRequested =
-            body.anonymous_requested
-              ? 1
-              : 0;
-
-          if (!story) {
-            return new Response(
-              JSON.stringify({
-                error:
-                  "Story is required."
-              }),
-              {
-                status: 400,
-                headers: {
-                  "Content-Type":
-                    "application/json"
-                }
-              }
-            );
-          }
-
-          if (!category) {
-            return new Response(
-              JSON.stringify({
-                error:
-                  "Category is required."
-              }),
-              {
-                status: 400,
-                headers: {
-                  "Content-Type":
-                    "application/json"
-                }
-              }
-            );
-          }
-
-          if (story.length > 2000) {
-            return new Response(
-              JSON.stringify({
-                error:
-                  "Story must be 2000 characters or fewer."
-              }),
-              {
-                status: 400,
-                headers: {
-                  "Content-Type":
-                    "application/json"
-                }
-              }
-            );
-          }
-
-          const result =
-            await env.pms_me_db
-              .prepare(
-                `INSERT INTO stories
-                 (
-                   story,
-                   category,
-                   display_name,
-                   email,
-                   anonymous_requested,
-                   force_anonymous,
-                   public_name,
-                   status
-                 )
-                 VALUES (?, ?, ?, ?, ?, 0, NULL, 'pending')`
-              )
-              .bind(
-                story,
-                category,
-                displayName || null,
-                email || null,
-                anonymousRequested
-              )
-              .run();
-
-          const storyId =
-            result.meta.last_row_id;
-
-          const newStory =
-            await env.pms_me_db
-              .prepare(
-                `SELECT *
-                 FROM stories
-                 WHERE id = ?`
-              )
-              .bind(storyId)
-              .first();
-
-          try {
-            await sendNewStoryNotification(
-              env,
-              newStory
-            );
-          } catch (emailError) {
-            console.error(
-              "New story notification failed:",
-              emailError
-            );
-          }
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              id: storyId
-            }),
-            {
-              status: 201,
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
-          );
-
-        } catch (error) {
-
-          console.error(
-            "Story submission error:",
-            error
-          );
-
-          return new Response(
-            JSON.stringify({
-              error:
-                "Unable to submit story."
-            }),
-            {
-              status: 500,
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
-          );
-        }
-      }
-    }
-
-
-    // ========================================================
-    // DELETE STORY
-    // ========================================================
-
-    if (
-      request.method === "DELETE" &&
-      url.pathname.startsWith(
-        "/api/stories/"
-      )
-    ) {
-
-      const authenticated =
-        await isModeratorAuthenticated(
-          request,
-          env
-        );
-
-      if (!authenticated) {
-        return unauthorizedResponse();
-      }
-
-      const id =
-        url.pathname.split("/").pop();
-
-      if (!id) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "Story ID is required."
-          }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type":
-                "application/json"
-            }
-          }
-        );
-      }
-
-      await env.pms_me_db
-        .prepare(
-          `DELETE FROM stories
-           WHERE id = ?`
-        )
-        .bind(id)
-        .run();
-
-      return new Response(
-        JSON.stringify({
-          success: true
-        }),
-        {
-          headers: {
-            "Content-Type":
-              "application/json"
-          }
-        }
+      return jsonResponse(
+        result.results || []
       );
     }
 
-
-    // ========================================================
-    // UPDATE / MODERATE STORY
-    // ========================================================
-
+    /*
+     * =========================================================
+     * STORIES — POST
+     * =========================================================
+     */
     if (
-      request.method === "PATCH" &&
-      url.pathname.startsWith(
-        "/api/stories/"
-      )
+      url.pathname === "/api/stories" &&
+      request.method === "POST"
     ) {
+      let body;
 
-      const authenticated =
-        await isModeratorAuthenticated(
-          request,
-          env
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse(
+          { error: "Invalid request body" },
+          400
         );
-
-      if (!authenticated) {
-        return unauthorizedResponse();
       }
 
+      const story =
+        typeof body.story === "string"
+          ? body.story.trim()
+          : "";
+
+      const category =
+        typeof body.category === "string"
+          ? body.category.trim()
+          : "";
+
+      const displayName =
+        typeof body.display_name === "string"
+          ? body.display_name.trim()
+          : "";
+
+      const email =
+        typeof body.email === "string"
+          ? body.email.trim()
+          : "";
+
+      const anonymousRequested =
+        body.anonymous_requested ? 1 : 0;
+
+      if (!story) {
+        return jsonResponse(
+          { error: "Story is required" },
+          400
+        );
+      }
+
+      if (!category) {
+        return jsonResponse(
+          { error: "Category is required" },
+          400
+        );
+      }
+
+      if (story.length > 2000) {
+        return jsonResponse(
+          {
+            error:
+              "Story must be 2000 characters or fewer."
+          },
+          400
+        );
+      }
+
+      const allowedCategories = [
+        "Homeowner of the Year",
+        "Vendor Blues",
+        "Legally Blunt",
+        "Board to Tears",
+        "Audit This"
+      ];
+
+      if (!allowedCategories.includes(category)) {
+        return jsonResponse(
+          { error: "Invalid category" },
+          400
+        );
+      }
+
+      const result =
+        await env.pms_me_db
+          .prepare(
+            `INSERT INTO stories (
+               story,
+               category,
+               display_name,
+               email,
+               anonymous_requested,
+               status
+             )
+             VALUES (?, ?, ?, ?, ?, 'pending')`
+          )
+          .bind(
+            story,
+            category,
+            displayName || null,
+            email || null,
+            anonymousRequested
+          )
+          .run();
+
+      const insertedId =
+        result.meta.last_row_id;
+
+      const insertedStory =
+        await env.pms_me_db
+          .prepare(
+            `SELECT *
+             FROM stories
+             WHERE id = ?`
+          )
+          .bind(insertedId)
+          .first();
+
+      try {
+        await sendNewStoryNotification(
+          env,
+          insertedStory
+        );
+      } catch (error) {
+        console.error(
+          "Immediate notification failed:",
+          error
+        );
+      }
+
+      return jsonResponse(
+        {
+          ok: true,
+          id: insertedId
+        },
+        201
+      );
+    }
+
+    /*
+     * =========================================================
+     * STORIES — PATCH
+     * =========================================================
+     */
+    if (
+      url.pathname.startsWith("/api/stories/") &&
+      request.method === "PATCH"
+    ) {
       const id =
         url.pathname.split("/").pop();
 
-      const body =
-        await request.json();
+      if (!/^\d+$/.test(id)) {
+        return jsonResponse(
+          { error: "Invalid story ID" },
+          400
+        );
+      }
+
+      let body;
+
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse(
+          { error: "Invalid request body" },
+          400
+        );
+      }
+
+      const existing =
+        await env.pms_me_db
+          .prepare(
+            `SELECT *
+             FROM stories
+             WHERE id = ?`
+          )
+          .bind(id)
+          .first();
+
+      if (!existing) {
+        return jsonResponse(
+          { error: "Story not found" },
+          404
+        );
+      }
 
       const action =
-        body.action || "";
+        typeof body.action === "string"
+          ? body.action
+          : "";
 
       const moderatorNotes =
-        body.moderator_notes || "";
-
+        typeof body.moderator_notes === "string"
+          ? body.moderator_notes.trim()
+          : "";
 
       if (
-        action === "approve"
+        !["approve", "approve_anonymously", "reject"]
+          .includes(action)
       ) {
-
-        const existing =
-          await env.pms_me_db
-            .prepare(
-              `SELECT *
-               FROM stories
-               WHERE id = ?`
-            )
-            .bind(id)
-            .first();
-
-        if (!existing) {
-          return new Response(
-            JSON.stringify({
-              error:
-                "Story not found."
-            }),
-            {
-              status: 404,
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
-          );
-        }
-
-        let publicName =
-          existing.display_name ||
-          "propertymanager";
-
-        if (
-          existing.anonymous_requested ||
-          existing.force_anonymous
-        ) {
-          publicName =
-            existing.public_name ||
-            generateAnonymousName();
-        }
-
-        await env.pms_me_db
-          .prepare(
-            `UPDATE stories
-             SET
-               status = 'published',
-               public_name = ?,
-               moderator_notes = ?,
-               published_at = CURRENT_TIMESTAMP
-             WHERE id = ?`
-          )
-          .bind(
-            publicName,
-            moderatorNotes,
-            id
-          )
-          .run();
-
-        return new Response(
-          JSON.stringify({
-            success: true
-          }),
-          {
-            headers: {
-              "Content-Type":
-                "application/json"
-            }
-          }
+        return jsonResponse(
+          { error: "Invalid moderation action" },
+          400
         );
       }
 
-
-      if (
-        action ===
-        "approve_anonymously"
-      ) {
-
-        const existing =
-          await env.pms_me_db
-            .prepare(
-              `SELECT *
-               FROM stories
-               WHERE id = ?`
-            )
-            .bind(id)
-            .first();
-
-        if (!existing) {
-          return new Response(
-            JSON.stringify({
-              error:
-                "Story not found."
-            }),
-            {
-              status: 404,
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
-          );
-        }
-
-        const publicName =
-          generateAnonymousName();
-
+      if (action === "reject") {
         await env.pms_me_db
           .prepare(
             `UPDATE stories
-             SET
-               status = 'published',
-               force_anonymous = 1,
-               public_name = ?,
-               moderator_notes = ?,
-               published_at = CURRENT_TIMESTAMP
+             SET status = 'rejected',
+                 moderator_notes = ?
              WHERE id = ?`
           )
           .bind(
-            publicName,
-            moderatorNotes,
-            id
-          )
-          .run();
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            public_name: publicName
-          }),
-          {
-            headers: {
-              "Content-Type":
-                "application/json"
-            }
-          }
-        );
-      }
-
-
-      if (
-        action === "reject"
-      ) {
-
-        const existing =
-          await env.pms_me_db
-            .prepare(
-              `SELECT *
-               FROM stories
-               WHERE id = ?`
-            )
-            .bind(id)
-            .first();
-
-        if (!existing) {
-          return new Response(
-            JSON.stringify({
-              error:
-                "Story not found."
-            }),
-            {
-              status: 404,
-              headers: {
-                "Content-Type":
-                  "application/json"
-              }
-            }
-          );
-        }
-
-        await env.pms_me_db
-          .prepare(
-            `UPDATE stories
-             SET
-               status = 'rejected',
-               moderator_notes = ?
-             WHERE id = ?`
-          )
-          .bind(
-            moderatorNotes,
+            moderatorNotes || null,
             id
           )
           .run();
@@ -1407,68 +1041,118 @@ if (!env.MODERATOR_SESS_SEC) {
             existing,
             moderatorNotes
           );
-        } catch (emailError) {
+        } catch (error) {
           console.error(
             "Rejection email failed:",
-            emailError
+            error
           );
         }
 
-        return new Response(
-          JSON.stringify({
-            success: true
-          }),
-          {
-            headers: {
-              "Content-Type":
-                "application/json"
-            }
-          }
+        return jsonResponse({
+          ok: true
+        });
+      }
+
+      const anonymize =
+        action === "approve_anonymously";
+
+      let publicName;
+
+      if (anonymize) {
+        publicName =
+          generateAnonymousName();
+      } else if (existing.anonymous_requested) {
+        publicName =
+          generateAnonymousName();
+      } else {
+        publicName =
+          existing.display_name ||
+          generateAnonymousName();
+      }
+
+      await env.pms_me_db
+        .prepare(
+          `UPDATE stories
+           SET status = 'published',
+               public_name = ?,
+               moderator_notes = ?,
+               published_at = CURRENT_TIMESTAMP,
+               force_anonymous = ?
+           WHERE id = ?`
+        )
+        .bind(
+          publicName,
+          moderatorNotes || null,
+          anonymize ? 1 : 0,
+          id
+        )
+        .run();
+
+      return jsonResponse({
+        ok: true,
+        public_name: publicName
+      });
+    }
+
+    /*
+     * =========================================================
+     * STORIES — DELETE
+     * =========================================================
+     */
+    if (
+      url.pathname.startsWith("/api/stories/") &&
+      request.method === "DELETE"
+    ) {
+      const id =
+        url.pathname.split("/").pop();
+
+      if (!/^\d+$/.test(id)) {
+        return jsonResponse(
+          { error: "Invalid story ID" },
+          400
         );
       }
 
+      const result =
+        await env.pms_me_db
+          .prepare(
+            `DELETE FROM stories
+             WHERE id = ?`
+          )
+          .bind(id)
+          .run();
 
-      return new Response(
-        JSON.stringify({
-          error:
-            "Invalid moderation action."
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type":
-              "application/json"
-          }
-        }
-      );
+      if (
+        !result.meta ||
+        result.meta.changes === 0
+      ) {
+        return jsonResponse(
+          { error: "Story not found" },
+          404
+        );
+      }
+
+      return jsonResponse({
+        ok: true
+      });
     }
 
-
-    // ========================================================
-    // STATIC ASSETS
-    // ========================================================
-
-    return env.ASSETS.fetch(
-      request
-    );
+    /*
+     * =========================================================
+     * STATIC ASSETS
+     * =========================================================
+     */
+    return env.ASSETS.fetch(request);
   },
 
-
-  async scheduled(
-    event,
-    env,
-    ctx
-  ) {
-
-    ctx.waitUntil(
-      sendDailyDigest(env)
-        .catch(error => {
-          console.error(
-            "Daily digest failed:",
-            error
-          );
-        })
-    );
+  async scheduled(event, env) {
+    try {
+      await sendDailyDigest(env);
+    } catch (error) {
+      console.error(
+        "Daily digest failed:",
+        error
+      );
+    }
   }
-
 };
