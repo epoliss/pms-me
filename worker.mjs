@@ -797,6 +797,98 @@ export default {
       }
     }
 
+    /*
+     * DELETE A PUBLISHED STORY
+     *
+     * Only stories whose current status is
+     * "published" can be permanently deleted
+     * through this endpoint.
+     */
+    if (
+      url.pathname.startsWith(
+        "/api/stories/"
+      ) &&
+      request.method === "DELETE"
+    ) {
+      try {
+        const id =
+          Number(
+            url.pathname
+              .split("/")
+              .pop()
+          );
+
+        if (
+          !Number.isInteger(id)
+        ) {
+          return Response.json(
+            {
+              error:
+                "Invalid story ID."
+            },
+            { status: 400 }
+          );
+        }
+
+        const story =
+          await env.pms_me_db
+            .prepare(
+              "SELECT id, status " +
+              "FROM stories " +
+              "WHERE id = ?"
+            )
+            .bind(id)
+            .first();
+
+        if (!story) {
+          return Response.json(
+            {
+              error:
+                "Story not found."
+            },
+            { status: 404 }
+          );
+        }
+
+        if (
+          story.status !==
+          "published"
+        ) {
+          return Response.json(
+            {
+              error:
+                "Only published stories can be deleted from this section."
+            },
+            { status: 400 }
+          );
+        }
+
+        await env.pms_me_db
+          .prepare(
+            "DELETE FROM stories " +
+            "WHERE id = ?"
+          )
+          .bind(id)
+          .run();
+
+        return Response.json({
+          success: true,
+          message:
+            "Story deleted."
+        });
+
+      } catch (error) {
+        return Response.json(
+          {
+            error:
+              error.message ||
+              "Delete failed."
+          },
+          { status: 500 }
+        );
+      }
+    }
+
     if (
       url.pathname.startsWith(
         "/api/stories/"
