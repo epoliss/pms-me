@@ -1,4 +1,4 @@
-// PMS-ME deployment trigger 2
+// PMS-ME deployment trigger 3
 
 function generateAnonymousName() {
   const words = [
@@ -619,10 +619,6 @@ export default {
      * =========================================================
      * MODERATOR PAGE
      * =========================================================
-     *
-     * IMPORTANT:
-     * Unauthenticated requests must receive the login page,
-     * not the generic JSON Unauthorized response.
      */
     if (url.pathname === "/moderate.html") {
       if (!(await isModeratorAuthenticated(request, env))) {
@@ -1087,8 +1083,11 @@ export default {
           : "";
 
       if (
-        !["approve", "approve_anonymously", "reject"]
-          .includes(action)
+        ![
+          "approve",
+          "approve_anonymously",
+          "reject"
+        ].includes(action)
       ) {
         return jsonResponse(
           { error: "Invalid moderation action" },
@@ -1096,6 +1095,11 @@ export default {
         );
       }
 
+      /*
+       * =======================================================
+       * REJECT
+       * =======================================================
+       */
       if (action === "reject") {
         await env.pms_me_db
           .prepare(
@@ -1128,6 +1132,37 @@ export default {
         });
       }
 
+      /*
+       * =======================================================
+       * APPROVAL
+       * =======================================================
+       *
+       * The moderator may change the category before approval.
+       */
+      const allowedCategories = [
+        "Homeowner of the Year",
+        "Vendor Blues",
+        "Legally Blunt",
+        "Board to Tears",
+        "Audit This"
+      ];
+
+      const requestedCategory =
+        typeof body.category === "string"
+          ? body.category.trim()
+          : existing.category;
+
+      if (
+        !allowedCategories.includes(
+          requestedCategory
+        )
+      ) {
+        return jsonResponse(
+          { error: "Invalid category" },
+          400
+        );
+      }
+
       const anonymize =
         action === "approve_anonymously";
 
@@ -1149,6 +1184,7 @@ export default {
         .prepare(
           `UPDATE stories
            SET status = 'published',
+               category = ?,
                public_name = ?,
                moderator_notes = ?,
                published_at = CURRENT_TIMESTAMP,
@@ -1156,6 +1192,7 @@ export default {
            WHERE id = ?`
         )
         .bind(
+          requestedCategory,
           publicName,
           moderatorNotes || null,
           anonymize ? 1 : 0,
@@ -1165,7 +1202,8 @@ export default {
 
       return jsonResponse({
         ok: true,
-        public_name: publicName
+        public_name: publicName,
+        category: requestedCategory
       });
     }
 
