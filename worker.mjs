@@ -616,7 +616,12 @@ export default {
 
     const url =
       new URL(request.url);
-
+    // Protect moderator page before static assets are served
+    if (url.pathname === "/moderate.html") {
+      if (!(await isModeratorAuthenticated(request, env))) {
+        return unauthorizedResponse();
+      }
+    }
 
     // ========================================================
     // MODERATOR LOGIN
