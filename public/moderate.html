@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -59,6 +60,66 @@ h1{
   border-radius:5px;
   font-weight:bold;
   font-size:14px
+}
+
+.settings{
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:6px;
+  padding:20px;
+  margin-bottom:20px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04)
+}
+
+.settings h2{
+  margin:0 0 6px;
+  font-size:18px
+}
+
+.settings-description{
+  margin:0 0 16px;
+  color:#666;
+  font-size:13px;
+  line-height:1.5
+}
+
+.setting-row{
+  margin-bottom:14px
+}
+
+.setting-row:last-of-type{
+  margin-bottom:0
+}
+
+.setting-row label{
+  display:block;
+  font-weight:bold;
+  font-size:13px;
+  margin-bottom:6px
+}
+
+select,
+input[type="email"]{
+  width:100%;
+  border:1px solid #ccc;
+  border-radius:4px;
+  padding:10px;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:14px;
+  background:#fff
+}
+
+.save-settings{
+  margin-top:15px;
+  background:#222;
+  color:#fff
+}
+
+.settings-status{
+  display:none;
+  margin-top:12px;
+  font-size:13px;
+  color:#555
 }
 
 .story{
@@ -187,6 +248,7 @@ footer{
   }
 }
 </style>
+
 </head>
 
 <body>
@@ -203,6 +265,41 @@ footer{
     <a class="back" href="/">Back to Stories</a>
   </div>
 
+  <section class="settings">
+    <h2>Notification Settings</h2>
+
+```
+<p class="settings-description">
+  Choose whether you want to receive an email when stories are submitted.
+</p>
+
+<div class="setting-row">
+  <label for="notificationFrequency">Notifications</label>
+  <select id="notificationFrequency">
+    <option value="off">Off</option>
+    <option value="immediate">Immediately — one email per new story</option>
+    <option value="daily">Daily digest — one email per day</option>
+  </select>
+</div>
+
+<div class="setting-row">
+  <label for="notificationEmail">Email address</label>
+  <input
+    type="email"
+    id="notificationEmail"
+    placeholder="you@example.com"
+  >
+</div>
+
+<button class="save-settings" id="saveSettings">
+  Save Notification Settings
+</button>
+
+<div class="settings-status" id="settingsStatus"></div>
+```
+
+  </section>
+
   <div class="message" id="message"></div>
 
   <section id="stories">
@@ -218,6 +315,18 @@ footer{
 <script>
 const storiesContainer = document.getElementById('stories');
 const message = document.getElementById('message');
+
+const notificationFrequency =
+  document.getElementById('notificationFrequency');
+
+const notificationEmail =
+  document.getElementById('notificationEmail');
+
+const saveSettingsButton =
+  document.getElementById('saveSettings');
+
+const settingsStatus =
+  document.getElementById('settingsStatus');
 
 async function loadPendingStories() {
   try {
@@ -370,7 +479,92 @@ async function updateStory(
   }
 }
 
+async function loadNotificationSettings() {
+  try {
+    const response = await fetch('/api/notification-settings');
+
+    if (!response.ok) {
+      throw new Error('Unable to load notification settings.');
+    }
+
+    const settings = await response.json();
+
+    notificationFrequency.value =
+      settings.frequency || 'off';
+
+    notificationEmail.value =
+      settings.email || '';
+
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function saveNotificationSettings() {
+  const frequency = notificationFrequency.value;
+  const email = notificationEmail.value.trim();
+
+  settingsStatus.style.display = 'block';
+  settingsStatus.textContent = 'Saving...';
+
+  try {
+    const response = await fetch('/api/notification-settings', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        frequency,
+        email
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || 'Unable to save notification settings.'
+      );
+    }
+
+    settingsStatus.textContent =
+      frequency === 'off'
+        ? 'Notifications are turned off.'
+        : 'Notification settings saved.';
+
+  } catch (error) {
+    settingsStatus.textContent =
+      error.message || 'Unable to save notification settings.';
+  }
+}
+
+saveSettingsButton.addEventListener(
+  'click',
+  saveNotificationSettings
+);
+
+loadNotificationSettings();
 loadPendingStories();
+
+setInterval(() => {
+
+  /*
+   * Do not refresh while the moderator is typing.
+   * This prevents the 30-second refresh from
+   * erasing an unfinished moderator comment.
+   */
+  const activeElement = document.activeElement;
+
+  if (
+    activeElement &&
+    activeElement.tagName === 'TEXTAREA'
+  ) {
+    return;
+  }
+
+  loadPendingStories();
+
+}, 30000);
 </script>
 
 </body>
