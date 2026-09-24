@@ -1,5 +1,6 @@
 name = "pms-me-site"
 main = "worker.mjs"
+no_bundle = true
 compatibility_date = "2026-09-21"
 
 [[d1_databases]]
