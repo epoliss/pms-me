@@ -295,7 +295,7 @@ footer{
       <label for="notificationFrequency">Notifications</label>
       <select id="notificationFrequency">
         <option value="off">Off</option>
-        <option value="immediate">Immediately — one email per new story</option>
+        <option value="immediately">Immediately — one email per new story</option>
         <option value="daily">Daily digest — one email per day</option>
       </select>
     </div>
@@ -362,10 +362,13 @@ const saveSettingsButton =
 const settingsStatus =
   document.getElementById('settingsStatus');
 
+
 async function loadPendingStories() {
   try {
     const response =
-      await fetch('/api/stories?status=pending');
+      await fetch('/api/stories?status=pending', {
+        credentials: 'same-origin'
+      });
 
     if (!response.ok) {
       throw new Error(
@@ -376,8 +379,13 @@ async function loadPendingStories() {
     const data =
       await response.json();
 
+    /*
+     * The Worker returns the stories array directly.
+     */
     const stories =
-      data.results || [];
+      Array.isArray(data)
+        ? data
+        : (data.results || []);
 
     storiesContainer.innerHTML = '';
 
@@ -470,8 +478,7 @@ async function loadPendingStories() {
         () =>
           updateStory(
             story.id,
-            'published',
-            false,
+            'approve',
             notes.value
           )
       );
@@ -481,8 +488,7 @@ async function loadPendingStories() {
         () =>
           updateStory(
             story.id,
-            'published',
-            true,
+            'approve_anonymously',
             notes.value
           )
       );
@@ -492,8 +498,7 @@ async function loadPendingStories() {
         () =>
           updateStory(
             story.id,
-            'rejected',
-            false,
+            'reject',
             notes.value
           )
       );
@@ -522,11 +527,14 @@ async function loadPendingStories() {
   }
 }
 
+
 async function loadPublishedStories() {
   try {
 
     const response =
-      await fetch('/api/stories?status=published');
+      await fetch('/api/stories?status=published', {
+        credentials: 'same-origin'
+      });
 
     if (!response.ok) {
       throw new Error(
@@ -537,8 +545,13 @@ async function loadPublishedStories() {
     const data =
       await response.json();
 
+    /*
+     * The Worker returns the stories array directly.
+     */
     const stories =
-      data.results || [];
+      Array.isArray(data)
+        ? data
+        : (data.results || []);
 
     publishedStoriesContainer.innerHTML = '';
 
@@ -642,6 +655,7 @@ async function loadPublishedStories() {
   }
 }
 
+
 async function deletePublishedStory(id) {
 
   const confirmed =
@@ -665,7 +679,8 @@ async function deletePublishedStory(id) {
       await fetch(
         '/api/stories/' + id,
         {
-          method: 'DELETE'
+          method: 'DELETE',
+          credentials: 'same-origin'
         }
       );
 
@@ -692,10 +707,10 @@ async function deletePublishedStory(id) {
   }
 }
 
+
 async function updateStory(
   id,
-  status,
-  forceAnonymous,
+  action,
   moderatorNotes
 ) {
   message.style.display =
@@ -711,15 +726,14 @@ async function updateStory(
         '/api/stories/' + id,
         {
           method: 'PATCH',
+          credentials: 'same-origin',
           headers: {
             'Content-Type':
               'application/json'
           },
           body:
             JSON.stringify({
-              status,
-              force_anonymous:
-                forceAnonymous,
+              action,
               moderator_notes:
                 moderatorNotes
             })
@@ -736,18 +750,21 @@ async function updateStory(
       );
     }
 
-    message.textContent =
-      status === 'published'
-        ? 'Story approved.'
-        : 'Story rejected.';
-
-    loadPendingStories();
-
-    if (
-      status === 'published'
+    if (action === 'approve') {
+      message.textContent =
+        'Story approved.';
+    } else if (
+      action === 'approve_anonymously'
     ) {
-      loadPublishedStories();
+      message.textContent =
+        'Story approved anonymously.';
+    } else {
+      message.textContent =
+        'Story rejected.';
     }
+
+    await loadPendingStories();
+    await loadPublishedStories();
 
   } catch (error) {
 
@@ -757,13 +774,17 @@ async function updateStory(
   }
 }
 
+
 async function loadNotificationSettings() {
 
   try {
 
     const response =
       await fetch(
-        '/api/notification-settings'
+        '/api/notification-settings',
+        {
+          credentials: 'same-origin'
+        }
       );
 
     if (!response.ok) {
@@ -789,6 +810,7 @@ async function loadNotificationSettings() {
   }
 }
 
+
 async function saveNotificationSettings() {
 
   const frequency =
@@ -810,6 +832,7 @@ async function saveNotificationSettings() {
         '/api/notification-settings',
         {
           method: 'PUT',
+          credentials: 'same-origin',
           headers: {
             'Content-Type':
               'application/json'
@@ -845,14 +868,17 @@ async function saveNotificationSettings() {
   }
 }
 
+
 saveSettingsButton.addEventListener(
   'click',
   saveNotificationSettings
 );
 
+
 loadNotificationSettings();
 loadPendingStories();
 loadPublishedStories();
+
 
 setInterval(() => {
 
