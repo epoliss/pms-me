@@ -1,6 +1,5 @@
 name = "pms-me-site"
 main = "worker.mjs"
-no_bundle = true
 compatibility_date = "2026-09-21"
 
 [[d1_databases]]
@@ -9,7 +8,7 @@ database_name = "pms-me-db"
 database_id = "7061bed5-7be8-4ee9-b4b3-3b7c75ae53f0"
 
 [assets]
-directory = "."
+directory = "./public"
 binding = "ASSETS"
 
 [secrets]
