@@ -352,9 +352,29 @@ form.addEventListener("submit", async (event) => {
   );
 }
 
-async function sendEmail(env, to, subject, text) {
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+async function sendEmail(env, to, subject, text, html) {
   if (!env.RESEND_API_KEY) {
     throw new Error("RESEND_API_KEY is missing");
+  }
+
+  const emailData = {
+    from: "PMS-ME <onboarding@resend.dev>",
+    to: [to],
+    subject: subject,
+    text: text
+  };
+
+  if (html) {
+    emailData.html = html;
   }
 
   const response = await fetch(
@@ -362,22 +382,18 @@ async function sendEmail(env, to, subject, text) {
     {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+        "Authorization": "Bearer " + env.RESEND_API_KEY,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        from: "PMS-ME <onboarding@resend.dev>",
-        to: [to],
-        subject,
-        text
-      })
+      body: JSON.stringify(emailData)
     }
   );
 
   if (!response.ok) {
     const body = await response.text();
+
     throw new Error(
-      `Email sending failed: ${body}`
+      "Email sending failed: " + body
     );
   }
 
@@ -438,22 +454,104 @@ async function sendRejectionEmail(env, story, reason) {
   const subject =
     "PMS-ME — Story Submission Update";
 
+  const safeName =
+    escapeHtml(
+      story.display_name || "PMS-ME contributor"
+    );
+
+  const safeCategory =
+    escapeHtml(story.category);
+
+  const safeReason =
+    escapeHtml(
+      reason ||
+      "The submission did not meet the site's submission guidelines."
+    );
+
   const text =
-`Your PMS-ME story submission was not approved for publication.
+    "Hello " +
+    (story.display_name || "PMS-ME contributor") +
+    ",\n\n" +
+    "Your PMS-ME story submission was not approved for publication.\n\n" +
+    "Category: " +
+    story.category +
+    "\n\n" +
+    "Reason from the moderator:\n\n" +
+    (reason ||
+      "The submission did not meet the site's submission guidelines.") +
+    "\n\n" +
+    "You are welcome to submit another story that complies with the site's guidelines.\n\n" +
+    "— PMS-ME";
 
-Category: ${story.category}
+  const html =
+    "<!doctype html>" +
+    "<html>" +
+    "<head>" +
+    "<meta charset=\"utf-8\">" +
+    "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+    "<title>PMS-ME — Story Submission Update</title>" +
+    "</head>" +
+    "<body style=\"margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#222;\">" +
 
-Reason from the moderator:
+    "<div style=\"max-width:650px;margin:0 auto;padding:30px 16px;\">" +
 
-${reason || "The submission did not meet the site's submission guidelines."}
+    "<div style=\"background:#ffffff;border:1px solid #dddddd;border-radius:8px;padding:30px;\">" +
 
-You are welcome to submit another story that complies with the site's guidelines.`;
+    "<h1 style=\"margin:0 0 22px;font-size:24px;line-height:1.3;color:#222;\">" +
+    "PMS-ME — Story Submission Update" +
+    "</h1>" +
+
+    "<p style=\"margin:0 0 18px;font-size:16px;line-height:1.6;\">" +
+    "Hello <strong>" +
+    safeName +
+    "</strong>," +
+    "</p>" +
+
+    "<p style=\"margin:0 0 22px;font-size:16px;line-height:1.6;\">" +
+    "Your PMS-ME story submission was not approved for publication." +
+    "</p>" +
+
+    "<div style=\"margin:0 0 22px;padding:16px 18px;background:#f7f7f7;border-left:4px solid #444;border-radius:4px;\">" +
+
+    "<p style=\"margin:0 0 8px;font-size:15px;line-height:1.5;\">" +
+    "<strong>Category:</strong> " +
+    safeCategory +
+    "</p>" +
+
+    "</div>" +
+
+    "<h2 style=\"margin:0 0 10px;font-size:18px;color:#222;\">" +
+    "Reason from the moderator" +
+    "</h2>" +
+
+    "<div style=\"margin:0 0 24px;padding:18px 20px;background:#f9f9f9;border:1px solid #dddddd;border-radius:5px;\">" +
+
+    "<p style=\"margin:0;font-size:15px;line-height:1.7;white-space:pre-wrap;\">" +
+    safeReason +
+    "</p>" +
+
+    "</div>" +
+
+    "<p style=\"margin:0 0 20px;font-size:16px;line-height:1.6;\">" +
+    "You are welcome to submit another story that complies with the site's guidelines." +
+    "</p>" +
+
+    "<p style=\"margin:24px 0 0;padding-top:18px;border-top:1px solid #dddddd;font-size:14px;line-height:1.5;color:#666;\">" +
+    "— PMS-ME" +
+    "</p>" +
+
+    "</div>" +
+    "</div>" +
+
+    "</body>" +
+    "</html>";
 
   await sendEmail(
     env,
     story.email,
     subject,
-    text
+    text,
+    html
   );
 }
 
