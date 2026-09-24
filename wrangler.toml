@@ -2,6 +2,9 @@ name = "pms-me-site"
 main = "worker.mjs"
 compatibility_date = "2026-09-21"
 
+[build.upload]
+format = "modules"
+
 [[d1_databases]]
 binding = "pms_me_db"
 database_name = "pms-me-db"
@@ -13,7 +16,3 @@ binding = "ASSETS"
 
 [secrets]
 required = ["RESEND_API_KEY"]
-
-[[rules]]
-type = "ESModule"
-globs = ["worker.mjs"]
