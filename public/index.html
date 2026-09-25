@@ -43,50 +43,40 @@ padding:0;
 
 .actions button:hover
 
+/* =========================================================
+SHARE BUTTONS
+========================================================= */
+
 .share-actions{
 border-top:1px solid #eee;
-margin-top:12px;
+margin-top:18px;
 padding-top:12px;
 display:flex;
-gap:10px;
+gap:15px;
 flex-wrap:wrap;
 }
 
-/* =========================================================
-ICON-ONLY SHARE BUTTONS
-========================================================= */
-
 .share-button{
-width:40px;
-height:40px;
-min-width:40px;
+width:36px;
+height:36px;
+min-width:36px;
 padding:0;
-border:1px solid #ccc;
-border-radius:50%;
-background:#fff;
-color:#444;
+border:none;
 cursor:pointer;
 display:inline-flex;
 align-items:center;
 justify-content:center;
-font-family:Arial,Helvetica,sans-serif;
-font-size:20px;
-font-weight:600;
 line-height:1;
 transition:
-background-color .15s ease,
-border-color .15s ease,
-color .15s ease,
 transform .15s ease,
+opacity .15s ease,
 box-shadow .15s ease;
 }
 
 .share-button:hover{
-background:#f3f3f3;
-border-color:#999;
-color:#111;
 transform:translateY(-1px);
-box-shadow:0 2px 5px rgba(0,0,0,.12);
+opacity:.88;
+box-shadow:0 2px 5px rgba(0,0,0,.18);
 }
 
 .share-button:active{
@@ -99,21 +89,32 @@ outline:2px solid #222;
 outline-offset:2px;
 }
 
-/* X icon */
+/* X — black square with white X */
 .share-x{
-font-size:19px;
+background:#000;
+color:#fff;
+border-radius:5px;
+font-size:20px;
 font-weight:700;
 }
 
-/* Facebook icon */
+/* Facebook — blue circle with white f */
 .share-facebook{
-font-size:23px;
+background:#1877f2;
+color:#fff;
+border-radius:50%;
+font-family:Arial,Helvetica,sans-serif;
+font-size:24px;
 font-weight:700;
+padding-top:3px;
 }
 
-/* Native share icon */
+/* Mobile native share */
 .share-native{
-font-size:22px;
+background:#555;
+color:#fff;
+border-radius:5px;
+font-size:21px;
 font-weight:700;
 }
 
@@ -148,14 +149,14 @@ display:inline-flex;
 }
 
 .share-actions{
-gap:10px;
+gap:15px;
+margin-top:18px;
 }
 
 .share-button{
-width:40px;
-height:40px;
-min-width:40px;
-flex:none;
+width:36px;
+height:36px;
+min-width:36px;
 }
 } </style>
 
@@ -204,7 +205,6 @@ const empty = document.getElementById('empty');
 
 let stories = [];
 
-
 function formatDate(dateString) {
   const date = new Date(dateString);
   const now = new Date();
@@ -237,7 +237,6 @@ function formatDate(dateString) {
   });
 }
 
-
 /*
  * =========================================================
  * STORY SHARING
@@ -250,11 +249,9 @@ function getStoryUrl(story) {
   return url.toString();
 }
 
-
 function getShareText(story) {
   return `PMS-ME — ${story.story}`;
 }
-
 
 function shareToX(story) {
   const storyUrl = getStoryUrl(story);
@@ -274,7 +271,6 @@ function shareToX(story) {
   );
 }
 
-
 function shareToFacebook(story) {
   const storyUrl = getStoryUrl(story);
 
@@ -291,7 +287,6 @@ function shareToFacebook(story) {
   );
 }
 
-
 async function shareNative(story) {
   const storyUrl = getStoryUrl(story);
 
@@ -301,9 +296,7 @@ async function shareNative(story) {
     url: storyUrl
   };
 
-  if (
-    !navigator.share
-  ) {
+  if (!navigator.share) {
     alert(
       'Your browser does not support the Share feature. You can copy the story URL from your browser and share it manually.'
     );
@@ -328,7 +321,6 @@ async function shareNative(story) {
     }
   }
 }
-
 
 /*
  * =========================================================
@@ -370,20 +362,17 @@ function renderStories(category = 'All') {
     meta.textContent =
       `${formatDate(story.published_at)} · ${story.category} · ${story.public_name || 'Anonymous'}`;
 
-
     const text =
       document.createElement('p');
 
     text.textContent =
       story.story;
 
-
     const pms =
       document.createElement('div');
 
     pms.className = 'pms';
     pms.textContent = 'PMS-ME.';
-
 
     /*
      * REACTION BUTTONS
@@ -394,13 +383,11 @@ function renderStories(category = 'All') {
 
     actions.className = 'actions';
 
-
     const beenThere =
       document.createElement('button');
 
     beenThere.textContent =
       `👍 I've been there (${story.reaction_been_there || 0})`;
-
 
     const funny =
       document.createElement('button');
@@ -408,10 +395,8 @@ function renderStories(category = 'All') {
     funny.textContent =
       `😂 That's a good one (${story.reaction_funny || 0})`;
 
-
     actions.appendChild(beenThere);
     actions.appendChild(funny);
-
 
     /*
      * SHARE BUTTONS
@@ -422,9 +407,8 @@ function renderStories(category = 'All') {
 
     shareActions.className = 'share-actions';
 
-
     /*
-     * Desktop X icon button
+     * X button
      */
 
     const xButton =
@@ -451,9 +435,8 @@ function renderStories(category = 'All') {
       () => shareToX(story)
     );
 
-
     /*
-     * Desktop Facebook icon button
+     * Facebook button
      */
 
     const facebookButton =
@@ -480,9 +463,8 @@ function renderStories(category = 'All') {
       () => shareToFacebook(story)
     );
 
-
     /*
-     * Mobile native Share icon button
+     * Mobile native Share button
      */
 
     const mobileShareButton =
@@ -509,11 +491,9 @@ function renderStories(category = 'All') {
       () => shareNative(story)
     );
 
-
     shareActions.appendChild(xButton);
     shareActions.appendChild(facebookButton);
     shareActions.appendChild(mobileShareButton);
-
 
     /*
      * Assemble story
@@ -527,7 +507,6 @@ function renderStories(category = 'All') {
 
     storiesContainer.appendChild(article);
   });
-
 
   /*
    * If the URL contains ?story=123,
@@ -559,7 +538,6 @@ function renderStories(category = 'All') {
     }
   }
 }
-
 
 /*
  * =========================================================
@@ -599,7 +577,6 @@ async function loadStories() {
   }
 }
 
-
 /*
  * =========================================================
  * CATEGORY FILTERING
@@ -625,7 +602,6 @@ buttons.forEach(button => {
   );
 
 });
-
 
 loadStories();
 
