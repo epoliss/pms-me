@@ -1,4 +1,4 @@
-// PMS-ME deployment trigger 5
+// PMS-ME deployment trigger 4
 
 function generateAnonymousName() {
   const words = [
@@ -195,12 +195,8 @@ function moderatorLoginPage() {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PMS-ME — Moderator Login</title>
-
 <style>
-  * {
-    box-sizing: border-box;
-  }
-
+  * { box-sizing: border-box; }
   body {
     margin: 0;
     min-height: 100vh;
@@ -211,7 +207,6 @@ function moderatorLoginPage() {
     font-family: Arial, Helvetica, sans-serif;
     color: #222;
   }
-
   .login-box {
     width: min(420px, calc(100% - 32px));
     background: white;
@@ -219,24 +214,9 @@ function moderatorLoginPage() {
     border-radius: 10px;
     box-shadow: 0 2px 12px rgba(0,0,0,.12);
   }
-
-  h1 {
-    margin: 0 0 10px;
-    font-size: 28px;
-  }
-
-  p {
-    margin: 0 0 24px;
-    color: #666;
-    line-height: 1.5;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-  }
-
+  h1 { margin: 0 0 10px; font-size: 28px; }
+  p { margin: 0 0 24px; color: #666; line-height: 1.5; }
+  label { display: block; margin-bottom: 8px; font-weight: 600; }
   input {
     width: 100%;
     padding: 12px;
@@ -245,7 +225,6 @@ function moderatorLoginPage() {
     font-size: 16px;
     margin-bottom: 16px;
   }
-
   button {
     width: 100%;
     padding: 12px;
@@ -256,11 +235,7 @@ function moderatorLoginPage() {
     font-size: 16px;
     cursor: pointer;
   }
-
-  button:hover {
-    background: #444;
-  }
-
+  button:hover { background: #444; }
   #error {
     display: none;
     margin-bottom: 16px;
@@ -271,21 +246,13 @@ function moderatorLoginPage() {
   }
 </style>
 </head>
-
 <body>
-
 <div class="login-box">
   <h1>Moderator Login</h1>
-
-  <p>
-    Enter the moderator password to access the PMS-ME moderation dashboard.
-  </p>
-
+  <p>Enter the moderator password to access the PMS-ME moderation dashboard.</p>
   <div id="error"></div>
-
   <form id="loginForm">
     <label for="password">Password</label>
-
     <input
       id="password"
       name="password"
@@ -294,11 +261,9 @@ function moderatorLoginPage() {
       required
       autofocus
     >
-
     <button type="submit">Log In</button>
   </form>
 </div>
-
 <script>
 const form = document.getElementById("loginForm");
 const password = document.getElementById("password");
@@ -306,49 +271,32 @@ const error = document.getElementById("error");
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-
   error.style.display = "none";
-
   try {
     const response = await fetch("/api/moderator-login", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       credentials: "same-origin",
-      body: JSON.stringify({
-        password: password.value
-      })
+      body: JSON.stringify({ password: password.value })
     });
-
     const data = await response.json();
-
     if (!response.ok) {
-      error.textContent =
-        data.error || "Login failed.";
-
+      error.textContent = data.error || "Login failed.";
       error.style.display = "block";
       password.select();
       return;
     }
-
     window.location.href = "/moderate.html";
-
   } catch (err) {
-    error.textContent =
-      "Unable to contact the server.";
-
+    error.textContent = "Unable to contact the server.";
     error.style.display = "block";
   }
 });
 </script>
-
 </body>
 </html>`,
     401,
-    {
-      "Cache-Control": "no-store"
-    }
+    { "Cache-Control": "no-store" }
   );
 }
 
@@ -382,9 +330,7 @@ async function sendEmail(env, to, subject, text, html = null) {
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(
-      `Email sending failed: ${body}`
-    );
+    throw new Error(`Email sending failed: ${body}`);
   }
 
   return response.json();
@@ -407,8 +353,7 @@ async function sendNewStoryNotification(env, story) {
     return;
   }
 
-  const subject =
-    "PMS-ME — New Story Submitted";
+  const subject = "PMS-ME — New Story Submitted";
 
   const text =
 `A new story has been submitted to PMS-ME.
@@ -428,12 +373,7 @@ ${story.story}
 Review it in the moderator dashboard:
 https://pms-me-site.epoliss.workers.dev/moderate.html`;
 
-  await sendEmail(
-    env,
-    settings.email,
-    subject,
-    text
-  );
+  await sendEmail(env, settings.email, subject, text);
 }
 
 function escapeHtml(value) {
@@ -446,12 +386,9 @@ function escapeHtml(value) {
 }
 
 async function sendRejectionEmail(env, story, reason) {
-  if (!story.email) {
-    return;
-  }
+  if (!story.email) return;
 
-  const subject =
-    "PMS-ME — Story Submission Update";
+  const subject = "PMS-ME — Story Submission Update";
 
   const moderatorComment =
     reason ||
@@ -481,55 +418,35 @@ PMS-ME — Property Manager Stories`;
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 </head>
-
 <body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#222222;">
-
 <div style="max-width:600px;margin:0 auto;padding:32px 24px;">
-
   <p style="margin:0 0 20px;font-size:16px;line-height:1.6;">
     Hello <strong>${escapeHtml(story.display_name || "there")}</strong>,
   </p>
-
   <p style="margin:0 0 28px;font-size:16px;line-height:1.6;">
     Your story submitted to PMS-ME was not approved for publication.
   </p>
-
   <p style="margin:0 0 8px;font-size:16px;line-height:1.5;">
     <strong>Moderator's comment</strong>
   </p>
-
   <div style="background:#f2f2f2;padding:14px 16px;margin:0 0 24px;font-size:16px;line-height:1.6;">
     ${escapeHtml(moderatorComment).replace(/\n/g, "<br>")}
   </div>
-
   <p style="margin:0 0 8px;font-size:16px;line-height:1.5;">
     <strong>Your submitted story</strong>
   </p>
-
   <div style="background:#f2f2f2;padding:14px 16px;margin:0 0 28px;font-size:16px;line-height:1.6;">
     ${escapeHtml(story.story).replace(/\n/g, "<br>")}
   </div>
-
-  <p style="margin:0;font-size:16px;line-height:1.6;">
-    Thank you,
-  </p>
-
+  <p style="margin:0;font-size:16px;line-height:1.6;">Thank you,</p>
   <p style="margin:4px 0 0;font-size:16px;line-height:1.6;">
     <strong>PMS-ME — Property Manager Stories</strong>
   </p>
-
 </div>
-
 </body>
 </html>`;
 
-  await sendEmail(
-    env,
-    story.email,
-    subject,
-    text,
-    html
-  );
+  await sendEmail(env, story.email, subject, text, html);
 }
 
 async function sendDailyDigest(env) {
@@ -564,18 +481,13 @@ async function sendDailyDigest(env) {
   }
 
   const lines = [];
-
-  lines.push(
-    "The following PMS-ME stories are awaiting moderation."
-  );
+  lines.push("The following PMS-ME stories are awaiting moderation.");
   lines.push("");
 
   for (const story of stories.results) {
     lines.push(`ID: ${story.id}`);
     lines.push(`Category: ${story.category}`);
-    lines.push(
-      `Display Name: ${story.display_name || "(not provided)"}`
-    );
+    lines.push(`Display Name: ${story.display_name || "(not provided)"}`);
     lines.push(
       `Anonymous Requested: ${
         story.anonymous_requested ? "Yes" : "No"
@@ -588,9 +500,7 @@ async function sendDailyDigest(env) {
     lines.push("");
   }
 
-  lines.push(
-    "Moderator dashboard:"
-  );
+  lines.push("Moderator dashboard:");
   lines.push(
     "https://pms-me-site.epoliss.workers.dev/moderate.html"
   );
@@ -611,252 +521,30 @@ async function sendDailyDigest(env) {
     .run();
 }
 
-/*
- * =============================================================
- * SHARE BUTTON VISUAL ENHANCEMENT
- * =============================================================
- *
- * This is injected into the public frontend after ASSETS
- * returns the existing HTML.
- *
- * It does NOT replace the existing share event handlers.
- * It only changes the visible text of buttons/links whose
- * existing text is exactly X, Facebook, or Share.
- *
- * Reaction buttons are deliberately untouched.
- */
-function injectShareButtonEnhancement(html) {
-  const injection = `
-<style id="pms-me-share-icons">
-  .pms-me-share-icon-button {
-    width: 38px !important;
-    height: 38px !important;
-    min-width: 38px !important;
-    min-height: 38px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border-radius: 50% !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-sizing: border-box !important;
-    font-family: Arial, Helvetica, sans-serif !important;
-    font-size: 19px !important;
-    font-weight: 600 !important;
-    line-height: 1 !important;
-    cursor: pointer !important;
-    text-decoration: none !important;
-    transition:
-      background-color .15s ease,
-      border-color .15s ease,
-      transform .15s ease,
-      box-shadow .15s ease !important;
-  }
-
-  .pms-me-share-icon-button:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,.12) !important;
-  }
-
-  .pms-me-share-icon-button:active {
-    transform: translateY(0) !important;
-  }
-
-  .pms-me-share-x {
-    font-size: 18px !important;
-    font-weight: 700 !important;
-  }
-
-  .pms-me-share-facebook {
-    font-size: 21px !important;
-    font-weight: 700 !important;
-  }
-
-  .pms-me-share-native {
-    font-size: 21px !important;
-    font-weight: 700 !important;
-  }
-</style>
-
-<script id="pms-me-share-icons-script">
-(function () {
-  function normalizeText(element) {
-    return (element.textContent || "")
-      .replace(/\\\\s+/g, " ")
-      .trim()
-      .toLowerCase();
-  }
-
-  function convertShareButtons() {
-    const elements = document.querySelectorAll(
-      "button, a, [role='button']"
-    );
-
-    elements.forEach(function (element) {
-      if (element.dataset.pmsMeShareConverted === "1") {
-        return;
-      }
-
-      const text = normalizeText(element);
-
-      if (
-        text === "x" ||
-        text === "twitter" ||
-        text === "share on x"
-      ) {
-        element.dataset.pmsMeShareConverted = "1";
-        element.dataset.pmsMeOriginalLabel =
-          element.textContent.trim();
-
-        element.textContent = "𝕏";
-        element.classList.add(
-          "pms-me-share-icon-button",
-          "pms-me-share-x"
-        );
-
-        element.setAttribute(
-          "aria-label",
-          "Share on X"
-        );
-
-        element.setAttribute(
-          "title",
-          "Share on X"
-        );
-
-        return;
-      }
-
-      if (
-        text === "facebook" ||
-        text === "share on facebook"
-      ) {
-        element.dataset.pmsMeShareConverted = "1";
-        element.dataset.pmsMeOriginalLabel =
-          element.textContent.trim();
-
-        element.textContent = "f";
-        element.classList.add(
-          "pms-me-share-icon-button",
-          "pms-me-share-facebook"
-        );
-
-        element.setAttribute(
-          "aria-label",
-          "Share on Facebook"
-        );
-
-        element.setAttribute(
-          "title",
-          "Share on Facebook"
-        );
-
-        return;
-      }
-
-      if (
-        text === "share" ||
-        text === "share story" ||
-        text === "share this story"
-      ) {
-        element.dataset.pmsMeShareConverted = "1";
-        element.dataset.pmsMeOriginalLabel =
-          element.textContent.trim();
-
-        element.textContent = "↗";
-        element.classList.add(
-          "pms-me-share-icon-button",
-          "pms-me-share-native"
-        );
-
-        element.setAttribute(
-          "aria-label",
-          "Share"
-        );
-
-        element.setAttribute(
-          "title",
-          "Share"
-        );
-      }
-    });
-  }
-
-  function start() {
-    convertShareButtons();
-
-    const observer = new MutationObserver(function () {
-      convertShareButtons();
-    });
-
-    if (document.body) {
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-    }
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener(
-      "DOMContentLoaded",
-      start
-    );
-  } else {
-    start();
-  }
-})();
-</script>
-`;
-
-  if (html.includes("</head>")) {
-    return html.replace(
-      "</head>",
-      injection + "</head>"
-    );
-  }
-
-  return html + injection;
-}
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    /*
-     * =========================================================
-     * MODERATOR PAGE
-     * =========================================================
-     */
     if (url.pathname === "/moderate.html") {
       if (!(await isModeratorAuthenticated(request, env))) {
         return moderatorLoginPage();
       }
     }
 
-    /*
-     * =========================================================
-     * MODERATOR LOGIN
-     * =========================================================
-     */
     if (
       url.pathname === "/api/moderator-login" &&
       request.method === "POST"
     ) {
       if (!env.MODERATOR_PASSWORD) {
         return jsonResponse(
-          {
-            error: "MODERATOR_PASSWORD is missing"
-          },
+          { error: "MODERATOR_PASSWORD is missing" },
           500
         );
       }
 
       if (!env.MODERATOR_SESS_SEC) {
         return jsonResponse(
-          {
-            error: "MODERATOR_SESS_SEC is missing"
-          },
+          { error: "MODERATOR_SESS_SEC is missing" },
           500
         );
       }
@@ -872,10 +560,7 @@ export default {
         );
       }
 
-      if (
-        !body ||
-        typeof body.password !== "string"
-      ) {
+      if (!body || typeof body.password !== "string") {
         return jsonResponse(
           { error: "Password is required" },
           400
@@ -889,8 +574,7 @@ export default {
         );
       }
 
-      const session =
-        await createModeratorSession(env);
+      const session = await createModeratorSession(env);
 
       return jsonResponse(
         { ok: true },
@@ -908,11 +592,6 @@ export default {
       );
     }
 
-    /*
-     * =========================================================
-     * MODERATOR LOGOUT
-     * =========================================================
-     */
     if (
       url.pathname === "/api/moderator-logout" &&
       request.method === "POST"
@@ -933,11 +612,6 @@ export default {
       );
     }
 
-    /*
-     * =========================================================
-     * MODERATOR API AUTHENTICATION
-     * =========================================================
-     */
     const isModeratorApi =
       url.pathname === "/api/notification-settings" ||
       (
@@ -950,18 +624,11 @@ export default {
       );
 
     if (isModeratorApi) {
-      if (
-        !(await isModeratorAuthenticated(request, env))
-      ) {
+      if (!(await isModeratorAuthenticated(request, env))) {
         return unauthorizedResponse();
       }
     }
 
-    /*
-     * =========================================================
-     * NOTIFICATION SETTINGS
-     * =========================================================
-     */
     if (
       url.pathname === "/api/notification-settings"
     ) {
@@ -1030,11 +697,6 @@ export default {
       );
     }
 
-    /*
-     * =========================================================
-     * STORIES — GET
-     * =========================================================
-     */
     if (
       url.pathname === "/api/stories" &&
       request.method === "GET"
@@ -1095,11 +757,6 @@ export default {
       );
     }
 
-    /*
-     * =========================================================
-     * STORIES — POST
-     * =========================================================
-     */
     if (
       url.pathname === "/api/stories" &&
       request.method === "POST"
@@ -1154,10 +811,7 @@ export default {
 
       if (story.length > 2000) {
         return jsonResponse(
-          {
-            error:
-              "Story must be 2000 characters or fewer."
-          },
+          { error: "Story must be 2000 characters or fewer." },
           400
         );
       }
@@ -1233,11 +887,6 @@ export default {
       );
     }
 
-    /*
-     * =========================================================
-     * STORIES — PATCH
-     * =========================================================
-     */
     if (
       url.pathname.startsWith("/api/stories/") &&
       request.method === "PATCH"
@@ -1303,11 +952,6 @@ export default {
         );
       }
 
-      /*
-       * =======================================================
-       * REJECT
-       * =======================================================
-       */
       if (action === "reject") {
         await env.pms_me_db
           .prepare(
@@ -1340,13 +984,6 @@ export default {
         });
       }
 
-      /*
-       * =======================================================
-       * APPROVAL
-       * =======================================================
-       *
-       * The moderator may change the category before approval.
-       */
       const allowedCategories = [
         "Homeowner of the Year",
         "Vendor Blues",
@@ -1415,11 +1052,6 @@ export default {
       });
     }
 
-    /*
-     * =========================================================
-     * STORIES — DELETE
-     * =========================================================
-     */
     if (
       url.pathname.startsWith("/api/stories/") &&
       request.method === "DELETE"
@@ -1458,50 +1090,7 @@ export default {
       });
     }
 
-    /*
-     * =========================================================
-     * STATIC ASSETS
-     * =========================================================
-     */
-    const assetResponse =
-      await env.ASSETS.fetch(request);
-
-    /*
-     * Only modify HTML responses.
-     * API responses, CSS, JS, images, etc. are returned
-     * completely untouched.
-     */
-    const contentType =
-      assetResponse.headers.get("Content-Type") || "";
-
-    if (
-      contentType.toLowerCase().includes("text/html")
-    ) {
-      const html =
-        await assetResponse.text();
-
-      const enhancedHtml =
-        injectShareButtonEnhancement(html);
-
-      const headers =
-        new Headers(assetResponse.headers);
-
-      headers.set(
-        "Content-Type",
-        "text/html; charset=utf-8"
-      );
-
-      return new Response(
-        enhancedHtml,
-        {
-          status: assetResponse.status,
-          statusText: assetResponse.statusText,
-          headers
-        }
-      );
-    }
-
-    return assetResponse;
+    return env.ASSETS.fetch(request);
   },
 
   async scheduled(event, env) {
