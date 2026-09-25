@@ -1,165 +1,296 @@
+```html
 <!doctype html>
-
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PMS-ME — Property Manager Stories</title>
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f3f3;color:#222}
-header{background:#202020;color:#fff;text-align:center;padding:24px 20px 18px}
-.logo{font-size:42px;font-weight:800;letter-spacing:2px}
-.subtitle{margin-top:4px;color:#d6d6d6}
-nav{background:#fff;border-bottom:1px solid #ddd;padding:12px 10px;text-align:center;position:sticky;top:0;z-index:5;overflow-x:auto;white-space:nowrap}
-nav button{border:0;background:transparent;padding:7px 10px;margin:2px;font-size:14px;cursor:pointer;color:#555;border-radius:4px}
-nav button:hover,nav button.active{background:#222;color:#fff}
-.container{max-width:850px;margin:24px auto;padding:0 15px}
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-h1{margin:0;font-size:24px}
-.submit{background:#222;color:#fff;text-decoration:none;padding:11px 16px;border-radius:5px;font-weight:bold;font-size:14px}
-.story{background:#fff;border:1px solid #ddd;border-radius:6px;padding:20px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-.story.highlighted{box-shadow:0 0 0 3px #222}
-.meta{color:#888;font-size:12px;margin-bottom:12px}
-.story p{font-size:17px;line-height:1.55;margin:0 0 14px}
-.pms{font-weight:800;font-size:14px;letter-spacing:.5px}
 
-.actions{
-border-top:1px solid #eee;
-padding-top:12px;
-display:flex;
-gap:18px;
-flex-wrap:wrap;
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f3f3f3;
+  color:#222
 }
 
-.actions button{
-border:0;
-background:none;
-color:#666;
-cursor:pointer;
-font-size:13px;
-padding:0;
+header{
+  background:#202020;
+  color:#fff;
+  text-align:center;
+  padding:24px 20px 18px
 }
 
-.actions button:hover
-
-/* =========================================================
-SHARE BUTTONS
-========================================================= */
-
-.share-actions{
-border-top:1px solid #eee;
-margin-top:18px;
-padding-top:12px;
-display:flex;
-gap:15px;
-flex-wrap:wrap;
+.logo{
+  font-size:42px;
+  font-weight:800;
+  letter-spacing:2px
 }
 
-.share-button{
-width:36px;
-height:36px;
-min-width:36px;
-padding:0;
-border:none;
-cursor:pointer;
-display:inline-flex;
-align-items:center;
-justify-content:center;
-line-height:1;
-transition:
-transform .15s ease,
-opacity .15s ease,
-box-shadow .15s ease;
+.subtitle{
+  margin-top:4px;
+  color:#d6d6d6
 }
 
-.share-button:hover{
-transform:translateY(-1px);
-opacity:.88;
-box-shadow:0 2px 5px rgba(0,0,0,.18);
+nav{
+  background:#fff;
+  border-bottom:1px solid #ddd;
+  padding:12px 10px;
+  text-align:center;
+  position:sticky;
+  top:0;
+  z-index:5;
+  overflow-x:auto;
+  white-space:nowrap
 }
 
-.share-button:active{
-transform:translateY(0);
-box-shadow:none;
+nav button{
+  border:0;
+  background:transparent;
+  padding:7px 10px;
+  margin:2px;
+  font-size:14px;
+  cursor:pointer;
+  color:#555;
+  border-radius:4px
 }
 
-.share-button:focus-visible{
-outline:2px solid #222;
-outline-offset:2px;
+nav button:hover,
+nav button.active{
+  background:#222;
+  color:#fff
 }
 
-/* X — black square with white X */
-.share-x{
-background:#000;
-color:#fff;
-border-radius:5px;
-font-size:20px;
-font-weight:700;
+.container{
+  max-width:850px;
+  margin:24px auto;
+  padding:0 15px
 }
-
-/* Facebook — blue circle with white f */
-.share-facebook{
-background:#1877f2;
-color:#fff;
-border-radius:50%;
-font-family:Arial,Helvetica,sans-serif;
-font-size:24px;
-font-weight:700;
-padding-top:3px;
-}
-
-/* Mobile native share */
-.share-native{
-background:#555;
-color:#fff;
-border-radius:5px;
-font-size:21px;
-font-weight:700;
-}
-
-.mobile-share{
-display:none;
-}
-
-.empty{display:none;background:#fff;border:1px solid #ddd;padding:35px;text-align:center;color:#777}
-.loading{background:#fff;border:1px solid #ddd;padding:35px;text-align:center;color:#777}
-footer{text-align:center;color:#888;font-size:12px;padding:30px 15px 45px}
-
-@media(max-width:600px){
-.logo{font-size:34px}
 
 .topbar{
-align-items:flex-start;
-flex-direction:column;
-gap:12px
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:18px
+}
+
+h1{
+  margin:0;
+  font-size:24px
 }
 
 .submit{
-align-self:stretch;
-text-align:center
+  background:#222;
+  color:#fff;
+  text-decoration:none;
+  padding:11px 16px;
+  border-radius:5px;
+  font-weight:bold;
+  font-size:14px
 }
 
-.desktop-share{
-display:none;
+.story{
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:6px;
+  padding:20px;
+  margin-bottom:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04)
 }
 
-.mobile-share{
-display:inline-flex;
+.story.highlighted{
+  box-shadow:0 0 0 3px #222
 }
+
+.meta{
+  color:#888;
+  font-size:12px;
+  margin-bottom:12px
+}
+
+.story p{
+  font-size:17px;
+  line-height:1.55;
+  margin:0 0 14px
+}
+
+.pms{
+  font-weight:800;
+  font-size:14px;
+  letter-spacing:.5px
+}
+
+/* =========================================================
+   REACTION BUTTONS
+   ========================================================= */
+
+.actions{
+  border-top:1px solid #eee;
+  padding-top:12px;
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap
+}
+
+.actions button{
+  border:0;
+  background:none;
+  color:#666;
+  cursor:pointer;
+  font-size:13px;
+  padding:0
+}
+
+.actions button:hover{
+  color:#111
+}
+
+/* =========================================================
+   SHARE BUTTONS
+   ========================================================= */
 
 .share-actions{
-gap:15px;
-margin-top:18px;
+  border-top:1px solid #eee;
+  margin-top:18px;
+  padding-top:12px;
+  display:flex;
+  align-items:center;
+  gap:22px;
+  flex-wrap:wrap
 }
 
 .share-button{
-width:36px;
-height:36px;
-min-width:36px;
+  width:32px;
+  height:32px;
+  min-width:32px;
+  padding:0;
+  border:none;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  transition:
+    transform .15s ease,
+    opacity .15s ease,
+    box-shadow .15s ease;
 }
-} </style>
 
+.share-button:hover{
+  transform:translateY(-1px);
+  opacity:.88;
+  box-shadow:0 2px 5px rgba(0,0,0,.18);
+}
+
+.share-button:active{
+  transform:translateY(0);
+  box-shadow:none;
+}
+
+.share-button:focus-visible{
+  outline:2px solid #222;
+  outline-offset:3px
+}
+
+/* X — black square with large white X */
+
+.share-x{
+  background:#000;
+  color:#fff;
+  border-radius:5px;
+  font-size:23px;
+  font-weight:700
+}
+
+/* Facebook — blue circle with large white f */
+
+.share-facebook{
+  background:#1877f2;
+  color:#fff;
+  border-radius:50%;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:27px;
+  font-weight:700;
+  padding-top:3px
+}
+
+/* Mobile native share */
+
+.share-native{
+  background:#555;
+  color:#fff;
+  border-radius:5px;
+  font-size:19px;
+  font-weight:700
+}
+
+.mobile-share{
+  display:none
+}
+
+.empty{
+  display:none;
+  background:#fff;
+  border:1px solid #ddd;
+  padding:35px;
+  text-align:center;
+  color:#777
+}
+
+.loading{
+  background:#fff;
+  border:1px solid #ddd;
+  padding:35px;
+  text-align:center;
+  color:#777
+}
+
+footer{
+  text-align:center;
+  color:#888;
+  font-size:12px;
+  padding:30px 15px 45px
+}
+
+@media(max-width:600px){
+
+  .logo{
+    font-size:34px
+  }
+
+  .topbar{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:12px
+  }
+
+  .submit{
+    align-self:stretch;
+    text-align:center
+  }
+
+  .desktop-share{
+    display:none
+  }
+
+  .mobile-share{
+    display:inline-flex
+  }
+
+  .share-actions{
+    gap:22px;
+    margin-top:18px
+  }
+
+  .share-button{
+    width:32px;
+    height:32px;
+    min-width:32px
+  }
+}
+</style>
 </head>
 
 <body>
@@ -189,7 +320,9 @@ min-width:36px;
     <div class="loading" id="loading">Loading stories...</div>
   </section>
 
-  <div class="empty" id="empty">No stories in this category yet.</div>
+  <div class="empty" id="empty">
+    No stories in this category yet.
+  </div>
 
 </main>
 
@@ -199,13 +332,24 @@ min-width:36px;
 </footer>
 
 <script>
-const buttons = document.querySelectorAll('#categories button');
-const storiesContainer = document.getElementById('stories');
-const empty = document.getElementById('empty');
+
+const buttons =
+  document.querySelectorAll('#categories button');
+
+const storiesContainer =
+  document.getElementById('stories');
+
+const empty =
+  document.getElementById('empty');
 
 let stories = [];
 
-function formatDate(dateString) {
+/* =========================================================
+   DATE FORMATTING
+   ========================================================= */
+
+function formatDate(dateString){
+
   const date = new Date(dateString);
   const now = new Date();
 
@@ -222,19 +366,27 @@ function formatDate(dateString) {
   );
 
   const difference =
-    Math.round((today - storyDay) / 86400000);
+    Math.round(
+      (today - storyDay) / 86400000
+    );
 
-  if (difference === 0) return 'Today';
-  if (difference === 1) return 'Yesterday';
+  if(difference === 0)
+    return 'Today';
 
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year:
-      date.getFullYear() !== now.getFullYear()
-        ? 'numeric'
-        : undefined
-  });
+  if(difference === 1)
+    return 'Yesterday';
+
+  return date.toLocaleDateString(
+    undefined,
+    {
+      month:'short',
+      day:'numeric',
+      year:
+        date.getFullYear() !== now.getFullYear()
+          ? 'numeric'
+          : undefined
+    }
+  );
 }
 
 /*
@@ -243,25 +395,39 @@ function formatDate(dateString) {
  * =========================================================
  */
 
-function getStoryUrl(story) {
-  const url = new URL(window.location.origin + '/');
-  url.searchParams.set('story', story.id);
+function getStoryUrl(story){
+
+  const url =
+    new URL(
+      window.location.origin + '/'
+    );
+
+  url.searchParams.set(
+    'story',
+    story.id
+  );
+
   return url.toString();
 }
 
-function getShareText(story) {
+function getShareText(story){
+
   return `PMS-ME — ${story.story}`;
 }
 
-function shareToX(story) {
-  const storyUrl = getStoryUrl(story);
-  const text = getShareText(story);
+function shareToX(story){
+
+  const storyUrl =
+    getStoryUrl(story);
+
+  const text =
+    getShareText(story);
 
   const shareUrl =
     'https://twitter.com/intent/tweet?' +
     new URLSearchParams({
-      text: text,
-      url: storyUrl
+      text:text,
+      url:storyUrl
     }).toString();
 
   window.open(
@@ -271,13 +437,15 @@ function shareToX(story) {
   );
 }
 
-function shareToFacebook(story) {
-  const storyUrl = getStoryUrl(story);
+function shareToFacebook(story){
+
+  const storyUrl =
+    getStoryUrl(story);
 
   const shareUrl =
     'https://www.facebook.com/sharer/sharer.php?' +
     new URLSearchParams({
-      u: storyUrl
+      u:storyUrl
     }).toString();
 
   window.open(
@@ -287,37 +455,54 @@ function shareToFacebook(story) {
   );
 }
 
-async function shareNative(story) {
-  const storyUrl = getStoryUrl(story);
+async function shareNative(story){
+
+  const storyUrl =
+    getStoryUrl(story);
 
   const shareData = {
-    title: 'PMS-ME — Property Manager Stories',
-    text: getShareText(story),
-    url: storyUrl
+    title:'PMS-ME — Property Manager Stories',
+    text:getShareText(story),
+    url:storyUrl
   };
 
-  if (!navigator.share) {
+  if(!navigator.share){
+
     alert(
       'Your browser does not support the Share feature. You can copy the story URL from your browser and share it manually.'
     );
+
     return;
   }
 
-  try {
-    if (
+  try{
+
+    if(
       navigator.canShare &&
       !navigator.canShare(shareData)
-    ) {
+    ){
+
       await navigator.share({
-        title: shareData.title,
-        text: shareData.text
+        title:shareData.title,
+        text:shareData.text
       });
-    } else {
-      await navigator.share(shareData);
+
+    }else{
+
+      await navigator.share(
+        shareData
+      );
     }
-  } catch (error) {
-    if (error.name !== 'AbortError') {
-      console.error('Share failed:', error);
+
+  }catch(error){
+
+    if(error.name !== 'AbortError'){
+
+      console.error(
+        'Share failed:',
+        error
+      );
+
     }
   }
 }
@@ -328,213 +513,294 @@ async function shareNative(story) {
  * =========================================================
  */
 
-function renderStories(category = 'All') {
+function renderStories(
+  category = 'All'
+){
+
   storiesContainer.innerHTML = '';
 
   const filtered =
     category === 'All'
       ? stories
       : stories.filter(
-          story => story.category === category
+          story =>
+            story.category === category
         );
 
-  if (!filtered.length) {
-    empty.style.display = 'block';
+  if(!filtered.length){
+
+    empty.style.display =
+      'block';
+
     return;
   }
 
-  empty.style.display = 'none';
+  empty.style.display =
+    'none';
 
-  filtered.forEach(story => {
+  filtered.forEach(
+    story => {
 
-    const article =
-      document.createElement('article');
+      const article =
+        document.createElement(
+          'article'
+        );
 
-    article.className = 'story';
-    article.dataset.category = story.category;
-    article.dataset.storyId = story.id;
+      article.className =
+        'story';
 
-    const meta =
-      document.createElement('div');
+      article.dataset.category =
+        story.category;
 
-    meta.className = 'meta';
+      article.dataset.storyId =
+        story.id;
 
-    meta.textContent =
-      `${formatDate(story.published_at)} · ${story.category} · ${story.public_name || 'Anonymous'}`;
+      const meta =
+        document.createElement(
+          'div'
+        );
 
-    const text =
-      document.createElement('p');
+      meta.className =
+        'meta';
 
-    text.textContent =
-      story.story;
+      meta.textContent =
+        `${formatDate(story.published_at)} · ${story.category} · ${story.public_name || 'Anonymous'}`;
 
-    const pms =
-      document.createElement('div');
+      const text =
+        document.createElement(
+          'p'
+        );
 
-    pms.className = 'pms';
-    pms.textContent = 'PMS-ME.';
+      text.textContent =
+        story.story;
 
-    /*
-     * REACTION BUTTONS
-     */
+      const pms =
+        document.createElement(
+          'div'
+        );
 
-    const actions =
-      document.createElement('div');
+      pms.className =
+        'pms';
 
-    actions.className = 'actions';
+      pms.textContent =
+        'PMS-ME.';
 
-    const beenThere =
-      document.createElement('button');
+      /*
+       * REACTION BUTTONS
+       */
 
-    beenThere.textContent =
-      `👍 I've been there (${story.reaction_been_there || 0})`;
+      const actions =
+        document.createElement(
+          'div'
+        );
 
-    const funny =
-      document.createElement('button');
+      actions.className =
+        'actions';
 
-    funny.textContent =
-      `😂 That's a good one (${story.reaction_funny || 0})`;
+      const beenThere =
+        document.createElement(
+          'button'
+        );
 
-    actions.appendChild(beenThere);
-    actions.appendChild(funny);
+      beenThere.textContent =
+        `👍 I've been there (${story.reaction_been_there || 0})`;
 
-    /*
-     * SHARE BUTTONS
-     */
+      const funny =
+        document.createElement(
+          'button'
+        );
 
-    const shareActions =
-      document.createElement('div');
+      funny.textContent =
+        `😂 That's a good one (${story.reaction_funny || 0})`;
 
-    shareActions.className = 'share-actions';
+      actions.appendChild(
+        beenThere
+      );
 
-    /*
-     * X button
-     */
+      actions.appendChild(
+        funny
+      );
 
-    const xButton =
-      document.createElement('button');
+      /*
+       * SHARE BUTTONS
+       */
 
-    xButton.className =
-      'share-button share-x desktop-share';
+      const shareActions =
+        document.createElement(
+          'div'
+        );
 
-    xButton.textContent =
-      '𝕏';
+      shareActions.className =
+        'share-actions';
 
-    xButton.setAttribute(
-      'aria-label',
-      'Share on X'
-    );
+      /*
+       * X BUTTON
+       */
 
-    xButton.setAttribute(
-      'title',
-      'Share on X'
-    );
+      const xButton =
+        document.createElement(
+          'button'
+        );
 
-    xButton.addEventListener(
-      'click',
-      () => shareToX(story)
-    );
+      xButton.className =
+        'share-button share-x desktop-share';
 
-    /*
-     * Facebook button
-     */
+      xButton.textContent =
+        '𝕏';
 
-    const facebookButton =
-      document.createElement('button');
+      xButton.setAttribute(
+        'aria-label',
+        'Share on X'
+      );
 
-    facebookButton.className =
-      'share-button share-facebook desktop-share';
+      xButton.setAttribute(
+        'title',
+        'Share on X'
+      );
 
-    facebookButton.textContent =
-      'f';
+      xButton.addEventListener(
+        'click',
+        () => shareToX(story)
+      );
 
-    facebookButton.setAttribute(
-      'aria-label',
-      'Share on Facebook'
-    );
+      /*
+       * FACEBOOK BUTTON
+       */
 
-    facebookButton.setAttribute(
-      'title',
-      'Share on Facebook'
-    );
+      const facebookButton =
+        document.createElement(
+          'button'
+        );
 
-    facebookButton.addEventListener(
-      'click',
-      () => shareToFacebook(story)
-    );
+      facebookButton.className =
+        'share-button share-facebook desktop-share';
 
-    /*
-     * Mobile native Share button
-     */
+      facebookButton.textContent =
+        'f';
 
-    const mobileShareButton =
-      document.createElement('button');
+      facebookButton.setAttribute(
+        'aria-label',
+        'Share on Facebook'
+      );
 
-    mobileShareButton.className =
-      'share-button share-native mobile-share';
+      facebookButton.setAttribute(
+        'title',
+        'Share on Facebook'
+      );
 
-    mobileShareButton.textContent =
-      '↗';
+      facebookButton.addEventListener(
+        'click',
+        () =>
+          shareToFacebook(story)
+      );
 
-    mobileShareButton.setAttribute(
-      'aria-label',
-      'Share'
-    );
+      /*
+       * MOBILE NATIVE SHARE
+       */
 
-    mobileShareButton.setAttribute(
-      'title',
-      'Share'
-    );
+      const mobileShareButton =
+        document.createElement(
+          'button'
+        );
 
-    mobileShareButton.addEventListener(
-      'click',
-      () => shareNative(story)
-    );
+      mobileShareButton.className =
+        'share-button share-native mobile-share';
 
-    shareActions.appendChild(xButton);
-    shareActions.appendChild(facebookButton);
-    shareActions.appendChild(mobileShareButton);
+      mobileShareButton.textContent =
+        '↗';
 
-    /*
-     * Assemble story
-     */
+      mobileShareButton.setAttribute(
+        'aria-label',
+        'Share'
+      );
 
-    article.appendChild(meta);
-    article.appendChild(text);
-    article.appendChild(pms);
-    article.appendChild(actions);
-    article.appendChild(shareActions);
+      mobileShareButton.setAttribute(
+        'title',
+        'Share'
+      );
 
-    storiesContainer.appendChild(article);
-  });
+      mobileShareButton.addEventListener(
+        'click',
+        () =>
+          shareNative(story)
+      );
+
+      shareActions.appendChild(
+        xButton
+      );
+
+      shareActions.appendChild(
+        facebookButton
+      );
+
+      shareActions.appendChild(
+        mobileShareButton
+      );
+
+      /*
+       * ASSEMBLE STORY
+       */
+
+      article.appendChild(
+        meta
+      );
+
+      article.appendChild(
+        text
+      );
+
+      article.appendChild(
+        pms
+      );
+
+      article.appendChild(
+        actions
+      );
+
+      article.appendChild(
+        shareActions
+      );
+
+      storiesContainer.appendChild(
+        article
+      );
+    }
+  );
 
   /*
-   * If the URL contains ?story=123,
-   * automatically locate and highlight that story.
+   * If URL contains ?story=123,
+   * locate and highlight that story.
    */
 
   const requestedStoryId =
-    new URLSearchParams(window.location.search)
-      .get('story');
+    new URLSearchParams(
+      window.location.search
+    ).get('story');
 
-  if (requestedStoryId) {
+  if(requestedStoryId){
 
     const requestedStory =
       document.querySelector(
         `.story[data-story-id="${CSS.escape(requestedStoryId)}"]`
       );
 
-    if (requestedStory) {
+    if(requestedStory){
 
-      requestedStory.classList.add('highlighted');
+      requestedStory.classList.add(
+        'highlighted'
+      );
 
-      setTimeout(() => {
-        requestedStory.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-      }, 100);
+      setTimeout(
+        () => {
 
+          requestedStory.scrollIntoView({
+            behavior:'smooth',
+            block:'center'
+          });
+
+        },
+        100
+      );
     }
   }
 }
@@ -545,14 +811,17 @@ function renderStories(category = 'All') {
  * =========================================================
  */
 
-async function loadStories() {
+async function loadStories(){
 
-  try {
+  try{
 
     const response =
-      await fetch('/api/stories');
+      await fetch(
+        '/api/stories'
+      );
 
-    if (!response.ok) {
+    if(!response.ok){
+
       throw new Error(
         'Unable to load stories'
       );
@@ -566,14 +835,18 @@ async function loadStories() {
         ? data
         : data.results || [];
 
-    renderStories('All');
+    renderStories(
+      'All'
+    );
 
-  } catch (error) {
+  }catch(error){
 
     storiesContainer.innerHTML =
       '<div class="loading">Unable to load stories right now.</div>';
 
-    console.error(error);
+    console.error(
+      error
+    );
   }
 }
 
@@ -583,25 +856,31 @@ async function loadStories() {
  * =========================================================
  */
 
-buttons.forEach(button => {
+buttons.forEach(
+  button => {
 
-  button.addEventListener(
-    'click',
-    () => {
+    button.addEventListener(
+      'click',
+      () => {
 
-      buttons.forEach(
-        b => b.classList.remove('active')
-      );
+        buttons.forEach(
+          b =>
+            b.classList.remove(
+              'active'
+            )
+        );
 
-      button.classList.add('active');
+        button.classList.add(
+          'active'
+        );
 
-      renderStories(
-        button.dataset.category
-      );
-    }
-  );
-
-});
+        renderStories(
+          button.dataset.category
+        );
+      }
+    );
+  }
+);
 
 loadStories();
 
@@ -609,3 +888,4 @@ loadStories();
 
 </body>
 </html>
+```
