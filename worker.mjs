@@ -1,4 +1,4 @@
-// PMS-ME deployment trigger 4
+// PMS-ME deployment trigger 5
 
 function generateAnonymousName() {
   const words = [
@@ -609,6 +609,214 @@ async function sendDailyDigest(env) {
        WHERE id = 1`
     )
     .run();
+}
+
+/*
+ * =============================================================
+ * SHARE BUTTON VISUAL ENHANCEMENT
+ * =============================================================
+ *
+ * This is injected into the public frontend after ASSETS
+ * returns the existing HTML.
+ *
+ * It does NOT replace the existing share event handlers.
+ * It only changes the visible text of buttons/links whose
+ * existing text is exactly X, Facebook, or Share.
+ *
+ * Reaction buttons are deliberately untouched.
+ */
+function injectShareButtonEnhancement(html) {
+  const injection = `
+<style id="pms-me-share-icons">
+  .pms-me-share-icon-button {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 19px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    transition:
+      background-color .15s ease,
+      border-color .15s ease,
+      transform .15s ease,
+      box-shadow .15s ease !important;
+  }
+
+  .pms-me-share-icon-button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.12) !important;
+  }
+
+  .pms-me-share-icon-button:active {
+    transform: translateY(0) !important;
+  }
+
+  .pms-me-share-x {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+  }
+
+  .pms-me-share-facebook {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+  }
+
+  .pms-me-share-native {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+  }
+</style>
+
+<script id="pms-me-share-icons-script">
+(function () {
+  function normalizeText(element) {
+    return (element.textContent || "")
+      .replace(/\\\\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  function convertShareButtons() {
+    const elements = document.querySelectorAll(
+      "button, a, [role='button']"
+    );
+
+    elements.forEach(function (element) {
+      if (element.dataset.pmsMeShareConverted === "1") {
+        return;
+      }
+
+      const text = normalizeText(element);
+
+      if (
+        text === "x" ||
+        text === "twitter" ||
+        text === "share on x"
+      ) {
+        element.dataset.pmsMeShareConverted = "1";
+        element.dataset.pmsMeOriginalLabel =
+          element.textContent.trim();
+
+        element.textContent = "𝕏";
+        element.classList.add(
+          "pms-me-share-icon-button",
+          "pms-me-share-x"
+        );
+
+        element.setAttribute(
+          "aria-label",
+          "Share on X"
+        );
+
+        element.setAttribute(
+          "title",
+          "Share on X"
+        );
+
+        return;
+      }
+
+      if (
+        text === "facebook" ||
+        text === "share on facebook"
+      ) {
+        element.dataset.pmsMeShareConverted = "1";
+        element.dataset.pmsMeOriginalLabel =
+          element.textContent.trim();
+
+        element.textContent = "f";
+        element.classList.add(
+          "pms-me-share-icon-button",
+          "pms-me-share-facebook"
+        );
+
+        element.setAttribute(
+          "aria-label",
+          "Share on Facebook"
+        );
+
+        element.setAttribute(
+          "title",
+          "Share on Facebook"
+        );
+
+        return;
+      }
+
+      if (
+        text === "share" ||
+        text === "share story" ||
+        text === "share this story"
+      ) {
+        element.dataset.pmsMeShareConverted = "1";
+        element.dataset.pmsMeOriginalLabel =
+          element.textContent.trim();
+
+        element.textContent = "↗";
+        element.classList.add(
+          "pms-me-share-icon-button",
+          "pms-me-share-native"
+        );
+
+        element.setAttribute(
+          "aria-label",
+          "Share"
+        );
+
+        element.setAttribute(
+          "title",
+          "Share"
+        );
+      }
+    });
+  }
+
+  function start() {
+    convertShareButtons();
+
+    const observer = new MutationObserver(function () {
+      convertShareButtons();
+    });
+
+    if (document.body) {
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      start
+    );
+  } else {
+    start();
+  }
+})();
+</script>
+`;
+
+  if (html.includes("</head>")) {
+    return html.replace(
+      "</head>",
+      injection + "</head>"
+    );
+  }
+
+  return html + injection;
 }
 
 export default {
@@ -1255,7 +1463,45 @@ export default {
      * STATIC ASSETS
      * =========================================================
      */
-    return env.ASSETS.fetch(request);
+    const assetResponse =
+      await env.ASSETS.fetch(request);
+
+    /*
+     * Only modify HTML responses.
+     * API responses, CSS, JS, images, etc. are returned
+     * completely untouched.
+     */
+    const contentType =
+      assetResponse.headers.get("Content-Type") || "";
+
+    if (
+      contentType.toLowerCase().includes("text/html")
+    ) {
+      const html =
+        await assetResponse.text();
+
+      const enhancedHtml =
+        injectShareButtonEnhancement(html);
+
+      const headers =
+        new Headers(assetResponse.headers);
+
+      headers.set(
+        "Content-Type",
+        "text/html; charset=utf-8"
+      );
+
+      return new Response(
+        enhancedHtml,
+        {
+          status: assetResponse.status,
+          statusText: assetResponse.statusText,
+          headers
+        }
+      );
+    }
+
+    return assetResponse;
   },
 
   async scheduled(event, env) {
