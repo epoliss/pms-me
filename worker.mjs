@@ -1,1176 +1,1248 @@
-<!doctype html>
+// PMS-ME deployment trigger 2
+
+function generateAnonymousName() {
+  const words = [
+    "catliver",
+    "squirrel",
+    "toenail",
+    "pigeon",
+    "hamster",
+    "pickle",
+    "waffle",
+    "muffin",
+    "turnip",
+    "goose",
+    "banjo",
+    "potato",
+    "meatloaf",
+    "crouton",
+    "picklejuice",
+    "cheeseball",
+    "spatula",
+    "cabbage",
+    "tater",
+    "noodle"
+  ];
+
+  const word = words[Math.floor(Math.random() * words.length)];
+  const number = Math.floor(100 + Math.random() * 900);
+
+  return `${word}${number}`;
+}
+
+function jsonResponse(data, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      ...extraHeaders
+    }
+  });
+}
+
+function htmlResponse(html, status = 200, extraHeaders = {}) {
+  return new Response(html, {
+    status,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      ...extraHeaders
+    }
+  });
+}
+
+function base64UrlEncode(bytes) {
+  let binary = "";
+  const chunkSize = 0x8000;
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(
+      ...bytes.subarray(i, i + chunkSize)
+    );
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function base64UrlDecode(value) {
+  const padded =
+    value.replace(/-/g, "+").replace(/_/g, "/") +
+    "=".repeat((4 - (value.length % 4)) % 4);
+
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return bytes;
+}
+
+async function hmacSign(value, secret) {
+  const keyData = new TextEncoder().encode(secret);
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    {
+      name: "HMAC",
+      hash: "SHA-256"
+    },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(value)
+  );
+
+  return base64UrlEncode(new Uint8Array(signature));
+}
+
+async function createModeratorSession(env) {
+  const expiresAt = Date.now() + 8 * 60 * 60 * 1000;
+
+  const payload = base64UrlEncode(
+    new TextEncoder().encode(String(expiresAt))
+  );
+
+  const signature = await hmacSign(
+    payload,
+    env.MODERATOR_SESS_SEC
+  );
+
+  return `${payload}.${signature}`;
+}
+
+async function isModeratorAuthenticated(request, env) {
+  if (!env.MODERATOR_SESS_SEC) {
+    return false;
+  }
+
+  const cookieHeader = request.headers.get("Cookie") || "";
+
+  const match = cookieHeader.match(
+    /(?:^|;\s*)pms_me_moderator=([^;]+)/
+  );
+
+  if (!match) {
+    return false;
+  }
+
+  const token = match[1];
+  const parts = token.split(".");
+
+  if (parts.length !== 2) {
+    return false;
+  }
+
+  const [payload, suppliedSignature] = parts;
+
+  let expectedSignature;
+
+  try {
+    expectedSignature = await hmacSign(
+      payload,
+      env.MODERATOR_SESS_SEC
+    );
+  } catch {
+    return false;
+  }
+
+  if (expectedSignature !== suppliedSignature) {
+    return false;
+  }
+
+  let expiresAt;
+
+  try {
+    expiresAt = Number(
+      new TextDecoder().decode(
+        base64UrlDecode(payload)
+      )
+    );
+  } catch {
+    return false;
+  }
+
+  if (!Number.isFinite(expiresAt)) {
+    return false;
+  }
+
+  return Date.now() < expiresAt;
+}
+
+function unauthorizedResponse() {
+  return jsonResponse(
+    { error: "Unauthorized" },
+    401,
+    {
+      "Cache-Control": "no-store"
+    }
+  );
+}
+
+function moderatorLoginPage() {
+  return htmlResponse(
+    `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PMS-ME — Property Manager Stories</title>
+<title>PMS-ME — Moderator Login</title>
 
 <style>
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  background:#f3f3f3;
-  color:#222
-}
-
-header{
-  background:#202020;
-  color:#fff;
-  text-align:center;
-  padding:24px 20px 18px
-}
-
-.logo{
-  font-size:42px;
-  font-weight:800;
-  letter-spacing:2px
-}
-
-.subtitle{
-  margin-top:4px;
-  color:#d6d6d6
-}
-
-nav{
-  background:#fff;
-  border-bottom:1px solid #ddd;
-  padding:12px 10px;
-  text-align:center;
-  position:sticky;
-  top:0;
-  z-index:5;
-  overflow-x:auto;
-  white-space:nowrap
-}
-
-nav button{
-  border:0;
-  background:transparent;
-  padding:7px 10px;
-  margin:2px;
-  font-size:14px;
-  cursor:pointer;
-  color:#555;
-  border-radius:4px
-}
-
-nav button:hover,
-nav button.active{
-  background:#222;
-  color:#fff
-}
-
-.container{
-  max-width:850px;
-  margin:24px auto;
-  padding:0 15px
-}
-
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:18px
-}
-
-h1{
-  margin:0;
-  font-size:24px
-}
-
-.submit{
-  background:#222;
-  color:#fff;
-  text-decoration:none;
-  padding:11px 16px;
-  border-radius:5px;
-  font-weight:bold;
-  font-size:14px
-}
-
-.story{
-  background:#fff;
-  border:1px solid #ddd;
-  border-radius:6px;
-  padding:20px;
-  margin-bottom:14px;
-  box-shadow:0 1px 2px rgba(0,0,0,.04)
-}
-
-.story.highlighted{
-  box-shadow:0 0 0 3px #222
-}
-
-.meta{
-  color:#888;
-  font-size:12px;
-  margin-bottom:12px
-}
-
-.story p{
-  font-size:17px;
-  line-height:1.55;
-  margin:0 0 14px
-}
-
-.pms{
-  font-weight:800;
-  font-size:14px;
-  letter-spacing:.5px
-}
-
-/* =========================================================
-   REACTION BUTTONS
-   ========================================================= */
-
-.actions{
-  border-top:1px solid #eee;
-  padding-top:12px;
-  display:flex;
-  gap:14px;
-  flex-wrap:wrap
-}
-
-.reaction{
-  border:1px solid #d5d5d5;
-  background:#f7f7f7;
-  color:#555;
-  cursor:pointer;
-  font-size:13px;
-  font-weight:600;
-  padding:7px 10px;
-  border-radius:5px;
-  transition:
-    background .15s ease,
-    color .15s ease,
-    border-color .15s ease;
-  display:inline-flex;
-  align-items:center;
-  gap:7px
-}
-
-.reaction .count{
-  font-weight:800
-}
-
-/* Left reaction — pale blue */
-
-.reaction-left:hover{
-  background:#b9dcf5;
-  color:#fff;
-  border-color:#9bc9e8
-}
-
-.reaction-left.selected{
-  background:#8fc7ee;
-  color:#fff;
-  border-color:#78b8e2;
-  cursor:default
-}
-
-/* Right reaction — warning orange */
-
-.reaction-right:hover{
-  background:#e58b32;
-  color:#fff;
-  border-color:#d77a1e
-}
-
-.reaction-right.selected{
-  background:#d9781c;
-  color:#fff;
-  border-color:#c86a12;
-  cursor:default
-}
-
-.reaction:disabled{
-  opacity:1
-}
-
-/* =========================================================
-   SHARE BUTTONS
-   ========================================================= */
-
-.share-actions{
-  border-top:1px solid #eee;
-  margin-top:18px;
-  padding-top:12px;
-  display:flex;
-  align-items:center;
-  gap:22px;
-  flex-wrap:wrap
-}
-
-.share-button{
-  width:32px;
-  height:32px;
-  min-width:32px;
-  padding:0;
-  border:none;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  line-height:1;
-  transition:
-    transform .15s ease,
-    opacity .15s ease,
-    box-shadow .15s ease
-}
-
-.share-button:hover{
-  transform:translateY(-1px);
-  opacity:.88;
-  box-shadow:0 2px 5px rgba(0,0,0,.18)
-}
-
-.share-button:active{
-  transform:translateY(0);
-  box-shadow:none
-}
-
-.share-button:focus-visible{
-  outline:2px solid #222;
-  outline-offset:3px
-}
-
-.share-x{
-  background:#000;
-  color:#fff;
-  border-radius:5px;
-  font-size:23px;
-  font-weight:700
-}
-
-.share-facebook{
-  background:#1877f2;
-  color:#fff;
-  border-radius:50%;
-  font-family:Arial,Helvetica,sans-serif;
-  font-size:27px;
-  font-weight:700;
-  padding-top:3px
-}
-
-.share-native{
-  background:#555;
-  color:#fff;
-  border-radius:5px;
-  font-size:19px;
-  font-weight:700
-}
-
-.mobile-share{
-  display:inline-flex
-}
-
-.empty{
-  display:none;
-  background:#fff;
-  border:1px solid #ddd;
-  padding:35px;
-  text-align:center;
-  color:#777
-}
-
-.loading{
-  background:#fff;
-  border:1px solid #ddd;
-  padding:35px;
-  text-align:center;
-  color:#777
-}
-
-footer{
-  text-align:center;
-  color:#888;
-  font-size:12px;
-  padding:30px 15px 45px
-}
-
-@media(max-width:600px){
-
-  .logo{
-    font-size:34px
+  * {
+    box-sizing: border-box;
   }
 
-  .topbar{
-    align-items:flex-start;
-    flex-direction:column;
-    gap:12px
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f4f4f4;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #222;
   }
 
-  .submit{
-    align-self:stretch;
-    text-align:center
+  .login-box {
+    width: min(420px, calc(100% - 32px));
+    background: white;
+    padding: 32px;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.12);
   }
 
-  .desktop-share{
-    display:inline-flex
+  h1 {
+    margin: 0 0 10px;
+    font-size: 28px;
   }
 
-  .mobile-share{
-    display:inline-flex
+  p {
+    margin: 0 0 24px;
+    color: #666;
+    line-height: 1.5;
   }
 
-  .share-actions{
-    gap:22px;
-    margin-top:18px
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
   }
 
-  .share-button{
-    width:32px;
-    height:32px;
-    min-width:32px
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    font-size: 16px;
+    margin-bottom: 16px;
   }
 
-  .actions{
-    gap:10px
+  button {
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-radius: 6px;
+    background: #222;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
   }
 
-  .reaction{
-    font-size:12px;
-    padding:7px 8px
+  button:hover {
+    background: #444;
   }
-}
+
+  #error {
+    display: none;
+    margin-bottom: 16px;
+    padding: 10px;
+    border-radius: 6px;
+    background: #fbe9e7;
+    color: #b71c1c;
+  }
 </style>
 </head>
 
 <body>
 
-<header>
-  <div class="logo">PMS-ME</div>
-  <div class="subtitle">Property Manager Stories</div>
-</header>
+<div class="login-box">
+  <h1>Moderator Login</h1>
 
-<nav id="categories">
-  <button class="active" data-category="All">All</button>
-  <button data-category="Homeowner of the Year">
-    Homeowner of the Year
-  </button>
-  <button data-category="Vendor Woes">
-    Vendor Woes
-  </button>
-  <button data-category="Legally Blunt">
-    Legally Blunt
-  </button>
-  <button data-category="Board to Tears">
-    Board to Tears
-  </button>
-  <button data-category="Audit This">
-    Audit This
-  </button>
-</nav>
+  <p>
+    Enter the moderator password to access the PMS-ME moderation dashboard.
+  </p>
 
-<main class="container">
+  <div id="error"></div>
 
-  <div class="topbar">
-    <h1>The Tops</h1>
-    <a class="submit" href="/submit.html">
-      Submit a Story
-    </a>
-  </div>
+  <form id="loginForm">
+    <label for="password">Password</label>
 
-  <section id="stories">
-    <div class="loading" id="loading">
-      Loading stories...
-    </div>
-  </section>
+    <input
+      id="password"
+      name="password"
+      type="password"
+      autocomplete="current-password"
+      required
+      autofocus
+    >
 
-  <div class="empty" id="empty">
-    No stories in this category yet.
-  </div>
-
-</main>
-
-<footer>
-  Property Manager Stories · PMS-ME<br>
-  Because sometimes you just have to laugh.
-</footer>
+    <button type="submit">Log In</button>
+  </form>
+</div>
 
 <script>
+const form = document.getElementById("loginForm");
+const password = document.getElementById("password");
+const error = document.getElementById("error");
 
-const buttons =
-  document.querySelectorAll(
-    '#categories button'
-  );
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-const storiesContainer =
-  document.getElementById('stories');
+  error.style.display = "none";
 
-const empty =
-  document.getElementById('empty');
+  try {
+    const response = await fetch("/api/moderator-login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        password: password.value
+      })
+    });
 
-let stories = [];
+    const data = await response.json();
 
-/* =========================================================
-   DATE FORMATTING
-   ========================================================= */
+    if (!response.ok) {
+      error.textContent =
+        data.error || "Login failed.";
 
-function formatDate(dateString){
+      error.style.display = "block";
+      password.select();
+      return;
+    }
 
-  const date = new Date(dateString);
-  const now = new Date();
+    window.location.href = "/moderate.html";
 
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
-  );
+  } catch (err) {
+    error.textContent =
+      "Unable to contact the server.";
 
-  const storyDay = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
-  );
+    error.style.display = "block";
+  }
+});
+</script>
 
-  const difference =
-    Math.round(
-      (today - storyDay) / 86400000
-    );
-
-  if(difference === 0)
-    return 'Today';
-
-  if(difference === 1)
-    return 'Yesterday';
-
-  return date.toLocaleDateString(
-    undefined,
+</body>
+</html>`,
+    401,
     {
-      month:'short',
-      day:'numeric',
-      year:
-        date.getFullYear() !== now.getFullYear()
-          ? 'numeric'
-          : undefined
+      "Cache-Control": "no-store"
     }
   );
 }
 
-/* =========================================================
-   STORY SHARING
-   ========================================================= */
+async function sendEmail(env, to, subject, text) {
+  if (!env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is missing");
+  }
 
-function getStoryUrl(story){
+  const response = await fetch(
+    "https://api.resend.com/emails",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: "PMS-ME <onboarding@resend.dev>",
+        to: [to],
+        subject,
+        text
+      })
+    }
+  );
 
-  const url =
-    new URL(
-      window.location.origin + '/'
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Email sending failed: ${body}`
     );
+  }
 
-  url.searchParams.set(
-    'story',
-    story.id
-  );
-
-  return url.toString();
+  return response.json();
 }
 
-function getShareText(story){
+async function sendNewStoryNotification(env, story) {
+  const settings = await env.pms_me_db
+    .prepare(
+      `SELECT email, frequency
+       FROM notification_settings
+       WHERE id = 1`
+    )
+    .first();
 
-  return `PMS-ME — ${story.story}`;
-}
-
-function shareToX(story){
-
-  const shareUrl =
-    'https://twitter.com/intent/tweet?' +
-    new URLSearchParams({
-      text:getShareText(story),
-      url:getStoryUrl(story)
-    }).toString();
-
-  window.open(
-    shareUrl,
-    '_blank',
-    'width=600,height=500,noopener,noreferrer'
-  );
-}
-
-function shareToFacebook(story){
-
-  const shareUrl =
-    'https://www.facebook.com/sharer/sharer.php?' +
-    new URLSearchParams({
-      u:getStoryUrl(story)
-    }).toString();
-
-  window.open(
-    shareUrl,
-    '_blank',
-    'width=600,height=500,noopener,noreferrer'
-  );
-}
-
-async function shareNative(story){
-
-  const storyUrl =
-    getStoryUrl(story);
-
-  const shareData = {
-    title:
-      'PMS-ME — Property Manager Stories',
-    text:
-      getShareText(story),
-    url:
-      storyUrl
-  };
-
-  if(!navigator.share){
-
-    alert(
-      'Your browser does not support the Share feature. You can copy the story URL from your browser and share it manually.'
-    );
-
+  if (!settings || !settings.email) {
     return;
   }
 
-  try{
+  if (settings.frequency !== "immediately") {
+    return;
+  }
 
-    if(
-      navigator.canShare &&
-      !navigator.canShare(shareData)
-    ){
+  const subject =
+    "PMS-ME — New Story Submitted";
 
-      await navigator.share({
-        title:shareData.title,
-        text:shareData.text
-      });
+  const text =
+`A new story has been submitted to PMS-ME.
 
-    }else{
+Category: ${story.category}
 
-      await navigator.share(
-        shareData
+Display Name: ${story.display_name || "(not provided)"}
+
+Anonymous Requested: ${
+  story.anonymous_requested ? "Yes" : "No"
+}
+
+Story:
+
+${story.story}
+
+Review it in the moderator dashboard:
+https://pms-me-site.epoliss.workers.dev/moderate.html`;
+
+  await sendEmail(
+    env,
+    settings.email,
+    subject,
+    text
+  );
+}
+
+async function sendRejectionEmail(env, story, reason) {
+  if (!story.email) {
+    return;
+  }
+
+  const subject =
+    "PMS-ME — Story Submission Update";
+
+  const text =
+`Your PMS-ME story submission was not approved for publication.
+
+Category: ${story.category}
+
+Reason from the moderator:
+
+${reason || "The submission did not meet the site's submission guidelines."}
+
+You are welcome to submit another story that complies with the site's guidelines.`;
+
+  await sendEmail(
+    env,
+    story.email,
+    subject,
+    text
+  );
+}
+
+async function sendDailyDigest(env) {
+  const settings = await env.pms_me_db
+    .prepare(
+      `SELECT email, frequency, last_digest_at
+       FROM notification_settings
+       WHERE id = 1`
+    )
+    .first();
+
+  if (
+    !settings ||
+    !settings.email ||
+    settings.frequency !== "daily"
+  ) {
+    return;
+  }
+
+  const stories = await env.pms_me_db
+    .prepare(
+      `SELECT id, story, category, display_name,
+              anonymous_requested, created_at
+       FROM stories
+       WHERE status = 'pending'
+       ORDER BY created_at ASC`
+    )
+    .all();
+
+  if (!stories.results || stories.results.length === 0) {
+    return;
+  }
+
+  const lines = [];
+
+  lines.push(
+    "The following PMS-ME stories are awaiting moderation."
+  );
+  lines.push("");
+
+  for (const story of stories.results) {
+    lines.push(`ID: ${story.id}`);
+    lines.push(`Category: ${story.category}`);
+    lines.push(
+      `Display Name: ${story.display_name || "(not provided)"}`
+    );
+    lines.push(
+      `Anonymous Requested: ${
+        story.anonymous_requested ? "Yes" : "No"
+      }`
+    );
+    lines.push("");
+    lines.push(story.story);
+    lines.push("");
+    lines.push("------------------------------");
+    lines.push("");
+  }
+
+  lines.push(
+    "Moderator dashboard:"
+  );
+  lines.push(
+    "https://pms-me-site.epoliss.workers.dev/moderate.html"
+  );
+
+  await sendEmail(
+    env,
+    settings.email,
+    "PMS-ME — Daily Story Digest",
+    lines.join("\n")
+  );
+
+  await env.pms_me_db
+    .prepare(
+      `UPDATE notification_settings
+       SET last_digest_at = CURRENT_TIMESTAMP
+       WHERE id = 1`
+    )
+    .run();
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    /*
+     * =========================================================
+     * MODERATOR PAGE
+     * =========================================================
+     */
+    if (url.pathname === "/moderate.html") {
+      if (!(await isModeratorAuthenticated(request, env))) {
+        return moderatorLoginPage();
+      }
+    }
+
+    /*
+     * =========================================================
+     * MODERATOR LOGIN
+     * =========================================================
+     */
+    if (
+      url.pathname === "/api/moderator-login" &&
+      request.method === "POST"
+    ) {
+      if (!env.MODERATOR_PASSWORD) {
+        return jsonResponse(
+          {
+            error: "MODERATOR_PASSWORD is missing"
+          },
+          500
+        );
+      }
+
+      if (!env.MODERATOR_SESS_SEC) {
+        return jsonResponse(
+          {
+            error: "MODERATOR_SESS_SEC is missing"
+          },
+          500
+        );
+      }
+
+      let body;
+
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse(
+          { error: "Invalid request body" },
+          400
+        );
+      }
+
+      if (
+        !body ||
+        typeof body.password !== "string"
+      ) {
+        return jsonResponse(
+          { error: "Password is required" },
+          400
+        );
+      }
+
+      if (body.password !== env.MODERATOR_PASSWORD) {
+        return jsonResponse(
+          { error: "Invalid password" },
+          401
+        );
+      }
+
+      const session =
+        await createModeratorSession(env);
+
+      return jsonResponse(
+        { ok: true },
+        200,
+        {
+          "Set-Cookie":
+            `pms_me_moderator=${session}; ` +
+            "Path=/; " +
+            "HttpOnly; " +
+            "Secure; " +
+            "SameSite=Strict; " +
+            "Max-Age=28800",
+          "Cache-Control": "no-store"
+        }
       );
     }
 
-  }catch(error){
+    /*
+     * =========================================================
+     * MODERATOR LOGOUT
+     * =========================================================
+     */
+    if (
+      url.pathname === "/api/moderator-logout" &&
+      request.method === "POST"
+    ) {
+      return jsonResponse(
+        { ok: true },
+        200,
+        {
+          "Set-Cookie":
+            "pms_me_moderator=; " +
+            "Path=/; " +
+            "HttpOnly; " +
+            "Secure; " +
+            "SameSite=Strict; " +
+            "Max-Age=0",
+          "Cache-Control": "no-store"
+        }
+      );
+    }
 
-    if(
-      error.name !== 'AbortError'
-    ){
+    /*
+     * =========================================================
+     * MODERATOR API AUTHENTICATION
+     * =========================================================
+     */
+    const isModeratorApi =
+      url.pathname === "/api/notification-settings" ||
+      (
+        url.pathname.startsWith("/api/stories") &&
+        (
+          url.searchParams.has("status") ||
+          request.method === "PATCH" ||
+          request.method === "DELETE"
+        )
+      );
 
+    if (isModeratorApi) {
+      if (
+        !(await isModeratorAuthenticated(request, env))
+      ) {
+        return unauthorizedResponse();
+      }
+    }
+
+    /*
+     * =========================================================
+     * NOTIFICATION SETTINGS
+     * =========================================================
+     */
+    if (
+      url.pathname === "/api/notification-settings"
+    ) {
+      if (request.method === "GET") {
+        const settings =
+          await env.pms_me_db
+            .prepare(
+              `SELECT email, frequency, last_digest_at
+               FROM notification_settings
+               WHERE id = 1`
+            )
+            .first();
+
+        return jsonResponse(
+          settings || {
+            email: "",
+            frequency: "off",
+            last_digest_at: null
+          }
+        );
+      }
+
+      if (request.method === "PUT") {
+        let body;
+
+        try {
+          body = await request.json();
+        } catch {
+          return jsonResponse(
+            { error: "Invalid request body" },
+            400
+          );
+        }
+
+        const email =
+          typeof body.email === "string"
+            ? body.email.trim()
+            : "";
+
+        const frequency =
+          ["off", "immediately", "daily"].includes(
+            body.frequency
+          )
+            ? body.frequency
+            : "off";
+
+        await env.pms_me_db
+          .prepare(
+            `UPDATE notification_settings
+             SET email = ?, frequency = ?
+             WHERE id = 1`
+          )
+          .bind(email || null, frequency)
+          .run();
+
+        return jsonResponse({
+          ok: true,
+          email,
+          frequency
+        });
+      }
+
+      return jsonResponse(
+        { error: "Method not allowed" },
+        405
+      );
+    }
+
+    /*
+     * =========================================================
+     * STORIES — GET
+     * =========================================================
+     */
+    if (
+      url.pathname === "/api/stories" &&
+      request.method === "GET"
+    ) {
+      const status =
+        url.searchParams.get("status");
+
+      if (status) {
+        const result =
+          await env.pms_me_db
+            .prepare(
+              `SELECT
+                 id,
+                 story,
+                 category,
+                 display_name,
+                 email,
+                 anonymous_requested,
+                 force_anonymous,
+                 public_name,
+                 status,
+                 moderator_notes,
+                 created_at,
+                 published_at,
+                 reaction_been_there,
+                 reaction_funny
+               FROM stories
+               WHERE status = ?
+               ORDER BY created_at DESC`
+            )
+            .bind(status)
+            .all();
+
+        return jsonResponse(
+          result.results || []
+        );
+      }
+
+      const result =
+        await env.pms_me_db
+          .prepare(
+            `SELECT
+               id,
+               story,
+               category,
+               public_name,
+               published_at,
+               reaction_been_there,
+               reaction_funny
+             FROM stories
+             WHERE status = 'published'
+             ORDER BY published_at DESC`
+          )
+          .all();
+
+      return jsonResponse(
+        result.results || []
+      );
+    }
+
+    /*
+     * =========================================================
+     * STORIES — POST
+     * =========================================================
+     */
+    if (
+      url.pathname === "/api/stories" &&
+      request.method === "POST"
+    ) {
+      let body;
+
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse(
+          { error: "Invalid request body" },
+          400
+        );
+      }
+
+      const story =
+        typeof body.story === "string"
+          ? body.story.trim()
+          : "";
+
+      const category =
+        typeof body.category === "string"
+          ? body.category.trim()
+          : "";
+
+      const displayName =
+        typeof body.display_name === "string"
+          ? body.display_name.trim()
+          : "";
+
+      const email =
+        typeof body.email === "string"
+          ? body.email.trim()
+          : "";
+
+      const anonymousRequested =
+        body.anonymous_requested ? 1 : 0;
+
+      if (!story) {
+        return jsonResponse(
+          { error: "Story is required" },
+          400
+        );
+      }
+
+      if (!category) {
+        return jsonResponse(
+          { error: "Category is required" },
+          400
+        );
+      }
+
+      if (story.length > 2000) {
+        return jsonResponse(
+          {
+            error:
+              "Story must be 2000 characters or fewer."
+          },
+          400
+        );
+      }
+
+      const allowedCategories = [
+        "Homeowner of the Year",
+        "Vendor Woes",
+        "Legally Blunt",
+        "Board to Tears",
+        "Audit This"
+      ];
+
+      if (!allowedCategories.includes(category)) {
+        return jsonResponse(
+          { error: "Invalid category" },
+          400
+        );
+      }
+
+      const result =
+        await env.pms_me_db
+          .prepare(
+            `INSERT INTO stories (
+               story,
+               category,
+               display_name,
+               email,
+               anonymous_requested,
+               status
+             )
+             VALUES (?, ?, ?, ?, ?, 'pending')`
+          )
+          .bind(
+            story,
+            category,
+            displayName || null,
+            email || null,
+            anonymousRequested
+          )
+          .run();
+
+      const insertedId =
+        result.meta.last_row_id;
+
+      const insertedStory =
+        await env.pms_me_db
+          .prepare(
+            `SELECT *
+             FROM stories
+             WHERE id = ?`
+          )
+          .bind(insertedId)
+          .first();
+
+      try {
+        await sendNewStoryNotification(
+          env,
+          insertedStory
+        );
+      } catch (error) {
+        console.error(
+          "Immediate notification failed:",
+          error
+        );
+      }
+
+      return jsonResponse(
+        {
+          ok: true,
+          id: insertedId
+        },
+        201
+      );
+    }
+
+    /*
+     * =========================================================
+     * STORIES — REACTIONS
+     * =========================================================
+     */
+    if (
+      url.pathname.startsWith("/api/stories/") &&
+      url.pathname.endsWith("/reaction") &&
+      request.method === "POST"
+    ) {
+      const parts = url.pathname.split("/");
+      const id = parts[3];
+
+      if (!/^\d+$/.test(id)) {
+        return jsonResponse(
+          { error: "Invalid story ID" },
+          400
+        );
+      }
+
+      let body;
+
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse(
+          { error: "Invalid request body" },
+          400
+        );
+      }
+
+      const reaction =
+        typeof body.reaction === "string"
+          ? body.reaction
+          : "";
+
+      let column;
+
+      if (reaction === "trainwreck") {
+        column = "reaction_been_there";
+      } else if (reaction === "right") {
+        column = "reaction_funny";
+      } else {
+        return jsonResponse(
+          { error: "Invalid reaction" },
+          400
+        );
+      }
+
+      const existing =
+        await env.pms_me_db
+          .prepare(
+            `SELECT id, reaction_been_there, reaction_funny
+             FROM stories
+             WHERE id = ? AND status = 'published'`
+          )
+          .bind(id)
+          .first();
+
+      if (!existing) {
+        return jsonResponse(
+          { error: "Story not found" },
+          404
+        );
+      }
+
+      await env.pms_me_db
+        .prepare(
+          `UPDATE stories
+           SET ${column} = COALESCE(${column}, 0) + 1
+           WHERE id = ? AND status = 'published'`
+        )
+        .bind(id)
+        .run();
+
+      const updated =
+        await env.pms_me_db
+          .prepare(
+            `SELECT reaction_been_there, reaction_funny
+             FROM stories
+             WHERE id = ?`
+          )
+          .bind(id)
+          .first();
+
+      return jsonResponse({
+        ok: true,
+        reaction_been_there:
+          updated.reaction_been_there || 0,
+        reaction_funny:
+          updated.reaction_funny || 0
+      });
+    }
+
+    /*
+     * =========================================================
+     * STORIES — PATCH
+     * =========================================================
+     */
+    if (
+      url.pathname.startsWith("/api/stories/") &&
+      request.method === "PATCH"
+    ) {
+      const id =
+        url.pathname.split("/").pop();
+
+      if (!/^\d+$/.test(id)) {
+        return jsonResponse(
+          { error: "Invalid story ID" },
+          400
+        );
+      }
+
+      let body;
+
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse(
+          { error: "Invalid request body" },
+          400
+        );
+      }
+
+      const existing =
+        await env.pms_me_db
+          .prepare(
+            `SELECT *
+             FROM stories
+             WHERE id = ?`
+          )
+          .bind(id)
+          .first();
+
+      if (!existing) {
+        return jsonResponse(
+          { error: "Story not found" },
+          404
+        );
+      }
+
+      const action =
+        typeof body.action === "string"
+          ? body.action
+          : "";
+
+      const moderatorNotes =
+        typeof body.moderator_notes === "string"
+          ? body.moderator_notes.trim()
+          : "";
+
+      if (
+        !["approve", "approve_anonymously", "reject"]
+          .includes(action)
+      ) {
+        return jsonResponse(
+          { error: "Invalid moderation action" },
+          400
+        );
+      }
+
+      if (action === "reject") {
+        await env.pms_me_db
+          .prepare(
+            `UPDATE stories
+             SET status = 'rejected',
+                 moderator_notes = ?
+             WHERE id = ?`
+          )
+          .bind(
+            moderatorNotes || null,
+            id
+          )
+          .run();
+
+        try {
+          await sendRejectionEmail(
+            env,
+            existing,
+            moderatorNotes
+          );
+        } catch (error) {
+          console.error(
+            "Rejection email failed:",
+            error
+          );
+        }
+
+        return jsonResponse({
+          ok: true
+        });
+      }
+
+      const anonymize =
+        action === "approve_anonymously";
+
+      let publicName;
+
+      if (anonymize) {
+        publicName =
+          generateAnonymousName();
+      } else if (existing.anonymous_requested) {
+        publicName =
+          generateAnonymousName();
+      } else {
+        publicName =
+          existing.display_name ||
+          generateAnonymousName();
+      }
+
+      await env.pms_me_db
+        .prepare(
+          `UPDATE stories
+           SET status = 'published',
+               public_name = ?,
+               moderator_notes = ?,
+               published_at = CURRENT_TIMESTAMP,
+               force_anonymous = ?
+           WHERE id = ?`
+        )
+        .bind(
+          publicName,
+          moderatorNotes || null,
+          anonymize ? 1 : 0,
+          id
+        )
+        .run();
+
+      return jsonResponse({
+        ok: true,
+        public_name: publicName
+      });
+    }
+
+    /*
+     * =========================================================
+     * STORIES — DELETE
+     * =========================================================
+     */
+    if (
+      url.pathname.startsWith("/api/stories/") &&
+      request.method === "DELETE"
+    ) {
+      const id =
+        url.pathname.split("/").pop();
+
+      if (!/^\d+$/.test(id)) {
+        return jsonResponse(
+          { error: "Invalid story ID" },
+          400
+        );
+      }
+
+      const result =
+        await env.pms_me_db
+          .prepare(
+            `DELETE FROM stories
+             WHERE id = ?`
+          )
+          .bind(id)
+          .run();
+
+      if (
+        !result.meta ||
+        result.meta.changes === 0
+      ) {
+        return jsonResponse(
+          { error: "Story not found" },
+          404
+        );
+      }
+
+      return jsonResponse({
+        ok: true
+      });
+    }
+
+    /*
+     * =========================================================
+     * STATIC ASSETS
+     * =========================================================
+     */
+    return env.ASSETS.fetch(request);
+  },
+
+  async scheduled(event, env) {
+    try {
+      await sendDailyDigest(env);
+    } catch (error) {
       console.error(
-        'Share failed:',
+        "Daily digest failed:",
         error
       );
     }
   }
-}
-
-/* =========================================================
-   REACTION LABELS
-   ========================================================= */
-
-const reactionLabels = {
-
-  'Homeowner of the Year': [
-    'YEP, IT’S A TRAINWRECK',
-    'ASSHOLE MANAGER'
-  ],
-
-  'Vendor Woes': [
-    'YEP, IT’S A TRAINWRECK',
-    'GLAD I DON’T WORK FOR YOU'
-  ],
-
-  'Legally Blunt': [
-    'YEP, IT’S A TRAINWRECK',
-    'DID YOU GET YOUR LAW DEGREE IN A BAR?'
-  ],
-
-  'Board to Tears': [
-    'YEP, IT’S A TRAINWRECK',
-    'SIT THIS ONE OUT'
-  ],
-
-  'Audit This': [
-    'YEP, IT’S A TRAINWRECK',
-    'LEAVE IT TO ACCOUNTANTS'
-  ]
 };
-
-/* =========================================================
-   REACTION STORAGE
-   ========================================================= */
-
-function reactionStorageKey(
-  storyId,
-  reaction
-){
-
-  return `pmsme_reaction_${storyId}_${reaction}`;
-}
-
-function hasReacted(
-  storyId,
-  reaction
-){
-
-  try{
-
-    return (
-      localStorage.getItem(
-        reactionStorageKey(
-          storyId,
-          reaction
-        )
-      ) === '1'
-    );
-
-  }catch{
-
-    return false;
-  }
-}
-
-function rememberReaction(
-  storyId,
-  reaction
-){
-
-  try{
-
-    localStorage.setItem(
-      reactionStorageKey(
-        storyId,
-        reaction
-      ),
-      '1'
-    );
-
-  }catch{}
-}
-
-/* =========================================================
-   SUBMIT REACTION
-   ========================================================= */
-
-async function submitReaction(
-  story,
-  button,
-  reaction
-){
-
-  if(
-    hasReacted(
-      story.id,
-      reaction
-    )
-  ){
-
-    return;
-  }
-
-  button.disabled = true;
-
-  try{
-
-    const response =
-      await fetch(
-        `/api/stories/${encodeURIComponent(
-          story.id
-        )}/reaction`,
-        {
-          method:'POST',
-          headers:{
-            'Content-Type':
-              'application/json'
-          },
-          body:JSON.stringify({
-            reaction
-          })
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if(!response.ok){
-
-      throw new Error(
-        data.error ||
-        'Unable to record reaction.'
-      );
-    }
-
-    rememberReaction(
-      story.id,
-      reaction
-    );
-
-    button.classList.add(
-      'selected'
-    );
-
-    button
-      .querySelector('.count')
-      .textContent =
-        reaction === 'trainwreck'
-          ? data.reaction_been_there
-          : data.reaction_funny;
-
-    story.reaction_been_there =
-      data.reaction_been_there;
-
-    story.reaction_funny =
-      data.reaction_funny;
-
-  }catch(error){
-
-    button.disabled = false;
-
-    console.error(
-      'Reaction failed:',
-      error
-    );
-
-    alert(
-      'Your reaction could not be recorded. Please try again.'
-    );
-  }
-}
-
-/* =========================================================
-   CREATE REACTION BUTTON
-   ========================================================= */
-
-function makeReactionButton(
-  story,
-  reaction,
-  label,
-  side
-){
-
-  const button =
-    document.createElement(
-      'button'
-    );
-
-  button.type = 'button';
-
-  button.className =
-    `reaction reaction-${side}`;
-
-  if(
-    hasReacted(
-      story.id,
-      reaction
-    )
-  ){
-
-    button.classList.add(
-      'selected'
-    );
-  }
-
-  const labelSpan =
-    document.createElement(
-      'span'
-    );
-
-  labelSpan.textContent =
-    label;
-
-  const countSpan =
-    document.createElement(
-      'span'
-    );
-
-  countSpan.className =
-    'count';
-
-  countSpan.textContent =
-    reaction === 'trainwreck'
-      ? (story.reaction_been_there || 0)
-      : (story.reaction_funny || 0);
-
-  button.appendChild(
-    labelSpan
-  );
-
-  button.appendChild(
-    document.createTextNode(' (')
-  );
-
-  button.appendChild(
-    countSpan
-  );
-
-  button.appendChild(
-    document.createTextNode(')')
-  );
-
-  button.addEventListener(
-    'click',
-    () =>
-      submitReaction(
-        story,
-        button,
-        reaction
-      )
-  );
-
-  return button;
-}
-
-/* =========================================================
-   RENDER STORIES
-   ========================================================= */
-
-function renderStories(
-  category = 'All'
-){
-
-  storiesContainer.innerHTML =
-    '';
-
-  const filtered =
-    category === 'All'
-      ? stories
-      : stories.filter(
-          story =>
-            story.category === category
-        );
-
-  if(!filtered.length){
-
-    empty.style.display =
-      'block';
-
-    return;
-  }
-
-  empty.style.display =
-    'none';
-
-  filtered.forEach(
-    story => {
-
-      const article =
-        document.createElement(
-          'article'
-        );
-
-      article.className =
-        'story';
-
-      article.dataset.category =
-        story.category;
-
-      article.dataset.storyId =
-        story.id;
-
-      const meta =
-        document.createElement(
-          'div'
-        );
-
-      meta.className =
-        'meta';
-
-      meta.textContent =
-        `${formatDate(
-          story.published_at
-        )} · ${
-          story.category
-        } · ${
-          story.public_name ||
-          'Anonymous'
-        }`;
-
-      const text =
-        document.createElement(
-          'p'
-        );
-
-      text.textContent =
-        story.story;
-
-      const pms =
-        document.createElement(
-          'div'
-        );
-
-      pms.className =
-        'pms';
-
-      pms.textContent =
-        'PMS-ME.';
-
-      /* =====================================================
-         REACTION BUTTONS
-         ===================================================== */
-
-      const actions =
-        document.createElement(
-          'div'
-        );
-
-      actions.className =
-        'actions';
-
-      const labels =
-        reactionLabels[
-          story.category
-        ] || [
-          'YEP, IT’S A TRAINWRECK',
-          'THAT’S A GOOD ONE'
-        ];
-
-      actions.appendChild(
-        makeReactionButton(
-          story,
-          'trainwreck',
-          labels[0],
-          'left'
-        )
-      );
-
-      actions.appendChild(
-        makeReactionButton(
-          story,
-          'right',
-          labels[1],
-          'right'
-        )
-      );
-
-      /* =====================================================
-         SHARE BUTTONS
-         ===================================================== */
-
-      const shareActions =
-        document.createElement(
-          'div'
-        );
-
-      shareActions.className =
-        'share-actions';
-
-      const xButton =
-        document.createElement(
-          'button'
-        );
-
-      xButton.className =
-        'share-button share-x desktop-share';
-
-      xButton.textContent =
-        '𝕏';
-
-      xButton.setAttribute(
-        'aria-label',
-        'Share on X'
-      );
-
-      xButton.setAttribute(
-        'title',
-        'Share on X'
-      );
-
-      xButton.addEventListener(
-        'click',
-        () =>
-          shareToX(story)
-      );
-
-      const facebookButton =
-        document.createElement(
-          'button'
-        );
-
-      facebookButton.className =
-        'share-button share-facebook desktop-share';
-
-      facebookButton.textContent =
-        'f';
-
-      facebookButton.setAttribute(
-        'aria-label',
-        'Share on Facebook'
-      );
-
-      facebookButton.setAttribute(
-        'title',
-        'Share on Facebook'
-      );
-
-      facebookButton.addEventListener(
-        'click',
-        () =>
-          shareToFacebook(story)
-      );
-
-      const mobileShareButton =
-        document.createElement(
-          'button'
-        );
-
-      mobileShareButton.className =
-        'share-button share-native mobile-share';
-
-      mobileShareButton.textContent =
-        '↗';
-
-      mobileShareButton.setAttribute(
-        'aria-label',
-        'Share'
-      );
-
-      mobileShareButton.setAttribute(
-        'title',
-        'Share'
-      );
-
-      mobileShareButton.addEventListener(
-        'click',
-        () =>
-          shareNative(story)
-      );
-
-      shareActions.append(
-        xButton,
-        facebookButton,
-        mobileShareButton
-      );
-
-      /* =====================================================
-         ASSEMBLE STORY
-         ===================================================== */
-
-      article.append(
-        meta,
-        text,
-        pms,
-        actions,
-        shareActions
-      );
-
-      storiesContainer.appendChild(
-        article
-      );
-    }
-  );
-
-  /* =========================================================
-     HIGHLIGHT REQUESTED STORY
-     ========================================================= */
-
-  const requestedStoryId =
-    new URLSearchParams(
-      window.location.search
-    ).get('story');
-
-  if(requestedStoryId){
-
-    const requestedStory =
-      document.querySelector(
-        `.story[data-story-id="${CSS.escape(
-          requestedStoryId
-        )}"]`
-      );
-
-    if(requestedStory){
-
-      requestedStory.classList.add(
-        'highlighted'
-      );
-
-      setTimeout(
-        () => {
-
-          requestedStory.scrollIntoView({
-            behavior:'smooth',
-            block:'center'
-          });
-
-        },
-        100
-      );
-    }
-  }
-}
-
-/* =========================================================
-   LOAD PUBLISHED STORIES
-   ========================================================= */
-
-async function loadStories(){
-
-  try{
-
-    const response =
-      await fetch(
-        '/api/stories'
-      );
-
-    if(!response.ok){
-
-      throw new Error(
-        'Unable to load stories'
-      );
-    }
-
-    const data =
-      await response.json();
-
-    stories =
-      Array.isArray(data)
-        ? data
-        : data.results || [];
-
-    renderStories(
-      'All'
-    );
-
-  }catch(error){
-
-    storiesContainer.innerHTML =
-      '<div class="loading">Unable to load stories right now.</div>';
-
-    console.error(
-      error
-    );
-  }
-}
-
-/* =========================================================
-   CATEGORY FILTERING
-   ========================================================= */
-
-buttons.forEach(
-  button => {
-
-    button.addEventListener(
-      'click',
-      () => {
-
-        buttons.forEach(
-          b =>
-            b.classList.remove(
-              'active'
-            )
-        );
-
-        button.classList.add(
-          'active'
-        );
-
-        renderStories(
-          button.dataset.category
-        );
-      }
-    );
-  }
-);
-
-loadStories();
-
-</script>
-
-</body>
-</html>
