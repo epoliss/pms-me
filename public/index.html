@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -24,50 +25,100 @@ h1{margin:0;font-size:24px}
 .pms{font-weight:800;font-size:14px;letter-spacing:.5px}
 
 .actions{
-  border-top:1px solid #eee;
-  padding-top:12px;
-  display:flex;
-  gap:18px;
-  flex-wrap:wrap;
+border-top:1px solid #eee;
+padding-top:12px;
+display:flex;
+gap:18px;
+flex-wrap:wrap;
 }
 
 .actions button{
-  border:0;
-  background:none;
-  color:#666;
-  cursor:pointer;
-  font-size:13px;
-  padding:0;
+border:0;
+background:none;
+color:#666;
+cursor:pointer;
+font-size:13px;
+padding:0;
 }
 
-.actions button:hover{color:#111}
+.actions button:hover
 
 .share-actions{
-  border-top:1px solid #eee;
-  margin-top:12px;
-  padding-top:12px;
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
+border-top:1px solid #eee;
+margin-top:12px;
+padding-top:12px;
+display:flex;
+gap:10px;
+flex-wrap:wrap;
 }
 
+/* =========================================================
+ICON-ONLY SHARE BUTTONS
+========================================================= */
+
 .share-button{
-  border:1px solid #ccc;
-  background:#fff;
-  color:#444;
-  cursor:pointer;
-  font-size:12px;
-  padding:6px 10px;
-  border-radius:4px;
+width:40px;
+height:40px;
+min-width:40px;
+padding:0;
+border:1px solid #ccc;
+border-radius:50%;
+background:#fff;
+color:#444;
+cursor:pointer;
+display:inline-flex;
+align-items:center;
+justify-content:center;
+font-family:Arial,Helvetica,sans-serif;
+font-size:20px;
+font-weight:600;
+line-height:1;
+transition:
+background-color .15s ease,
+border-color .15s ease,
+color .15s ease,
+transform .15s ease,
+box-shadow .15s ease;
 }
 
 .share-button:hover{
-  background:#f3f3f3;
-  color:#111;
+background:#f3f3f3;
+border-color:#999;
+color:#111;
+transform:translateY(-1px);
+box-shadow:0 2px 5px rgba(0,0,0,.12);
+}
+
+.share-button:active{
+transform:translateY(0);
+box-shadow:none;
+}
+
+.share-button:focus-visible{
+outline:2px solid #222;
+outline-offset:2px;
+}
+
+/* X icon */
+.share-x{
+font-size:19px;
+font-weight:700;
+}
+
+/* Facebook icon */
+.share-facebook{
+font-size:23px;
+font-weight:700;
+}
+
+/* Native share icon */
+.share-native{
+font-size:22px;
+font-weight:700;
 }
 
 .mobile-share{
-  display:none;
+display:none;
 }
 
 .empty{display:none;background:#fff;border:1px solid #ddd;padding:35px;text-align:center;color:#777}
@@ -75,37 +126,39 @@ h1{margin:0;font-size:24px}
 footer{text-align:center;color:#888;font-size:12px;padding:30px 15px 45px}
 
 @media(max-width:600px){
-  .logo{font-size:34px}
+.logo{font-size:34px}
 
-  .topbar{
-    align-items:flex-start;
-    flex-direction:column;
-    gap:12px
-  }
-
-  .submit{
-    align-self:stretch;
-    text-align:center
-  }
-
-  .desktop-share{
-    display:none;
-  }
-
-  .mobile-share{
-    display:inline-block;
-  }
-
-  .share-actions{
-    gap:8px;
-  }
-
-  .share-button{
-    flex:1;
-    min-width:100px;
-  }
+.topbar{
+align-items:flex-start;
+flex-direction:column;
+gap:12px
 }
-</style>
+
+.submit{
+align-self:stretch;
+text-align:center
+}
+
+.desktop-share{
+display:none;
+}
+
+.mobile-share{
+display:inline-flex;
+}
+
+.share-actions{
+gap:10px;
+}
+
+.share-button{
+width:40px;
+height:40px;
+min-width:40px;
+flex:none;
+}
+} </style>
+
 </head>
 
 <body>
@@ -371,17 +424,27 @@ function renderStories(category = 'All') {
 
 
     /*
-     * Desktop X button
+     * Desktop X icon button
      */
 
     const xButton =
       document.createElement('button');
 
     xButton.className =
-      'share-button desktop-share';
+      'share-button share-x desktop-share';
 
     xButton.textContent =
-      '𝕏 Share on X';
+      '𝕏';
+
+    xButton.setAttribute(
+      'aria-label',
+      'Share on X'
+    );
+
+    xButton.setAttribute(
+      'title',
+      'Share on X'
+    );
 
     xButton.addEventListener(
       'click',
@@ -390,17 +453,27 @@ function renderStories(category = 'All') {
 
 
     /*
-     * Desktop Facebook button
+     * Desktop Facebook icon button
      */
 
     const facebookButton =
       document.createElement('button');
 
     facebookButton.className =
-      'share-button desktop-share';
+      'share-button share-facebook desktop-share';
 
     facebookButton.textContent =
-      'f Share on Facebook';
+      'f';
+
+    facebookButton.setAttribute(
+      'aria-label',
+      'Share on Facebook'
+    );
+
+    facebookButton.setAttribute(
+      'title',
+      'Share on Facebook'
+    );
 
     facebookButton.addEventListener(
       'click',
@@ -409,17 +482,27 @@ function renderStories(category = 'All') {
 
 
     /*
-     * Mobile native Share button
+     * Mobile native Share icon button
      */
 
     const mobileShareButton =
       document.createElement('button');
 
     mobileShareButton.className =
-      'share-button mobile-share';
+      'share-button share-native mobile-share';
 
     mobileShareButton.textContent =
-      '↗ Share';
+      '↗';
+
+    mobileShareButton.setAttribute(
+      'aria-label',
+      'Share'
+    );
+
+    mobileShareButton.setAttribute(
+      'title',
+      'Share'
+    );
 
     mobileShareButton.addEventListener(
       'click',
