@@ -352,9 +352,29 @@ form.addEventListener("submit", async (event) => {
   );
 }
 
-async function sendEmail(env, to, subject, text) {
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+async function sendEmail(env, to, subject, text, html = null) {
   if (!env.RESEND_API_KEY) {
     throw new Error("RESEND_API_KEY is missing");
+  }
+
+  const emailBody = {
+    from: "PMS-ME <onboarding@resend.dev>",
+    to: [to],
+    subject,
+    text
+  };
+
+  if (html) {
+    emailBody.html = html;
   }
 
   const response = await fetch(
@@ -365,12 +385,7 @@ async function sendEmail(env, to, subject, text) {
         "Authorization": `Bearer ${env.RESEND_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        from: "PMS-ME <onboarding@resend.dev>",
-        to: [to],
-        subject,
-        text
-      })
+      body: JSON.stringify(emailBody)
     }
   );
 
@@ -442,8 +457,39 @@ async function sendRejectionEmail(env, story, reason) {
   const subject =
     "PMS-ME — Story Submission Update";
 
+  const greetingName =
+    story.display_name || "there";
+
+  const safeGreetingName =
+    escapeHtml(greetingName);
+
+  const safeModeratorNotes =
+    escapeHtml(
+      reason ||
+      "The submission did not meet the site's submission guidelines."
+    );
+
+  const safeStory =
+    escapeHtml(story.story);
+
+  const safeTitle =
+    escapeHtml(
+      story.title || "(not provided)"
+    );
+
+  const safeCity =
+    escapeHtml(
+      story.city || "(not provided)"
+    );
+
+  const safeCategory =
+    escapeHtml(story.category);
+
   const text =
-`Your PMS-ME story submission was not approved for publication.
+`Hello ${greetingName},
+
+Thank you for submitting your story to PMS-ME.
+After review, your submission was not approved for publication.
 
 Title: ${story.title || "(not provided)"}
 
@@ -451,17 +497,104 @@ City: ${story.city || "(not provided)"}
 
 Category: ${story.category}
 
-Reason from the moderator:
+MODERATOR'S COMMENT:
 
 ${reason || "The submission did not meet the site's submission guidelines."}
 
-You are welcome to submit another story that complies with the site's guidelines.`;
+YOUR SUBMITTED STORY:
+
+${story.story}
+
+Thank you,
+
+PMS-ME`;
+
+  const html =
+`<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#222;">
+
+  <div style="margin:0;padding:30px 15px;background:#f4f4f4;">
+
+    <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #ddd;padding:32px 36px;">
+
+      <p style="font-size:16px;margin:0 0 22px 0;">
+        Hello ${safeGreetingName},
+      </p>
+
+      <p style="font-size:16px;line-height:1.6;margin:0 0 22px 0;">
+        Thank you for submitting your story to PMS-ME.
+        After review, your submission was not approved for publication.
+      </p>
+
+      <table style="width:100%;border-collapse:collapse;margin:0 0 25px 0;font-size:15px;">
+        <tr>
+          <td style="padding:7px 10px 7px 0;font-weight:bold;width:90px;vertical-align:top;">
+            Title:
+          </td>
+          <td style="padding:7px 0;">
+            ${safeTitle}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:7px 10px 7px 0;font-weight:bold;vertical-align:top;">
+            City:
+          </td>
+          <td style="padding:7px 0;">
+            ${safeCity}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:7px 10px 7px 0;font-weight:bold;vertical-align:top;">
+            Category:
+          </td>
+          <td style="padding:7px 0;">
+            ${safeCategory}
+          </td>
+        </tr>
+      </table>
+
+      <p style="font-size:15px;font-weight:bold;margin:0 0 8px 0;">
+        MODERATOR'S COMMENT:
+      </p>
+
+      <div style="margin:0 0 25px 0;padding:15px 18px;background:#f3f3f3;border-left:4px solid #999;font-family:Georgia,serif;font-size:15px;line-height:1.6;white-space:pre-wrap;">
+        ${safeModeratorNotes}
+      </div>
+
+      <p style="font-size:15px;font-weight:bold;margin:0 0 8px 0;">
+        YOUR SUBMITTED STORY:
+      </p>
+
+      <div style="margin:0 0 25px 0;padding:15px 18px;background:#f3f3f3;border-left:4px solid #999;font-family:Georgia,serif;font-size:15px;line-height:1.6;white-space:pre-wrap;">
+        ${safeStory}
+      </div>
+
+      <p style="font-size:16px;line-height:1.6;margin:0 0 22px 0;">
+        Thank you,<br>
+        <strong>PMS-ME</strong>
+      </p>
+
+    </div>
+
+  </div>
+
+</body>
+</html>`;
 
   await sendEmail(
     env,
     story.email,
     subject,
-    text
+    text,
+    html
   );
 }
 
