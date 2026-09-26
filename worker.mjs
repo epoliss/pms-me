@@ -1,4 +1,4 @@
-// PMS-ME deployment trigger 2
+// PMS-ME deployment trigger 3
 
 function generateAnonymousName() {
   const words = [
@@ -407,6 +407,10 @@ async function sendNewStoryNotification(env, story) {
   const text =
 `A new story has been submitted to PMS-ME.
 
+Title: ${story.title || "(not provided)"}
+
+City: ${story.city || "(not provided)"}
+
 Category: ${story.category}
 
 Display Name: ${story.display_name || "(not provided)"}
@@ -440,6 +444,10 @@ async function sendRejectionEmail(env, story, reason) {
 
   const text =
 `Your PMS-ME story submission was not approved for publication.
+
+Title: ${story.title || "(not provided)"}
+
+City: ${story.city || "(not provided)"}
 
 Category: ${story.category}
 
@@ -476,7 +484,7 @@ async function sendDailyDigest(env) {
 
   const stories = await env.pms_me_db
     .prepare(
-      `SELECT id, story, category, display_name,
+      `SELECT id, title, city, story, category, display_name,
               anonymous_requested, created_at
        FROM stories
        WHERE status = 'pending'
@@ -497,6 +505,8 @@ async function sendDailyDigest(env) {
 
   for (const story of stories.results) {
     lines.push(`ID: ${story.id}`);
+    lines.push(`Title: ${story.title || "(not provided)"}`);
+    lines.push(`City: ${story.city || "(not provided)"}`);
     lines.push(`Category: ${story.category}`);
     lines.push(
       `Display Name: ${story.display_name || "(not provided)"}`
@@ -765,6 +775,8 @@ export default {
             .prepare(
               `SELECT
                  id,
+                 title,
+                 city,
                  story,
                  category,
                  display_name,
@@ -795,6 +807,8 @@ export default {
           .prepare(
             `SELECT
                id,
+               title,
+               city,
                story,
                category,
                public_name,
@@ -832,6 +846,16 @@ export default {
         );
       }
 
+      const title =
+        typeof body.title === "string"
+          ? body.title.trim()
+          : "";
+
+      const city =
+        typeof body.city === "string"
+          ? body.city.trim()
+          : "";
+
       const story =
         typeof body.story === "string"
           ? body.story.trim()
@@ -855,6 +879,13 @@ export default {
       const anonymousRequested =
         body.anonymous_requested ? 1 : 0;
 
+      if (!city) {
+        return jsonResponse(
+          { error: "City is required" },
+          400
+        );
+      }
+
       if (!story) {
         return jsonResponse(
           { error: "Story is required" },
@@ -865,6 +896,26 @@ export default {
       if (!category) {
         return jsonResponse(
           { error: "Category is required" },
+          400
+        );
+      }
+
+      if (title.length > 150) {
+        return jsonResponse(
+          {
+            error:
+              "Title must be 150 characters or fewer."
+          },
+          400
+        );
+      }
+
+      if (city.length > 100) {
+        return jsonResponse(
+          {
+            error:
+              "City must be 100 characters or fewer."
+          },
           400
         );
       }
@@ -898,6 +949,8 @@ export default {
         await env.pms_me_db
           .prepare(
             `INSERT INTO stories (
+               title,
+               city,
                story,
                category,
                display_name,
@@ -905,9 +958,11 @@ export default {
                anonymous_requested,
                status
              )
-             VALUES (?, ?, ?, ?, ?, 'pending')`
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`
           )
           .bind(
+            title || null,
+            city,
             story,
             category,
             displayName || null,
@@ -1101,6 +1156,16 @@ export default {
           ? body.moderator_notes.trim()
           : "";
 
+      const title =
+        typeof body.title === "string"
+          ? body.title.trim()
+          : "";
+
+      const category =
+        typeof body.category === "string"
+          ? body.category.trim()
+          : "";
+
       if (
         !["approve", "approve_anonymously", "reject"]
           .includes(action)
@@ -1143,6 +1208,39 @@ export default {
         });
       }
 
+      if (!title) {
+        return jsonResponse(
+          {
+            error:
+              "A title is required before the story can be approved. Enter a title in the Title field."
+          },
+          400
+        );
+      }
+
+      if (title.length > 150) {
+        return jsonResponse(
+          {
+            error:
+              "Title must be 150 characters or fewer."
+          },
+          400
+        );
+      }
+
+      const allowedCategories = [
+        "Homeowner of the Year",
+        "Vendor Woes",
+        "Legally Blunt",
+        "Board to Tears",
+        "Audit This"
+      ];
+
+      const finalCategory =
+        allowedCategories.includes(category)
+          ? category
+          : existing.category;
+
       const anonymize =
         action === "approve_anonymously";
 
@@ -1163,7 +1261,9 @@ export default {
       await env.pms_me_db
         .prepare(
           `UPDATE stories
-           SET status = 'published',
+           SET title = ?,
+               category = ?,
+               status = 'published',
                public_name = ?,
                moderator_notes = ?,
                published_at = CURRENT_TIMESTAMP,
@@ -1171,6 +1271,8 @@ export default {
            WHERE id = ?`
         )
         .bind(
+          title,
+          finalCategory,
           publicName,
           moderatorNotes || null,
           anonymize ? 1 : 0,
@@ -1180,7 +1282,9 @@ export default {
 
       return jsonResponse({
         ok: true,
-        public_name: publicName
+        public_name: publicName,
+        title,
+        category: finalCategory
       });
     }
 
