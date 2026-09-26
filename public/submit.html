@@ -261,6 +261,31 @@ button:hover{
 
     <form id="storyForm">
 
+      <label for="title">Story Title</label>
+
+      <input
+        id="title"
+        maxlength="150"
+        placeholder="Give your story a title"
+      >
+
+      <div class="help">
+        A title is requested, but if you leave it blank, a moderator may create one before publication.
+      </div>
+
+      <label for="city">City</label>
+
+      <input
+        id="city"
+        maxlength="100"
+        required
+        placeholder="City where this happened"
+      >
+
+      <div class="help">
+        Please provide the city where the property or incident is located.
+      </div>
+
       <label for="story">Your Story</label>
 
       <textarea
@@ -279,7 +304,7 @@ button:hover{
       <select id="category" required>
         <option value="">Select a category</option>
         <option>Homeowner of the Year</option>
-        <option>Vendor Blues</option>
+        <option>Vendor Woes</option>
         <option>Legally Blunt</option>
         <option>Board to Tears</option>
         <option>Audit This</option>
@@ -319,8 +344,6 @@ button:hover{
         Your email will not be displayed publicly.
       </div>
 
-      <!-- GUIDELINES -->
-
       <button
         type="button"
         class="guidelines-button"
@@ -328,8 +351,6 @@ button:hover{
       >
         Guidelines for Submitting Content
       </button>
-
-      <!-- TERMS -->
 
       <div class="terms-box">
 
@@ -391,9 +412,6 @@ button:hover{
   Because sometimes you just have to laugh.
 </footer>
 
-
-<!-- GUIDELINES MODAL -->
-
 <div
   class="modal"
   id="guidelinesModal"
@@ -426,7 +444,6 @@ button:hover{
 
 </div>
 
-
 <script>
 
 const form =
@@ -444,9 +461,6 @@ const guidelinesModal =
 const closeGuidelines =
   document.getElementById('closeGuidelines');
 
-
-// Open guidelines
-
 guidelinesButton.addEventListener(
   'click',
   () => {
@@ -454,18 +468,12 @@ guidelinesButton.addEventListener(
   }
 );
 
-
-// Close guidelines
-
 closeGuidelines.addEventListener(
   'click',
   () => {
     guidelinesModal.style.display = 'none';
   }
 );
-
-
-// Close by clicking outside the modal
 
 guidelinesModal.addEventListener(
   'click',
@@ -481,14 +489,23 @@ guidelinesModal.addEventListener(
   }
 );
 
-
-// Submit story
-
 form.addEventListener(
   'submit',
   async event => {
 
     event.preventDefault();
+
+    const title =
+      document
+        .getElementById('title')
+        .value
+        .trim();
+
+    const city =
+      document
+        .getElementById('city')
+        .value
+        .trim();
 
     const story =
       document
@@ -523,19 +540,16 @@ form.addEventListener(
         .getElementById('termsAgreement')
         .checked;
 
-
-    if (!story || !category) {
+    if (!city || !story || !category) {
 
       message.style.display =
         'block';
 
       message.textContent =
-        'Please enter your story and select a category.';
+        'Please enter the city, your story, and select a category.';
 
       return;
-
     }
-
 
     if (!termsAgreement) {
 
@@ -546,16 +560,13 @@ form.addEventListener(
         'Please read and agree to the Terms of Service before submitting.';
 
       return;
-
     }
-
 
     message.style.display =
       'block';
 
     message.textContent =
       'Submitting...';
-
 
     try {
 
@@ -572,6 +583,10 @@ form.addEventListener(
 
             body:
               JSON.stringify({
+
+                title,
+
+                city,
 
                 story,
 
@@ -593,10 +608,8 @@ form.addEventListener(
           }
         );
 
-
       const result =
         await response.json();
-
 
       if (!response.ok) {
 
@@ -607,13 +620,10 @@ form.addEventListener(
 
       }
 
-
       message.textContent =
         'Thank you! Your story has been submitted for review.';
 
-
       form.reset();
-
 
     } catch(error) {
 
