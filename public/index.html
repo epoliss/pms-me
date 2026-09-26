@@ -109,6 +109,13 @@ h1{
   margin-bottom:12px
 }
 
+.story-title{
+  font-size:19px;
+  font-weight:800;
+  line-height:1.35;
+  margin:0 0 10px
+}
+
 .story p{
   font-size:17px;
   line-height:1.55;
@@ -331,11 +338,11 @@ footer{
     padding:7px 8px
   }
 }
-  </style>
+</style>
 
-  <!-- Cloudflare Web Analytics -->
-  <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "295908aca52842f8b3cf49bc507c63b6"}'></script>
-  <!-- End Cloudflare Web Analytics -->
+<!-- Cloudflare Web Analytics -->
+<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "295908aca52842f8b3cf49bc507c63b6"}'></script>
+<!-- End Cloudflare Web Analytics -->
 
 </head>
 
@@ -478,7 +485,7 @@ function getStoryUrl(story){
 
 function getShareText(story){
 
-  return `PMS-ME — ${story.story}`;
+  return `PMS-ME — ${story.title ? story.title + ' — ' : ''}${story.story}`;
 }
 
 function shareToX(story){
@@ -883,15 +890,32 @@ function renderStories(
       meta.className =
         'meta';
 
+      const metaParts = [
+        formatDate(story.published_at),
+        story.category
+      ];
+
+      if(story.city){
+        metaParts.push(story.city);
+      }
+
+      metaParts.push(
+        story.public_name || 'Anonymous'
+      );
+
       meta.textContent =
-        `${formatDate(
-          story.published_at
-        )} · ${
-          story.category
-        } · ${
-          story.public_name ||
-          'Anonymous'
-        }`;
+        metaParts.join(' · ');
+
+      const title =
+        document.createElement(
+          'div'
+        );
+
+      title.className =
+        'story-title';
+
+      title.textContent =
+        story.title || '';
 
       const text =
         document.createElement(
@@ -911,10 +935,6 @@ function renderStories(
 
       pms.textContent =
         'PMS-ME.';
-
-      /* =====================================================
-         REACTION BUTTONS
-         ===================================================== */
 
       const actions =
         document.createElement(
@@ -949,10 +969,6 @@ function renderStories(
           'right'
         )
       );
-
-      /* =====================================================
-         SHARE BUTTONS
-         ===================================================== */
 
       const shareActions =
         document.createElement(
@@ -1049,12 +1065,9 @@ function renderStories(
         mobileShareButton
       );
 
-      /* =====================================================
-         ASSEMBLE STORY
-         ===================================================== */
-
       article.append(
         meta,
+        title,
         text,
         pms,
         actions,
@@ -1066,10 +1079,6 @@ function renderStories(
       );
     }
   );
-
-  /* =========================================================
-     HIGHLIGHT REQUESTED STORY
-     ========================================================= */
 
   const requestedStoryId =
     new URLSearchParams(
