@@ -103,7 +103,8 @@ h2{
 }
 
 select,
-input[type="email"]{
+input[type="email"],
+input[type="text"]{
   width:100%;
   border:1px solid #ccc;
   border-radius:4px;
@@ -141,6 +142,13 @@ input[type="email"]{
   margin-bottom:12px
 }
 
+.story-title{
+  font-size:19px;
+  font-weight:800;
+  line-height:1.35;
+  margin:0 0 10px
+}
+
 .story p{
   font-size:17px;
   line-height:1.55;
@@ -161,15 +169,24 @@ input[type="email"]{
   padding-top:16px
 }
 
+.title-row,
 .category-row{
   margin-bottom:14px
 }
 
+.title-row label,
 .category-row label{
   display:block;
   font-weight:bold;
   font-size:13px;
   margin-bottom:6px
+}
+
+.title-help{
+  color:#777;
+  font-size:12px;
+  margin-top:5px;
+  line-height:1.4
 }
 
 .category-select{
@@ -384,7 +401,6 @@ const saveSettingsButton =
 const settingsStatus =
   document.getElementById('settingsStatus');
 
-
 /*
  * =========================================================
  * AVAILABLE CATEGORIES
@@ -393,12 +409,11 @@ const settingsStatus =
 
 const categories = [
   "Homeowner of the Year",
-  "Vendor Blues",
+  "Vendor Woes",
   "Legally Blunt",
   "Board to Tears",
   "Audit This"
 ];
-
 
 /*
  * =========================================================
@@ -437,10 +452,6 @@ async function loadPendingStories() {
     const data =
       await response.json();
 
-    /*
-     * The Worker returns the stories as a direct array.
-     * This also safely accepts { results: [...] }.
-     */
     const stories =
       Array.isArray(data)
         ? data
@@ -464,7 +475,6 @@ async function loadPendingStories() {
       article.className =
         'story';
 
-
       const meta =
         document.createElement('div');
 
@@ -472,15 +482,63 @@ async function loadPendingStories() {
         'meta';
 
       meta.textContent =
-        `#${story.id} · ${story.category} · ${story.created_at}`;
+        `#${story.id} · ${story.category} · ${story.city || 'City not provided'} · ${story.created_at}`;
 
+      const titleRow =
+        document.createElement('div');
+
+      titleRow.className =
+        'title-row';
+
+      const titleLabel =
+        document.createElement('label');
+
+      titleLabel.textContent =
+        'Title';
+
+      const titleInput =
+        document.createElement('input');
+
+      titleInput.type =
+        'text';
+
+      titleInput.maxLength =
+        150;
+
+      titleInput.value =
+        story.title || '';
+
+      titleInput.placeholder =
+        'Enter a title if the submitter did not provide one';
+
+      const titleHelp =
+        document.createElement('div');
+
+      titleHelp.className =
+        'title-help';
+
+      titleHelp.textContent =
+        story.title
+          ? 'Edit the title here if needed before publication.'
+          : 'A title is required for publication. Enter one here to create/force a title.';
+
+      titleRow.appendChild(
+        titleLabel
+      );
+
+      titleRow.appendChild(
+        titleInput
+      );
+
+      titleRow.appendChild(
+        titleHelp
+      );
 
       const text =
         document.createElement('p');
 
       text.textContent =
         story.story;
-
 
       const details =
         document.createElement('div');
@@ -489,11 +547,11 @@ async function loadPendingStories() {
         'details';
 
       details.innerHTML =
+        `<strong>City:</strong> ${story.city || '(not provided)'}<br>` +
         `<strong>Display name:</strong> ${story.display_name || '(none)'}<br>` +
         `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
         `<strong>Anonymous requested:</strong> ${story.anonymous_requested ? 'Yes' : 'No'}<br>` +
         `<strong>Email:</strong> ${story.email || '(none)'}`;
-
 
       const moderation =
         document.createElement('div');
@@ -501,26 +559,17 @@ async function loadPendingStories() {
       moderation.className =
         'moderation';
 
-
-      /*
-       * =======================================================
-       * CATEGORY SELECTOR
-       * =======================================================
-       */
-
       const categoryRow =
         document.createElement('div');
 
       categoryRow.className =
         'category-row';
 
-
       const categoryLabel =
         document.createElement('label');
 
       categoryLabel.textContent =
         'Category';
-
 
       const categorySelect =
         document.createElement('select');
@@ -554,32 +603,17 @@ async function loadPendingStories() {
         categorySelect
       );
 
-
-      /*
-       * =======================================================
-       * MODERATOR COMMENT
-       * =======================================================
-       */
-
       const notes =
         document.createElement('textarea');
 
       notes.placeholder =
         'Optional moderator comment / reason for rejection';
 
-
-      /*
-       * =======================================================
-       * ACTION BUTTONS
-       * =======================================================
-       */
-
       const actions =
         document.createElement('div');
 
       actions.className =
         'actions';
-
 
       const approve =
         document.createElement('button');
@@ -590,7 +624,6 @@ async function loadPendingStories() {
       approve.textContent =
         'Approve';
 
-
       const approveAnonymous =
         document.createElement('button');
 
@@ -599,7 +632,6 @@ async function loadPendingStories() {
 
       approveAnonymous.textContent =
         'Approve Anonymously';
-
 
       const reject =
         document.createElement('button');
@@ -610,31 +642,17 @@ async function loadPendingStories() {
       reject.textContent =
         'Reject';
 
-
-      /*
-       * =======================================================
-       * APPROVE
-       * =======================================================
-       */
-
       approve.addEventListener(
         'click',
         () =>
           updateStory(
             story.id,
             'approve',
-            false,
             notes.value,
-            categorySelect.value
+            categorySelect.value,
+            titleInput.value
           )
       );
-
-
-      /*
-       * =======================================================
-       * APPROVE ANONYMOUSLY
-       * =======================================================
-       */
 
       approveAnonymous.addEventListener(
         'click',
@@ -642,21 +660,11 @@ async function loadPendingStories() {
           updateStory(
             story.id,
             'approve_anonymously',
-            true,
             notes.value,
-            categorySelect.value
+            categorySelect.value,
+            titleInput.value
           )
       );
-
-
-      /*
-       * =======================================================
-       * REJECT
-       * =======================================================
-       *
-       * The selected category is deliberately NOT sent for
-       * rejection. Rejection does not change the category.
-       */
 
       reject.addEventListener(
         'click',
@@ -664,12 +672,11 @@ async function loadPendingStories() {
           updateStory(
             story.id,
             'reject',
-            false,
             notes.value,
-            story.category
+            story.category,
+            titleInput.value
           )
       );
-
 
       actions.appendChild(
         approve
@@ -683,7 +690,6 @@ async function loadPendingStories() {
         reject
       );
 
-
       moderation.appendChild(
         categoryRow
       );
@@ -696,9 +702,12 @@ async function loadPendingStories() {
         actions
       );
 
-
       article.appendChild(
         meta
+      );
+
+      article.appendChild(
+        titleRow
       );
 
       article.appendChild(
@@ -712,7 +721,6 @@ async function loadPendingStories() {
       article.appendChild(
         moderation
       );
-
 
       storiesContainer.appendChild(
         article
@@ -731,7 +739,6 @@ async function loadPendingStories() {
       '<div class="empty">Unable to load pending stories.</div>';
   }
 }
-
 
 /*
  * =========================================================
@@ -770,10 +777,6 @@ async function loadPublishedStories() {
     const data =
       await response.json();
 
-    /*
-     * The Worker returns the stories as a direct array.
-     * This also safely accepts { results: [...] }.
-     */
     const stories =
       Array.isArray(data)
         ? data
@@ -798,7 +801,6 @@ async function loadPublishedStories() {
       article.className =
         'story';
 
-
       const meta =
         document.createElement('div');
 
@@ -806,15 +808,22 @@ async function loadPublishedStories() {
         'meta';
 
       meta.textContent =
-        `#${story.id} · ${story.category} · Published ${story.published_at || story.created_at}`;
+        `#${story.id} · ${story.category} · ${story.city || 'City not provided'} · Published ${story.published_at || story.created_at}`;
 
+      const title =
+        document.createElement('div');
+
+      title.className =
+        'story-title';
+
+      title.textContent =
+        story.title || '(No title)';
 
       const text =
         document.createElement('p');
 
       text.textContent =
         story.story;
-
 
       const details =
         document.createElement('div');
@@ -823,6 +832,7 @@ async function loadPublishedStories() {
         'details';
 
       details.innerHTML =
+        `<strong>City:</strong> ${story.city || '(none)'}<br>` +
         `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
         `<strong>Anonymous:</strong> ${
           story.force_anonymous || story.anonymous_requested
@@ -830,20 +840,17 @@ async function loadPublishedStories() {
             : 'No'
         }`;
 
-
       const moderation =
         document.createElement('div');
 
       moderation.className =
         'moderation';
 
-
       const actions =
         document.createElement('div');
 
       actions.className =
         'actions';
-
 
       const deleteButton =
         document.createElement('button');
@@ -854,7 +861,6 @@ async function loadPublishedStories() {
       deleteButton.textContent =
         'Delete Story';
 
-
       deleteButton.addEventListener(
         'click',
         () =>
@@ -862,7 +868,6 @@ async function loadPublishedStories() {
             story.id
           )
       );
-
 
       actions.appendChild(
         deleteButton
@@ -872,9 +877,12 @@ async function loadPublishedStories() {
         actions
       );
 
-
       article.appendChild(
         meta
+      );
+
+      article.appendChild(
+        title
       );
 
       article.appendChild(
@@ -888,7 +896,6 @@ async function loadPublishedStories() {
       article.appendChild(
         moderation
       );
-
 
       publishedStoriesContainer.appendChild(
         article
@@ -907,7 +914,6 @@ async function loadPublishedStories() {
       '<div class="empty">Unable to load published stories.</div>';
   }
 }
-
 
 /*
  * =========================================================
@@ -967,7 +973,6 @@ async function deletePublishedStory(id) {
   }
 }
 
-
 /*
  * =========================================================
  * UPDATE STORY
@@ -977,9 +982,9 @@ async function deletePublishedStory(id) {
 async function updateStory(
   id,
   action,
-  forceAnonymous,
   moderatorNotes,
-  category
+  category,
+  title
 ) {
 
   message.style.display =
@@ -1006,11 +1011,10 @@ async function updateStory(
           body:
             JSON.stringify({
               action,
-              force_anonymous:
-                forceAnonymous,
               moderator_notes:
                 moderatorNotes,
-              category
+              category,
+              title
             })
         }
       );
@@ -1026,7 +1030,6 @@ async function updateStory(
       );
     }
 
-
     if (
       action === 'approve' ||
       action === 'approve_anonymously'
@@ -1041,9 +1044,7 @@ async function updateStory(
         'Story rejected.';
     }
 
-
     await loadPendingStories();
-
 
     if (
       action === 'approve' ||
@@ -1065,7 +1066,6 @@ async function updateStory(
       'Something went wrong.';
   }
 }
-
 
 /*
  * =========================================================
@@ -1111,7 +1111,6 @@ async function loadNotificationSettings() {
     );
   }
 }
-
 
 async function saveNotificationSettings() {
 
@@ -1174,34 +1173,16 @@ async function saveNotificationSettings() {
   }
 }
 
-
 saveSettingsButton.addEventListener(
   'click',
   saveNotificationSettings
 );
-
-
-/*
- * =========================================================
- * INITIAL LOAD
- * =========================================================
- */
 
 loadNotificationSettings();
 
 loadPendingStories();
 
 loadPublishedStories();
-
-
-/*
- * =========================================================
- * AUTOMATIC REFRESH
- * =========================================================
- *
- * Do not refresh while the moderator is typing a comment
- * or selecting a category.
- */
 
 setInterval(() => {
 
@@ -1212,7 +1193,8 @@ setInterval(() => {
     activeElement &&
     (
       activeElement.tagName === 'TEXTAREA' ||
-      activeElement.tagName === 'SELECT'
+      activeElement.tagName === 'SELECT' ||
+      activeElement.tagName === 'INPUT'
     )
   ) {
     return;
