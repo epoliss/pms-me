@@ -328,7 +328,7 @@ footer{
 @media(max-width:600px){
 
   .logo{
-    font-size:31px
+    font-size:27px
   }
 
   .brand-management{
@@ -340,9 +340,9 @@ footer{
   }
 
   .brand-tagline{
-    font-size:17px;
-    letter-spacing:.4px;
-    margin-left:4px
+    font-size:15px;
+    letter-spacing:.2px;
+    margin-left:3px
   }
 
   .topbar{
@@ -524,12 +524,6 @@ const saveSettingsButton =
 const settingsStatus =
   document.getElementById('settingsStatus');
 
-/*
- * =========================================================
- * AVAILABLE CATEGORIES
- * =========================================================
- */
-
 const categories = [
   "Homeowner of the Year",
   "Vendor Woes",
@@ -537,12 +531,6 @@ const categories = [
   "Board to Tears",
   "Audit This"
 ];
-
-/*
- * =========================================================
- * PENDING STORIES
- * =========================================================
- */
 
 async function loadPendingStories() {
 
@@ -595,17 +583,13 @@ async function loadPendingStories() {
       story => {
 
         const article =
-          document.createElement(
-            'article'
-          );
+          document.createElement('article');
 
         article.className =
           'story';
 
         const meta =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         meta.className =
           'meta';
@@ -614,25 +598,19 @@ async function loadPendingStories() {
           `#${story.id} · ${story.category} · ${story.city || 'City not provided'} · ${story.created_at}`;
 
         const titleRow =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         titleRow.className =
           'title-row';
 
         const titleLabel =
-          document.createElement(
-            'label'
-          );
+          document.createElement('label');
 
         titleLabel.textContent =
           'Title';
 
         const titleInput =
-          document.createElement(
-            'input'
-          );
+          document.createElement('input');
 
         titleInput.type =
           'text';
@@ -647,9 +625,7 @@ async function loadPendingStories() {
           'Enter a title if the submitter did not provide one';
 
         const titleHelp =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         titleHelp.className =
           'title-help';
@@ -659,30 +635,18 @@ async function loadPendingStories() {
             ? 'Edit the title here if needed before publication.'
             : 'A title is required for publication. Enter one here to create/force a title.';
 
-        titleRow.appendChild(
-          titleLabel
-        );
-
-        titleRow.appendChild(
-          titleInput
-        );
-
-        titleRow.appendChild(
-          titleHelp
-        );
+        titleRow.appendChild(titleLabel);
+        titleRow.appendChild(titleInput);
+        titleRow.appendChild(titleHelp);
 
         const text =
-          document.createElement(
-            'p'
-          );
+          document.createElement('p');
 
         text.textContent =
           story.story;
 
         const details =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         details.className =
           'details';
@@ -695,33 +659,25 @@ async function loadPendingStories() {
           `<strong>Email:</strong> ${story.email || '(none)'}`;
 
         const moderation =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         moderation.className =
           'moderation';
 
         const categoryRow =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         categoryRow.className =
           'category-row';
 
         const categoryLabel =
-          document.createElement(
-            'label'
-          );
+          document.createElement('label');
 
         categoryLabel.textContent =
           'Category';
 
         const categorySelect =
-          document.createElement(
-            'select'
-          );
+          document.createElement('select');
 
         categorySelect.className =
           'category-select';
@@ -730,9 +686,7 @@ async function loadPendingStories() {
           category => {
 
             const option =
-              document.createElement(
-                'option'
-              );
+              document.createElement('option');
 
             option.value =
               category;
@@ -750,41 +704,28 @@ async function loadPendingStories() {
 
             }
 
-            categorySelect.appendChild(
-              option
-            );
+            categorySelect.appendChild(option);
 
           }
         );
 
-        categoryRow.appendChild(
-          categoryLabel
-        );
-
-        categoryRow.appendChild(
-          categorySelect
-        );
+        categoryRow.appendChild(categoryLabel);
+        categoryRow.appendChild(categorySelect);
 
         const notes =
-          document.createElement(
-            'textarea'
-          );
+          document.createElement('textarea');
 
         notes.placeholder =
           'Optional moderator comment / reason for rejection';
 
         const actions =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         actions.className =
           'actions';
 
         const approve =
-          document.createElement(
-            'button'
-          );
+          document.createElement('button');
 
         approve.className =
           'approve';
@@ -793,9 +734,7 @@ async function loadPendingStories() {
           'Approve';
 
         const approveAnonymous =
-          document.createElement(
-            'button'
-          );
+          document.createElement('button');
 
         approveAnonymous.className =
           'approve-anonymous';
@@ -804,9 +743,7 @@ async function loadPendingStories() {
           'Approve Anonymously';
 
         const reject =
-          document.createElement(
-            'button'
-          );
+          document.createElement('button');
 
         reject.className =
           'reject';
@@ -850,53 +787,21 @@ async function loadPendingStories() {
             )
         );
 
-        actions.appendChild(
-          approve
-        );
+        actions.appendChild(approve);
+        actions.appendChild(approveAnonymous);
+        actions.appendChild(reject);
 
-        actions.appendChild(
-          approveAnonymous
-        );
+        moderation.appendChild(categoryRow);
+        moderation.appendChild(notes);
+        moderation.appendChild(actions);
 
-        actions.appendChild(
-          reject
-        );
+        article.appendChild(meta);
+        article.appendChild(titleRow);
+        article.appendChild(text);
+        article.appendChild(details);
+        article.appendChild(moderation);
 
-        moderation.appendChild(
-          categoryRow
-        );
-
-        moderation.appendChild(
-          notes
-        );
-
-        moderation.appendChild(
-          actions
-        );
-
-        article.appendChild(
-          meta
-        );
-
-        article.appendChild(
-          titleRow
-        );
-
-        article.appendChild(
-          text
-        );
-
-        article.appendChild(
-          details
-        );
-
-        article.appendChild(
-          moderation
-        );
-
-        storiesContainer.appendChild(
-          article
-        );
+        storiesContainer.appendChild(article);
 
       }
     );
@@ -914,12 +819,6 @@ async function loadPendingStories() {
   }
 
 }
-
-/*
- * =========================================================
- * PUBLISHED STORIES
- * =========================================================
- */
 
 async function loadPublishedStories() {
 
@@ -972,17 +871,13 @@ async function loadPublishedStories() {
       story => {
 
         const article =
-          document.createElement(
-            'article'
-          );
+          document.createElement('article');
 
         article.className =
           'story';
 
         const meta =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         meta.className =
           'meta';
@@ -991,9 +886,7 @@ async function loadPublishedStories() {
           `#${story.id} · ${story.category} · ${story.city || 'City not provided'} · Published ${story.published_at || story.created_at}`;
 
         const title =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         title.className =
           'story-title';
@@ -1003,17 +896,13 @@ async function loadPublishedStories() {
           '(No title)';
 
         const text =
-          document.createElement(
-            'p'
-          );
+          document.createElement('p');
 
         text.textContent =
           story.story;
 
         const details =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         details.className =
           'details';
@@ -1029,25 +918,19 @@ async function loadPublishedStories() {
           }`;
 
         const moderation =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         moderation.className =
           'moderation';
 
         const actions =
-          document.createElement(
-            'div'
-          );
+          document.createElement('div');
 
         actions.className =
           'actions';
 
         const deleteButton =
-          document.createElement(
-            'button'
-          );
+          document.createElement('button');
 
         deleteButton.className =
           'delete';
@@ -1063,37 +946,16 @@ async function loadPublishedStories() {
             )
         );
 
-        actions.appendChild(
-          deleteButton
-        );
+        actions.appendChild(deleteButton);
+        moderation.appendChild(actions);
 
-        moderation.appendChild(
-          actions
-        );
+        article.appendChild(meta);
+        article.appendChild(title);
+        article.appendChild(text);
+        article.appendChild(details);
+        article.appendChild(moderation);
 
-        article.appendChild(
-          meta
-        );
-
-        article.appendChild(
-          title
-        );
-
-        article.appendChild(
-          text
-        );
-
-        article.appendChild(
-          details
-        );
-
-        article.appendChild(
-          moderation
-        );
-
-        publishedStoriesContainer.appendChild(
-          article
-        );
+        publishedStoriesContainer.appendChild(article);
 
       }
     );
@@ -1111,12 +973,6 @@ async function loadPublishedStories() {
   }
 
 }
-
-/*
- * =========================================================
- * DELETE PUBLISHED STORY
- * =========================================================
- */
 
 async function deletePublishedStory(
   id
@@ -1173,12 +1029,6 @@ async function deletePublishedStory(
   }
 
 }
-
-/*
- * =========================================================
- * UPDATE STORY
- * =========================================================
- */
 
 async function updateStory(
   id,
@@ -1271,12 +1121,6 @@ async function updateStory(
   }
 
 }
-
-/*
- * =========================================================
- * NOTIFICATION SETTINGS
- * =========================================================
- */
 
 async function loadNotificationSettings() {
 
@@ -1388,9 +1232,7 @@ saveSettingsButton.addEventListener(
 );
 
 loadNotificationSettings();
-
 loadPendingStories();
-
 loadPublishedStories();
 
 setInterval(
@@ -1416,7 +1258,6 @@ setInterval(
     }
 
     loadPendingStories();
-
     loadPublishedStories();
 
   },
