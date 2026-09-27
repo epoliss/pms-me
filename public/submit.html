@@ -27,42 +27,42 @@ header{
   overflow:hidden
 }
 
-.wordmark{
+.logo{
   display:inline-block;
   text-align:left;
   font-size:42px;
   font-weight:800;
-  line-height:.92;
   letter-spacing:2px;
+  line-height:.92;
   white-space:nowrap
 }
 
-.wordmark-row{
+.brand-line{
   display:block
 }
 
-.wordmark-management{
+.brand-management{
   margin-left:1.4em
 }
 
-.wordmark-stories{
+.brand-stories{
   margin-left:calc(2.7em + 1ch)
 }
 
-.wordmark .black{
+.black{
   color:#000
 }
 
-.wordmark .gray{
+.gray{
   color:#a6a6a6
 }
 
-.every-day{
+.brand-tagline{
   color:#000;
   font-size:24px;
   letter-spacing:1px;
-  vertical-align:middle;
-  margin-left:8px
+  margin-left:8px;
+  vertical-align:middle
 }
 
 .container{
@@ -277,39 +277,21 @@ footer{
   padding:30px 15px 45px
 }
 
-@media(max-width:900px){
-
-  .wordmark{
-    font-size:38px;
-    letter-spacing:1.5px
-  }
-
-  .every-day{
-    font-size:22px
-  }
-}
-
 @media(max-width:600px){
 
-  header{
-    padding:16px 12px 18px
+  .logo{
+    font-size:34px
   }
 
-  .wordmark{
-    font-size:34px;
-    letter-spacing:1px;
-    line-height:.92
-  }
-
-  .wordmark-management{
+  .brand-management{
     margin-left:1.3em
   }
 
-  .wordmark-stories{
+  .brand-stories{
     margin-left:calc(2.5em + 1ch)
   }
 
-  .every-day{
+  .brand-tagline{
     font-size:19px;
     letter-spacing:.5px;
     margin-left:5px
@@ -338,20 +320,20 @@ footer{
 <body>
 
 <header>
-  <div class="wordmark">
+  <div class="logo">
 
-    <span class="wordmark-row wordmark-property">
+    <div class="brand-line brand-property">
       <span class="black">P</span><span class="gray">ROPERTY</span>
-    </span>
+    </div>
 
-    <span class="wordmark-row wordmark-management">
+    <div class="brand-line brand-management">
       <span class="black">M</span><span class="gray">ANAGEMENT</span>
-    </span>
+    </div>
 
-    <span class="wordmark-row wordmark-stories">
+    <div class="brand-line brand-stories">
       <span class="black">S</span><span class="gray">TORIES</span>
-      <span class="every-day">. . . for every day</span>
-    </span>
+      <span class="brand-tagline">. . . for every day</span>
+    </div>
 
   </div>
 </header>
