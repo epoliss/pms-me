@@ -4,21 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PMS-ME — Moderation</title>
-
 <style>
 *{box-sizing:border-box}
-
 body{
   margin:0;
   font-family:Arial,Helvetica,sans-serif;
   background:#f3f3f3;
   color:#222
 }
-
 /* =========================================================
    SITE HEADER / WORDMARK
    ========================================================= */
-
 header{
   background:rgba(64,224,208,.78);
   color:#a6a6a6;
@@ -26,7 +22,6 @@ header{
   padding:18px 20px 22px;
   overflow:hidden
 }
-
 .logo{
   display:inline-block;
   text-align:left;
@@ -36,27 +31,21 @@ header{
   line-height:.92;
   white-space:nowrap
 }
-
 .brand-line{
   display:block
 }
-
 .brand-management{
   margin-left:1.4em
 }
-
 .brand-stories{
   margin-left:calc(2.5em + 1ch)
 }
-
 .black{
   color:#000
 }
-
 .gray{
   color:#a6a6a6
 }
-
 .brand-tagline{
   color:#000;
   font-size:24px;
@@ -64,34 +53,28 @@ header{
   margin-left:4px;
   vertical-align:middle
 }
-
 .subtitle{
   display:none
 }
-
 .container{
   max-width:850px;
   margin:30px auto;
   padding:0 15px
 }
-
 .topbar{
   display:flex;
   justify-content:space-between;
   align-items:center;
   margin-bottom:18px
 }
-
 h1{
   margin:0;
   font-size:24px
 }
-
 h2{
   margin:0 0 14px;
   font-size:20px
 }
-
 .back{
   background:#222;
   color:#fff;
@@ -101,7 +84,6 @@ h2{
   font-weight:bold;
   font-size:14px
 }
-
 .settings{
   background:#fff;
   border:1px solid #ddd;
@@ -110,34 +92,28 @@ h2{
   margin-bottom:20px;
   box-shadow:0 1px 2px rgba(0,0,0,.04)
 }
-
 .settings h2{
   margin:0 0 6px;
   font-size:18px
 }
-
 .settings-description{
   margin:0 0 16px;
   color:#666;
   font-size:13px;
   line-height:1.5
 }
-
 .setting-row{
   margin-bottom:14px
 }
-
 .setting-row:last-of-type{
   margin-bottom:0
 }
-
 .setting-row label{
   display:block;
   font-weight:bold;
   font-size:13px;
   margin-bottom:6px
 }
-
 select,
 input[type="email"],
 input[type="text"]{
@@ -149,20 +125,17 @@ input[type="text"]{
   font-size:14px;
   background:#fff
 }
-
 .save-settings{
   margin-top:15px;
   background:#222;
   color:#fff
 }
-
 .settings-status{
   display:none;
   margin-top:12px;
   font-size:13px;
   color:#555
 }
-
 .story{
   background:#fff;
   border:1px solid #ddd;
@@ -171,13 +144,11 @@ input[type="text"]{
   margin-bottom:14px;
   box-shadow:0 1px 2px rgba(0,0,0,.04)
 }
-
 .meta{
   color:#888;
   font-size:12px;
   margin-bottom:12px
 }
-
 .story-title{
   font-size:19px;
   font-weight:800;
@@ -185,13 +156,11 @@ input[type="text"]{
   margin:0 0 10px;
   color:#000
 }
-
 .story p{
   font-size:17px;
   line-height:1.55;
   margin:0 0 14px
 }
-
 .details{
   border-top:1px solid #eee;
   padding-top:12px;
@@ -199,18 +168,15 @@ input[type="text"]{
   font-size:13px;
   line-height:1.6
 }
-
 .moderation{
   border-top:1px solid #eee;
   margin-top:16px;
   padding-top:16px
 }
-
 .title-row,
 .category-row{
   margin-bottom:14px
 }
-
 .title-row label,
 .category-row label{
   display:block;
@@ -218,14 +184,12 @@ input[type="text"]{
   font-size:13px;
   margin-bottom:6px
 }
-
 .title-help{
   color:#777;
   font-size:12px;
   margin-top:5px;
   line-height:1.4
 }
-
 .category-select{
   width:100%;
   border:1px solid #ccc;
@@ -235,7 +199,6 @@ input[type="text"]{
   font-size:14px;
   background:#fff
 }
-
 textarea{
   width:100%;
   min-height:90px;
@@ -246,17 +209,14 @@ textarea{
   font-family:Arial,Helvetica,sans-serif;
   font-size:14px
 }
-
 textarea::placeholder{
   color:#999
 }
-
 .actions{
   margin-top:12px;
   display:flex;
   gap:10px
 }
-
 button{
   border:0;
   border-radius:5px;
@@ -265,31 +225,25 @@ button{
   font-weight:bold;
   cursor:pointer
 }
-
 .approve{
   background:#222;
   color:#fff
 }
-
 .approve-anonymous{
   background:#555;
   color:#fff
 }
-
 .reject{
   background:#eee;
   color:#333
 }
-
 .delete{
   background:#8b0000;
   color:#fff
 }
-
 button:hover{
   opacity:.85
 }
-
 .empty{
   background:#fff;
   border:1px solid #ddd;
@@ -297,7 +251,6 @@ button:hover{
   text-align:center;
   color:#777
 }
-
 .message{
   display:none;
   background:#fff;
@@ -306,236 +259,171 @@ button:hover{
   margin-bottom:15px;
   border-radius:5px
 }
-
 .published-section{
   margin-top:40px
 }
-
 .published-intro{
   color:#666;
   font-size:13px;
   line-height:1.5;
   margin:0 0 16px
 }
-
 footer{
   text-align:center;
   color:#888;
   font-size:12px;
   padding:30px 15px 45px
 }
-
 @media(max-width:600px){
-
   .logo{
     font-size:27px
   }
-
   .brand-management{
     margin-left:1.3em
   }
-
   .brand-stories{
     margin-left:calc(2.5em + 1ch)
   }
-
   .brand-tagline{
     font-size:15px;
     letter-spacing:.2px;
     margin-left:3px
   }
-
   .topbar{
     align-items:flex-start;
     flex-direction:column;
     gap:12px
   }
-
   .actions{
     flex-direction:column
   }
-
   button{
     width:100%
   }
 }
 </style>
 </head>
-
 <body>
-
 <header>
   <div class="logo">
-
     <div class="brand-line brand-property">
       <span class="black">P</span><span class="gray">ROPERTY</span>
     </div>
-
     <div class="brand-line brand-management">
       <span class="black">M</span><span class="gray">ANAGEMENT</span>
     </div>
-
     <div class="brand-line brand-stories">
       <span class="black">S</span><span class="gray">TORIES</span>
       <span class="brand-tagline">. . . for every day</span>
     </div>
-
   </div>
 </header>
-
 <main class="container">
-
   <div class="topbar">
-
     <h1>
       Pending Stories
     </h1>
-
     <a
       class="back"
       href="/"
     >
       Back to Stories
     </a>
-
   </div>
-
   <section class="settings">
-
     <h2>
       Notification Settings
     </h2>
-
     <p class="settings-description">
       Choose whether you want to receive an email when stories are submitted.
     </p>
-
     <div class="setting-row">
-
       <label for="notificationFrequency">
         Notifications
       </label>
-
       <select id="notificationFrequency">
-
         <option value="off">
           Off
         </option>
-
         <option value="immediately">
           Immediately — one email per new story
         </option>
-
         <option value="daily">
           Daily digest — one email per day
         </option>
-
       </select>
-
     </div>
-
     <div class="setting-row">
-
       <label for="notificationEmail">
         Email address
       </label>
-
       <input
         type="email"
         id="notificationEmail"
         placeholder="you@example.com"
       >
-
     </div>
-
     <button
       class="save-settings"
       id="saveSettings"
     >
       Save Notification Settings
     </button>
-
     <div
       class="settings-status"
       id="settingsStatus"
     ></div>
-
   </section>
-
   <div
     class="message"
     id="message"
   ></div>
-
   <section id="stories">
-
     <div class="empty">
       Loading...
     </div>
-
   </section>
-
   <section class="published-section">
-
     <h2>
       Published Stories
     </h2>
-
     <p class="published-intro">
       These stories have already been published. Deleting a story permanently removes it from PMS-ME.
     </p>
-
     <section id="publishedStories">
-
       <div class="empty">
         Loading...
       </div>
-
     </section>
-
   </section>
-
 </main>
-
 <footer>
   Property Manager Stories · PMS-ME
 </footer>
-
 <script>
-
 const storiesContainer =
   document.getElementById('stories');
-
 const publishedStoriesContainer =
   document.getElementById('publishedStories');
-
 const message =
   document.getElementById('message');
-
 const notificationFrequency =
   document.getElementById('notificationFrequency');
-
 const notificationEmail =
   document.getElementById('notificationEmail');
-
 const saveSettingsButton =
   document.getElementById('saveSettings');
-
 const settingsStatus =
   document.getElementById('settingsStatus');
-
 const categories = [
-  "Homeowner of the Year",
+  "Owner Moaner",
   "Vendor Woes",
   "Legally Blunt",
   "Board to Tears",
   "Audit This"
 ];
-
 async function loadPendingStories() {
-
   try {
-
     const response =
       await fetch(
         '/api/stories?status=pending',
@@ -543,214 +431,148 @@ async function loadPendingStories() {
           credentials:'same-origin'
         }
       );
-
     if (!response.ok) {
-
       const errorText =
         await response.text();
-
       console.error(
         'Pending stories request failed:',
         response.status,
         errorText
       );
-
       throw new Error(
         'Unable to load pending stories.'
       );
     }
-
     const data =
       await response.json();
-
     const stories =
       Array.isArray(data)
         ? data
         : (data.results || []);
-
     storiesContainer.innerHTML =
       '';
-
     if (!stories.length) {
-
       storiesContainer.innerHTML =
         '<div class="empty">There are no pending stories.</div>';
-
       return;
     }
-
     stories.forEach(
       story => {
-
         const article =
           document.createElement('article');
-
         article.className =
           'story';
-
         const meta =
           document.createElement('div');
-
         meta.className =
           'meta';
-
         meta.textContent =
           `#${story.id} · ${story.category} · ${story.city || 'City not provided'} · ${story.created_at}`;
-
         const titleRow =
           document.createElement('div');
-
         titleRow.className =
           'title-row';
-
         const titleLabel =
           document.createElement('label');
-
         titleLabel.textContent =
           'Title';
-
         const titleInput =
           document.createElement('input');
-
         titleInput.type =
           'text';
-
         titleInput.maxLength =
           150;
-
         titleInput.value =
           story.title || '';
-
         titleInput.placeholder =
           'Enter a title if the submitter did not provide one';
-
         const titleHelp =
           document.createElement('div');
-
         titleHelp.className =
           'title-help';
-
         titleHelp.textContent =
           story.title
             ? 'Edit the title here if needed before publication.'
             : 'A title is required for publication. Enter one here to create/force a title.';
-
         titleRow.appendChild(titleLabel);
         titleRow.appendChild(titleInput);
         titleRow.appendChild(titleHelp);
-
         const text =
           document.createElement('p');
-
         text.textContent =
           story.story;
-
         const details =
           document.createElement('div');
-
         details.className =
           'details';
-
         details.innerHTML =
           `<strong>City:</strong> ${story.city || '(not provided)'}<br>` +
           `<strong>Display name:</strong> ${story.display_name || '(none)'}<br>` +
           `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
           `<strong>Anonymous requested:</strong> ${story.anonymous_requested ? 'Yes' : 'No'}<br>` +
           `<strong>Email:</strong> ${story.email || '(none)'}`;
-
         const moderation =
           document.createElement('div');
-
         moderation.className =
           'moderation';
-
         const categoryRow =
           document.createElement('div');
-
         categoryRow.className =
           'category-row';
-
         const categoryLabel =
           document.createElement('label');
-
         categoryLabel.textContent =
           'Category';
-
         const categorySelect =
           document.createElement('select');
-
         categorySelect.className =
           'category-select';
-
         categories.forEach(
           category => {
-
             const option =
               document.createElement('option');
-
             option.value =
               category;
-
             option.textContent =
               category;
-
             if (
               category ===
               story.category
             ) {
-
               option.selected =
                 true;
-
             }
-
             categorySelect.appendChild(option);
-
           }
         );
-
         categoryRow.appendChild(categoryLabel);
         categoryRow.appendChild(categorySelect);
-
         const notes =
           document.createElement('textarea');
-
         notes.placeholder =
           'Optional moderator comment / reason for rejection';
-
         const actions =
           document.createElement('div');
-
         actions.className =
           'actions';
-
         const approve =
           document.createElement('button');
-
         approve.className =
           'approve';
-
         approve.textContent =
           'Approve';
-
         const approveAnonymous =
           document.createElement('button');
-
         approveAnonymous.className =
           'approve-anonymous';
-
         approveAnonymous.textContent =
           'Approve Anonymously';
-
         const reject =
           document.createElement('button');
-
         reject.className =
           'reject';
-
         reject.textContent =
           'Reject';
-
         approve.addEventListener(
           'click',
           () =>
@@ -762,7 +584,6 @@ async function loadPendingStories() {
               titleInput.value
             )
         );
-
         approveAnonymous.addEventListener(
           'click',
           () =>
@@ -774,7 +595,6 @@ async function loadPendingStories() {
               titleInput.value
             )
         );
-
         reject.addEventListener(
           'click',
           () =>
@@ -786,44 +606,31 @@ async function loadPendingStories() {
               titleInput.value
             )
         );
-
         actions.appendChild(approve);
         actions.appendChild(approveAnonymous);
         actions.appendChild(reject);
-
         moderation.appendChild(categoryRow);
         moderation.appendChild(notes);
         moderation.appendChild(actions);
-
         article.appendChild(meta);
         article.appendChild(titleRow);
         article.appendChild(text);
         article.appendChild(details);
         article.appendChild(moderation);
-
         storiesContainer.appendChild(article);
-
       }
     );
-
   } catch (error) {
-
     console.error(
       'Pending stories error:',
       error
     );
-
     storiesContainer.innerHTML =
       '<div class="empty">Unable to load pending stories.</div>';
-
   }
-
 }
-
 async function loadPublishedStories() {
-
   try {
-
     const response =
       await fetch(
         '/api/stories?status=published',
@@ -831,82 +638,58 @@ async function loadPublishedStories() {
           credentials:'same-origin'
         }
       );
-
     if (!response.ok) {
-
       const errorText =
         await response.text();
-
       console.error(
         'Published stories request failed:',
         response.status,
         errorText
       );
-
       throw new Error(
         'Unable to load published stories.'
       );
     }
-
     const data =
       await response.json();
-
     const stories =
       Array.isArray(data)
         ? data
         : (data.results || []);
-
     publishedStoriesContainer.innerHTML =
       '';
-
     if (!stories.length) {
-
       publishedStoriesContainer.innerHTML =
         '<div class="empty">There are no published stories.</div>';
-
       return;
     }
-
     stories.forEach(
       story => {
-
         const article =
           document.createElement('article');
-
         article.className =
           'story';
-
         const meta =
           document.createElement('div');
-
         meta.className =
           'meta';
-
         meta.textContent =
           `#${story.id} · ${story.category} · ${story.city || 'City not provided'} · Published ${story.published_at || story.created_at}`;
-
         const title =
           document.createElement('div');
-
         title.className =
           'story-title';
-
         title.textContent =
           story.title ||
           '(No title)';
-
         const text =
           document.createElement('p');
-
         text.textContent =
           story.story;
-
         const details =
           document.createElement('div');
-
         details.className =
           'details';
-
         details.innerHTML =
           `<strong>City:</strong> ${story.city || '(none)'}<br>` +
           `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
@@ -916,28 +699,20 @@ async function loadPublishedStories() {
               ? 'Yes'
               : 'No'
           }`;
-
         const moderation =
           document.createElement('div');
-
         moderation.className =
           'moderation';
-
         const actions =
           document.createElement('div');
-
         actions.className =
           'actions';
-
         const deleteButton =
           document.createElement('button');
-
         deleteButton.className =
           'delete';
-
         deleteButton.textContent =
           'Delete Story';
-
         deleteButton.addEventListener(
           'click',
           () =>
@@ -945,56 +720,40 @@ async function loadPublishedStories() {
               story.id
             )
         );
-
         actions.appendChild(deleteButton);
         moderation.appendChild(actions);
-
         article.appendChild(meta);
         article.appendChild(title);
         article.appendChild(text);
         article.appendChild(details);
         article.appendChild(moderation);
-
         publishedStoriesContainer.appendChild(article);
-
       }
     );
-
   } catch (error) {
-
     console.error(
       'Published stories error:',
       error
     );
-
     publishedStoriesContainer.innerHTML =
       '<div class="empty">Unable to load published stories.</div>';
-
   }
-
 }
-
 async function deletePublishedStory(
   id
 ) {
-
   const confirmed =
     window.confirm(
       'Are you sure you want to permanently delete this published story? This cannot be undone.'
     );
-
   if (!confirmed) {
     return;
   }
-
   message.style.display =
     'block';
-
   message.textContent =
     'Deleting story...';
-
   try {
-
     const response =
       await fetch(
         '/api/stories/' + id,
@@ -1003,33 +762,23 @@ async function deletePublishedStory(
           credentials:'same-origin'
         }
       );
-
     const result =
       await response.json();
-
     if (!response.ok) {
-
       throw new Error(
         result.error ||
         'Delete failed.'
       );
     }
-
     message.textContent =
       'Story deleted.';
-
     await loadPublishedStories();
-
   } catch (error) {
-
     message.textContent =
       error.message ||
       'Something went wrong.';
-
   }
-
 }
-
 async function updateStory(
   id,
   action,
@@ -1037,28 +786,21 @@ async function updateStory(
   category,
   title
 ) {
-
   message.style.display =
     'block';
-
   message.textContent =
     'Saving...';
-
   try {
-
     const response =
       await fetch(
         '/api/stories/' + id,
         {
           method:'PATCH',
-
           headers:{
             'Content-Type':
               'application/json'
           },
-
           credentials:'same-origin',
-
           body:
             JSON.stringify({
               action,
@@ -1069,63 +811,43 @@ async function updateStory(
             })
         }
       );
-
     const result =
       await response.json();
-
     if (!response.ok) {
-
       throw new Error(
         result.error ||
         'Update failed.'
       );
     }
-
     if (
       action === 'approve' ||
       action === 'approve_anonymously'
     ) {
-
       message.textContent =
         'Story approved.';
-
     } else {
-
       message.textContent =
         'Story rejected.';
-
     }
-
     await loadPendingStories();
-
     if (
       action === 'approve' ||
       action === 'approve_anonymously'
     ) {
-
       await loadPublishedStories();
-
     }
-
   } catch (error) {
-
     console.error(
       'Update story error:',
       error
     );
-
     message.textContent =
       error.message ||
       'Something went wrong.';
-
   }
-
 }
-
 async function loadNotificationSettings() {
-
   try {
-
     const response =
       await fetch(
         '/api/notification-settings',
@@ -1133,65 +855,46 @@ async function loadNotificationSettings() {
           credentials:'same-origin'
         }
       );
-
     if (!response.ok) {
-
       throw new Error(
         'Unable to load notification settings.'
       );
     }
-
     const settings =
       await response.json();
-
     notificationFrequency.value =
       settings.frequency ||
       'off';
-
     notificationEmail.value =
       settings.email ||
       '';
-
   } catch (error) {
-
     console.error(
       'Notification settings error:',
       error
     );
-
   }
-
 }
-
 async function saveNotificationSettings() {
-
   const frequency =
     notificationFrequency.value;
-
   const email =
     notificationEmail.value.trim();
-
   settingsStatus.style.display =
     'block';
-
   settingsStatus.textContent =
     'Saving...';
-
   try {
-
     const response =
       await fetch(
         '/api/notification-settings',
         {
           method:'PUT',
-
           headers:{
             'Content-Type':
               'application/json'
           },
-
           credentials:'same-origin',
-
           body:
             JSON.stringify({
               frequency,
@@ -1199,48 +902,35 @@ async function saveNotificationSettings() {
             })
         }
       );
-
     const result =
       await response.json();
-
     if (!response.ok) {
-
       throw new Error(
         result.error ||
         'Unable to save notification settings.'
       );
     }
-
     settingsStatus.textContent =
       frequency === 'off'
         ? 'Notifications are turned off.'
         : 'Notification settings saved.';
-
   } catch (error) {
-
     settingsStatus.textContent =
       error.message ||
       'Unable to save notification settings.';
-
   }
-
 }
-
 saveSettingsButton.addEventListener(
   'click',
   saveNotificationSettings
 );
-
 loadNotificationSettings();
 loadPendingStories();
 loadPublishedStories();
-
 setInterval(
   () => {
-
     const activeElement =
       document.activeElement;
-
     if (
       activeElement &&
       (
@@ -1252,19 +942,13 @@ setInterval(
           'INPUT'
       )
     ) {
-
       return;
-
     }
-
     loadPendingStories();
     loadPublishedStories();
-
   },
   30000
 );
-
 </script>
-
 </body>
 </html>
