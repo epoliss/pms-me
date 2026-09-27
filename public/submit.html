@@ -23,17 +23,15 @@ header{
   background:rgba(64,224,208,.78);
   color:#a6a6a6;
   text-align:left;
-  padding:18px 20px 22px;
+  padding:24px 20px 20px;
   overflow:hidden
 }
 
 .wordmark{
-  max-width:1200px;
-  margin:0 auto;
-  font-size:106px;
+  font-size:42px;
   font-weight:800;
-  line-height:.78;
-  letter-spacing:-4px;
+  line-height:.92;
+  letter-spacing:2px;
   white-space:nowrap
 }
 
@@ -41,16 +39,12 @@ header{
   display:block
 }
 
-.wordmark-property{
-  padding-left:0
-}
-
 .wordmark-management{
-  padding-left:2ch
+  margin-left:58px
 }
 
 .wordmark-stories{
-  padding-left:4ch
+  margin-left:112px
 }
 
 .wordmark .black{
@@ -63,11 +57,15 @@ header{
 
 .every-day{
   color:#000;
-  font-size:70px;
-  letter-spacing:-2px;
+  font-size:24px;
+  letter-spacing:1px;
   vertical-align:middle;
   margin-left:8px
 }
+
+/* =========================================================
+   FORM
+   ========================================================= */
 
 .container{
   max-width:700px;
@@ -195,17 +193,18 @@ button,
 }
 
 button{
-  background:#222;
-  color:#fff
+  background:rgba(64,224,208,.78);
+  color:#000
+}
+
+button:hover{
+  background:rgba(64,224,208,1);
+  color:#000
 }
 
 .back{
   background:#eee;
   color:#333
-}
-
-button:hover{
-  background:#000
 }
 
 .back:hover{
@@ -281,33 +280,31 @@ footer{
   padding:30px 15px 45px
 }
 
-@media(max-width:900px){
-
-  .wordmark{
-    font-size:72px;
-    letter-spacing:-3px
-  }
-
-  .every-day{
-    font-size:48px
-  }
-}
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
 @media(max-width:600px){
 
   header{
-    padding:16px 12px 18px
+    padding:20px 15px 18px
   }
 
   .wordmark{
-    font-size:48px;
-    letter-spacing:-2px;
-    line-height:.82
+    font-size:34px
+  }
+
+  .wordmark-management{
+    margin-left:45px
+  }
+
+  .wordmark-stories{
+    margin-left:82px
   }
 
   .every-day{
-    font-size:31px;
-    letter-spacing:-1px;
+    font-size:19px;
+    letter-spacing:.5px;
     margin-left:5px
   }
 
@@ -335,7 +332,8 @@ footer{
 
 <header>
   <div class="wordmark">
-    <span class="wordmark-row wordmark-property">
+
+    <span class="wordmark-row">
       <span class="black">P</span><span class="gray">ROPERTY</span>
     </span>
 
@@ -345,8 +343,9 @@ footer{
 
     <span class="wordmark-row wordmark-stories">
       <span class="black">S</span><span class="gray">TORIES</span>
-      <span class="every-day">… for every day</span>
+      <span class="every-day">. . . for every day</span>
     </span>
+
   </div>
 </header>
 
