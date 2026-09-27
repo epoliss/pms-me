@@ -844,8 +844,20 @@ function renderStories(
           'p'
         );
 
-      text.textContent =
-        story.story;
+      const storyText =
+        story.story || '';
+
+      if(
+        /[.!?]$/.test(
+          storyText.trim()
+        )
+      ){
+        text.textContent =
+          storyText + ' PMS';
+      }else{
+        text.textContent =
+          storyText + '. PMS';
+      }
 
       const actions =
         document.createElement(
