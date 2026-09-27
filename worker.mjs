@@ -1,3 +1,4 @@
+```javascript
 // PMS-ME deployment trigger 4
 
 function generateAnonymousName() {
@@ -1064,7 +1065,7 @@ export default {
       }
 
       const allowedCategories = [
-        "Homeowner of the Year",
+        "Owner Moaner",
         "Vendor Woes",
         "Legally Blunt",
         "Board to Tears",
@@ -1362,7 +1363,7 @@ export default {
       }
 
       const allowedCategories = [
-        "Homeowner of the Year",
+        "Owner Moaner",
         "Vendor Woes",
         "Legally Blunt",
         "Board to Tears",
@@ -1524,3 +1525,6 @@ export default {
     }
   }
 };
+```
+
+Only the **two backend category arrays** were changed to `Owner Moaner`. Everything else is preserved exactly from your supplied Worker.
