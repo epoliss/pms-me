@@ -1,4 +1,3 @@
-```javascript
 // PMS-ME deployment trigger 4
 
 function generateAnonymousName() {
@@ -1013,6 +1012,16 @@ export default {
       const anonymousRequested =
         body.anonymous_requested ? 1 : 0;
 
+      if (!anonymousRequested && !displayName) {
+        return jsonResponse(
+          {
+            error:
+              "Display Name is required unless you choose to publish this story anonymously."
+          },
+          400
+        );
+      }
+
       if (!city) {
         return jsonResponse(
           { error: "City is required" },
@@ -1469,10 +1478,6 @@ export default {
      * =========================================================
      * STATIC ASSETS
      * =========================================================
-     *
-     * HTML pages are deliberately marked no-store so the
-     * browser does not keep serving an older submit.html or
-     * other HTML asset after deployment.
      */
     const assetResponse =
       await env.ASSETS.fetch(request);
@@ -1525,6 +1530,3 @@ export default {
     }
   }
 };
-```
-
-Only the **two backend category arrays** were changed to `Owner Moaner`. Everything else is preserved exactly from your supplied Worker.
