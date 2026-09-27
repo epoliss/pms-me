@@ -4,17 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Property Management Stories — Submit a Story</title>
-
 <style>
 *{box-sizing:border-box}
-
 body{
   margin:0;
   font-family:Arial,Helvetica,sans-serif;
   background:#f3f3f3;
   color:#222
 }
-
 header{
   background:rgba(64,224,208,.78);
   color:#a6a6a6;
@@ -22,7 +19,6 @@ header{
   padding:18px 20px 22px;
   overflow:hidden
 }
-
 .logo{
   display:block;
   width:max-content;
@@ -34,27 +30,21 @@ header{
   line-height:.92;
   white-space:nowrap
 }
-
 .brand-line{
   display:block
 }
-
 .brand-management{
   margin-left:1.4em
 }
-
 .brand-stories{
   margin-left:calc(2.7em + 1ch)
 }
-
 .black{
   color:#000
 }
-
 .gray{
   color:#a6a6a6
 }
-
 .brand-tagline{
   color:#000;
   font-size:24px;
@@ -62,13 +52,11 @@ header{
   margin-left:8px;
   vertical-align:middle
 }
-
 .container{
   max-width:700px;
   margin:30px auto;
   padding:0 15px
 }
-
 .card{
   background:#fff;
   border:1px solid #ddd;
@@ -76,19 +64,16 @@ header{
   padding:24px;
   box-shadow:0 1px 2px rgba(0,0,0,.04)
 }
-
 h1{
   margin:0 0 22px;
   font-size:24px
 }
-
 label{
   display:block;
   font-weight:bold;
   font-size:14px;
   margin:18px 0 7px
 }
-
 textarea,
 input,
 select{
@@ -99,36 +84,30 @@ select{
   font-family:Arial,Helvetica,sans-serif;
   font-size:15px
 }
-
 textarea{
   min-height:180px;
   resize:vertical
 }
-
 .help{
   color:#777;
   font-size:12px;
   margin-top:5px
 }
-
 .checkbox{
   display:flex;
   align-items:flex-start;
   gap:9px;
   margin-top:18px
 }
-
 .checkbox input{
   width:auto;
   margin-top:2px
 }
-
 .checkbox label{
   margin:0;
   font-weight:normal;
   line-height:1.4
 }
-
 .terms-box{
   margin-top:20px;
   padding:14px;
@@ -136,47 +115,39 @@ textarea{
   border:1px solid #ddd;
   border-radius:5px
 }
-
 .terms-box a{
   color:#333;
   font-weight:bold
 }
-
 .terms-agreement{
   display:flex;
   align-items:flex-start;
   gap:9px;
   margin-top:12px
 }
-
 .terms-agreement input{
   width:auto;
   margin-top:3px
 }
-
 .terms-agreement label{
   margin:0;
   font-weight:normal;
   line-height:1.4
 }
-
 .guidelines-button{
   margin-top:16px;
   background:#eee;
   color:#333;
   border:1px solid #ccc
 }
-
 .guidelines-button:hover{
   background:#ddd
 }
-
 .buttons{
   display:flex;
   gap:10px;
   margin-top:24px
 }
-
 button,
 .back{
   border:0;
@@ -187,25 +158,20 @@ button,
   cursor:pointer;
   text-decoration:none
 }
-
 button{
   background:rgba(64,224,208,.78);
   color:#000
 }
-
 .back{
   background:#eee;
   color:#333
 }
-
 button:hover{
   background:rgba(64,224,208,.78)
 }
-
 .back:hover{
   background:#ddd
 }
-
 .message{
   display:none;
   margin-top:18px;
@@ -213,7 +179,6 @@ button:hover{
   border-radius:4px;
   font-size:14px
 }
-
 .modal{
   display:none;
   position:fixed;
@@ -226,7 +191,6 @@ button:hover{
   padding:20px;
   overflow:auto
 }
-
 .modal-content{
   background:#fff;
   max-width:650px;
@@ -236,17 +200,14 @@ button:hover{
   position:relative;
   box-shadow:0 8px 30px rgba(0,0,0,.25)
 }
-
 .modal-content h2{
   margin:0 35px 18px 0;
   font-size:22px
 }
-
 .modal-content p{
   line-height:1.55;
   margin:0 0 15px
 }
-
 .close{
   position:absolute;
   top:12px;
@@ -258,189 +219,143 @@ button:hover{
   line-height:1;
   padding:4px 8px
 }
-
 .close:hover{
   background:transparent;
   color:#000
 }
-
 footer{
   text-align:center;
   color:#888;
   font-size:12px;
   padding:30px 15px 45px
 }
-
 @media(max-width:900px){
-
   .logo{
     font-size:38px;
     letter-spacing:1.5px
   }
-
   .brand-tagline{
     font-size:22px
   }
 }
-
 @media(max-width:600px){
-
   header{
     padding:16px 12px 18px
   }
-
   .logo{
     font-size:27px;
     margin-left:auto;
     margin-right:auto
   }
-
   .brand-management{
     margin-left:1.3em
   }
-
   .brand-stories{
     margin-left:calc(2.5em + 1ch)
   }
-
   .brand-tagline{
     font-size:15px;
     letter-spacing:.2px;
     margin-left:3px
   }
-
   .card{
     padding:18px
   }
-
   .buttons{
     flex-direction:column
   }
-
   button,
   .back{
     text-align:center
   }
-
   .modal-content{
     margin:3vh auto
   }
 }
 </style>
 </head>
-
 <body>
-
 <header>
   <div class="logo">
-
     <div class="brand-line brand-property">
       <span class="black">P</span><span class="gray">ROPERTY</span>
     </div>
-
     <div class="brand-line brand-management">
       <span class="black">M</span><span class="gray">ANAGEMENT</span>
     </div>
-
     <div class="brand-line brand-stories">
       <span class="black">S</span><span class="gray">TORIES</span>
       <span class="brand-tagline">. . . for every day</span>
     </div>
-
   </div>
 </header>
-
 <main class="container">
-
   <div class="card">
-
     <h1>Submit a Story</h1>
-
     <form id="storyForm">
-
       <label for="title">Story Title</label>
-
       <input
         id="title"
         maxlength="150"
         placeholder="Give your story a title"
       >
-
       <div class="help">
         A title is requested, but if you leave it blank, a moderator may create one before publication.
       </div>
-
       <label for="city">City</label>
-
       <input
         id="city"
         maxlength="100"
         required
         placeholder="City where this happened"
       >
-
       <div class="help">
         Please provide the city where the property or incident is located.
       </div>
-
       <label for="story">Your Story</label>
-
       <textarea
         id="story"
         required
         maxlength="2000"
         placeholder="Tell us what happened..."
       ></textarea>
-
       <div class="help">
         Maximum 2,000 characters.
       </div>
-
       <label for="category">Category</label>
-
       <select id="category" required>
         <option value="">Select a category</option>
-        <option>Homeowner of the Year</option>
+        <option>Owner Moaner</option>
         <option>Vendor Woes</option>
         <option>Legally Blunt</option>
         <option>Board to Tears</option>
         <option>Audit This</option>
       </select>
-
       <label for="name">Display Name</label>
-
       <input
         id="name"
         maxlength="50"
         placeholder="How should your name appear?"
       >
-
       <div class="checkbox">
-
         <input
           type="checkbox"
           id="anonymous"
         >
-
         <label for="anonymous">
           Publish this story anonymously
         </label>
-
       </div>
-
       <label for="email">Email</label>
-
       <input
         id="email"
         type="email"
         maxlength="200"
         placeholder="Your email address"
       >
-
       <div class="help">
         Your email will not be displayed publicly.
       </div>
-
       <button
         type="button"
         class="guidelines-button"
@@ -448,9 +363,7 @@ footer{
       >
         Guidelines for Submitting Content
       </button>
-
       <div class="terms-box">
-
         <div>
           Before submitting, please read the
           <a
@@ -461,61 +374,44 @@ footer{
             PMS-ME Terms of Service
           </a>.
         </div>
-
         <div class="terms-agreement">
-
           <input
             type="checkbox"
             id="termsAgreement"
             required
           >
-
           <label for="termsAgreement">
             I have read and agree to the PMS-ME Terms of Service.
           </label>
-
         </div>
-
       </div>
-
       <div class="buttons">
-
         <a
           class="back"
           href="/"
         >
           Back to Stories
         </a>
-
         <button type="submit">
           Submit Story
         </button>
-
       </div>
-
       <div
         class="message"
         id="message"
       ></div>
-
     </form>
-
   </div>
-
 </main>
-
 <footer>
   Property Manager Stories · PMS-ME<br>
   Because sometimes you just have to laugh.
 </footer>
-
 <div
   class="modal"
   id="guidelinesModal"
 >
-
   <div class="modal-content">
-
     <button
       type="button"
       class="close"
@@ -524,216 +420,154 @@ footer{
     >
       ×
     </button>
-
     <h2>
       Guidelines for Submitting Content
     </h2>
-
     <p>
       This website is intended to be a place for property managers to come blow off steam. If you are a homeowner, you guys already have plenty other social media forums to bitch about your management company - go back to those forums and reviews to spew your venom and don't do that here... but you are welcome to hang out here, and you might learn a thing or two of how the other half sees you.
     </p>
-
     <p>
       Don't use this space to spam or sell or advertise services. Defamatory statements will be weeded out, but so will calculated praise, so anonymize the names and places.
     </p>
-
   </div>
-
 </div>
-
 <script>
-
 const form =
   document.getElementById('storyForm');
-
 const message =
   document.getElementById('message');
-
 const guidelinesButton =
   document.getElementById('guidelinesButton');
-
 const guidelinesModal =
   document.getElementById('guidelinesModal');
-
 const closeGuidelines =
   document.getElementById('closeGuidelines');
-
 guidelinesButton.addEventListener(
   'click',
   () => {
     guidelinesModal.style.display = 'block';
   }
 );
-
 closeGuidelines.addEventListener(
   'click',
   () => {
     guidelinesModal.style.display = 'none';
   }
 );
-
 guidelinesModal.addEventListener(
   'click',
   event => {
-
     if (
       event.target ===
       guidelinesModal
     ) {
       guidelinesModal.style.display = 'none';
     }
-
   }
 );
-
 form.addEventListener(
   'submit',
   async event => {
-
     event.preventDefault();
-
     const title =
       document
         .getElementById('title')
         .value
         .trim();
-
     const city =
       document
         .getElementById('city')
         .value
         .trim();
-
     const story =
       document
         .getElementById('story')
         .value
         .trim();
-
     const category =
       document
         .getElementById('category')
         .value;
-
     const displayName =
       document
         .getElementById('name')
         .value
         .trim();
-
     const anonymous =
       document
         .getElementById('anonymous')
         .checked;
-
     const email =
       document
         .getElementById('email')
         .value
         .trim();
-
     const termsAgreement =
       document
         .getElementById('termsAgreement')
         .checked;
-
     if (!city || !story || !category) {
-
       message.style.display =
         'block';
-
       message.textContent =
         'Please enter the city, your story, and select a category.';
-
       return;
     }
-
     if (!termsAgreement) {
-
       message.style.display =
         'block';
-
       message.textContent =
         'Please read and agree to the Terms of Service before submitting.';
-
       return;
     }
-
     message.style.display =
       'block';
-
     message.textContent =
       'Submitting...';
-
     try {
-
       const response =
         await fetch(
           '/api/stories',
           {
             method:'POST',
-
             headers:{
               'Content-Type':
                 'application/json'
             },
-
             body:
               JSON.stringify({
-
                 title,
-
                 city,
-
                 story,
-
                 category,
-
                 display_name:
                   displayName,
-
                 email,
-
                 anonymous_requested:
                   anonymous,
-
                 terms_accepted:
                   true
-
               })
-
           }
         );
-
       const result =
         await response.json();
-
       if (!response.ok) {
-
         throw new Error(
           result.error ||
           'Submission failed'
         );
-
       }
-
       message.textContent =
         'Thank you! Your story has been submitted for review.';
-
       form.reset();
-
     } catch(error) {
-
       message.textContent =
         error.message ||
         'Something went wrong. Please try again.';
-
     }
-
   }
 );
-
 </script>
-
 </body>
 </html>
