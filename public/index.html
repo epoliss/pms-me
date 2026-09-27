@@ -144,7 +144,8 @@ h1{
   border-top:1px solid #eee;
   padding-top:12px;
   display:flex;
-  justify-content:flex-end;
+  justify-content:space-between;
+  align-items:center;
   gap:14px;
   flex-wrap:wrap
 }
@@ -327,8 +328,7 @@ footer{
     min-width:32px
   }
   .actions{
-    gap:10px;
-    justify-content:flex-end
+    gap:10px
   }
   .reaction{
     font-size:12px;
@@ -353,6 +353,7 @@ footer{
     </div>
   </div>
 </header>
+
 <nav id="categories">
   <button class="active" data-category="All">
     All
@@ -373,57 +374,71 @@ footer{
     Audit This
   </button>
 </nav>
+
 <main class="container">
   <div class="topbar">
     <a class="submit" href="/submit.html">
       Submit a Story
     </a>
   </div>
+
   <section id="stories">
     <div class="loading" id="loading">
       Loading stories...
     </div>
   </section>
+
   <div class="empty" id="empty">
     No stories in this category yet.
   </div>
 </main>
+
 <footer>
   Property Manager Stories · PMS-ME<br>
   Because sometimes you just have to laugh.
 </footer>
+
 <script>
 const buttons =
   document.querySelectorAll(
     '#categories button'
   );
+
 const storiesContainer =
   document.getElementById('stories');
+
 const empty =
   document.getElementById('empty');
+
 let stories = [];
 
 function formatDate(dateString){
   const date = new Date(dateString);
   const now = new Date();
+
   const today = new Date(
     now.getFullYear(),
     now.getMonth(),
     now.getDate()
   );
+
   const storyDay = new Date(
     date.getFullYear(),
     date.getMonth(),
     date.getDate()
   );
+
   const difference =
     Math.round(
       (today - storyDay) / 86400000
     );
+
   if(difference === 0)
     return 'Today';
+
   if(difference === 1)
     return 'Yesterday';
+
   return date.toLocaleDateString(
     undefined,
     {
@@ -442,10 +457,12 @@ function getStoryUrl(story){
     new URL(
       window.location.origin + '/'
     );
+
   url.searchParams.set(
     'story',
     story.id
   );
+
   return url.toString();
 }
 
@@ -460,6 +477,7 @@ function shareToX(story){
       text:getShareText(story),
       url:getStoryUrl(story)
     }).toString();
+
   window.open(
     shareUrl,
     '_blank',
@@ -473,6 +491,7 @@ function shareToFacebook(story){
     new URLSearchParams({
       u:getStoryUrl(story)
     }).toString();
+
   window.open(
     shareUrl,
     '_blank',
@@ -483,6 +502,7 @@ function shareToFacebook(story){
 async function shareNative(story){
   const storyUrl =
     getStoryUrl(story);
+
   const shareData = {
     title:
       'PMS-ME — Property Manager Stories',
@@ -491,12 +511,14 @@ async function shareNative(story){
     url:
       storyUrl
   };
+
   if(!navigator.share){
     alert(
       'Your browser does not support the Share feature. You can copy the story URL from your browser and share it manually.'
     );
     return;
   }
+
   try{
     if(
       navigator.canShare &&
@@ -653,6 +675,7 @@ async function submitReaction(
       data.reaction_funny;
 
   }catch(error){
+
     button.disabled = false;
 
     console.error(
