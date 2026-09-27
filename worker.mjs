@@ -1,4 +1,4 @@
-// PMS-ME deployment trigger 3
+// PMS-ME deployment trigger 4
 
 function generateAnonymousName() {
   const words = [
@@ -1468,8 +1468,49 @@ export default {
      * =========================================================
      * STATIC ASSETS
      * =========================================================
+     *
+     * HTML pages are deliberately marked no-store so the
+     * browser does not keep serving an older submit.html or
+     * other HTML asset after deployment.
      */
-    return env.ASSETS.fetch(request);
+    const assetResponse =
+      await env.ASSETS.fetch(request);
+
+    const contentType =
+      assetResponse.headers.get("Content-Type") || "";
+
+    if (
+      contentType.toLowerCase().includes("text/html")
+    ) {
+      const headers =
+        new Headers(assetResponse.headers);
+
+      headers.set(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate"
+      );
+
+      headers.set(
+        "Pragma",
+        "no-cache"
+      );
+
+      headers.set(
+        "Expires",
+        "0"
+      );
+
+      return new Response(
+        assetResponse.body,
+        {
+          status: assetResponse.status,
+          statusText: assetResponse.statusText,
+          headers
+        }
+      );
+    }
+
+    return assetResponse;
   },
 
   async scheduled(event, env) {
