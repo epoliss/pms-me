@@ -22,12 +22,14 @@ body{
 header{
   background:rgba(64,224,208,.78);
   color:#a6a6a6;
-  text-align:left;
+  text-align:center;
   padding:18px 20px 22px;
   overflow:hidden
 }
 
 .wordmark{
+  display:inline-block;
+  text-align:left;
   max-width:1200px;
   margin:0 auto;
   font-size:42px;
@@ -41,16 +43,12 @@ header{
   display:block
 }
 
-.wordmark-property{
-  padding-left:0
-}
-
 .wordmark-management{
   padding-left:1.4em
 }
 
 .wordmark-stories{
-  padding-left:2.7em
+  padding-left:calc(2.7em + 1ch)
 }
 
 .wordmark .black{
@@ -310,7 +308,7 @@ footer{
   }
 
   .wordmark-stories{
-    padding-left:2.5em
+    padding-left:calc(2.5em + 1ch)
   }
 
   .every-day{
