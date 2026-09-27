@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PMS-ME — Property Manager Stories</title>
+<title>Property Management Stories — PMS-ME</title>
 
 <style>
 *{box-sizing:border-box}
@@ -15,23 +15,63 @@ body{
   color:#222
 }
 
+/* =========================================================
+   SITE HEADER / WORDMARK
+   ========================================================= */
+
 header{
-  background:#202020;
-  color:#fff;
-  text-align:center;
-  padding:24px 20px 18px
+  background:rgba(64,224,208,.78);
+  color:#a6a6a6;
+  text-align:left;
+  padding:18px 20px 22px;
+  overflow:hidden
 }
 
-.logo{
-  font-size:42px;
+.wordmark{
+  max-width:1200px;
+  margin:0 auto;
+  font-size:106px;
   font-weight:800;
-  letter-spacing:2px
+  line-height:.78;
+  letter-spacing:-4px;
+  white-space:nowrap
 }
 
-.subtitle{
-  margin-top:4px;
-  color:#d6d6d6
+.wordmark-row{
+  display:block
 }
+
+.wordmark-property{
+  padding-left:0
+}
+
+.wordmark-management{
+  padding-left:2ch
+}
+
+.wordmark-stories{
+  padding-left:4ch
+}
+
+.wordmark .black{
+  color:#000
+}
+
+.wordmark .gray{
+  color:#a6a6a6
+}
+
+.every-day{
+  color:#000;
+  font-size:70px;
+  letter-spacing:-2px;
+  vertical-align:middle;
+  margin-left:8px
+}
+
+/* =========================================================
+   CATEGORY NAVIGATION
+   ========================================================= */
 
 nav{
   background:#fff;
@@ -58,8 +98,8 @@ nav button{
 
 nav button:hover,
 nav button.active{
-  background:#222;
-  color:#fff
+  background:rgba(64,224,208,.78);
+  color:#000
 }
 
 .container{
@@ -70,7 +110,7 @@ nav button.active{
 
 .topbar{
   display:flex;
-  justify-content:space-between;
+  justify-content:flex-end;
   align-items:center;
   margin-bottom:18px
 }
@@ -293,10 +333,42 @@ footer{
   padding:30px 15px 45px
 }
 
+@media(max-width:900px){
+
+  .wordmark{
+    font-size:72px;
+    letter-spacing:-3px
+  }
+
+  .every-day{
+    font-size:48px
+  }
+}
+
 @media(max-width:600px){
 
-  .logo{
-    font-size:34px
+  header{
+    padding:16px 12px 18px
+  }
+
+  .wordmark{
+    font-size:48px;
+    letter-spacing:-2px;
+    line-height:.82
+  }
+
+  .every-day{
+    font-size:31px;
+    letter-spacing:-1px;
+    margin-left:5px
+  }
+
+  .wordmark-management{
+    padding-left:2ch
+  }
+
+  .wordmark-stories{
+    padding-left:4ch
   }
 
   .topbar{
@@ -349,8 +421,20 @@ footer{
 <body>
 
 <header>
-  <div class="logo">PMS-ME</div>
-  <div class="subtitle">Property Manager Stories</div>
+  <div class="wordmark">
+    <span class="wordmark-row wordmark-property">
+      <span class="black">P</span><span class="gray">ROPERTY</span>
+    </span>
+
+    <span class="wordmark-row wordmark-management">
+      <span class="black">M</span><span class="gray">ANAGEMENT</span>
+    </span>
+
+    <span class="wordmark-row wordmark-stories">
+      <span class="black">S</span><span class="gray">TORIES</span>
+      <span class="every-day">… for every day</span>
+    </span>
+  </div>
 </header>
 
 <nav id="categories">
@@ -380,8 +464,6 @@ footer{
 <main class="container">
 
   <div class="topbar">
-    <h1>The Tops</h1>
-
     <a class="submit" href="/submit.html">
       Submit a Story
     </a>
