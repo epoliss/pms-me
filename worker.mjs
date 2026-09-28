@@ -2148,19 +2148,20 @@ input[type=text] {
 }
 
 .password-wrap input {
-  padding-right:48px;
+  padding-right:46px;
 }
 
 .password-toggle {
   position:absolute;
-  right:8px;
-  top:50%;
-  transform:translateY(-50%);
-  width:36px;
-  height:36px;
+  right:1px;
+  top:1px;
+  bottom:1px;
+  z-index:2;
+  width:44px;
   margin:0;
   padding:0;
   border:0;
+  border-radius:0 5px 5px 0;
   background:transparent;
   color:#555;
   cursor:pointer;
@@ -2189,7 +2190,7 @@ input[type=text] {
   line-height:1.5;
 }
 
-button {
+button:not(.password-toggle) {
   width:100%;
   margin-top:20px;
   padding:12px;
@@ -2265,13 +2266,10 @@ Password
   minlength="8"
   required
 >
-<button
-  type="button"
-  class="password-toggle"
-  data-target="password"
-  aria-label="Show password"
-  title="Show password"
-></button>
+<button type="button" class="password-toggle" data-target="password" aria-label="Show password" title="Show password">
+<svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+<svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c6.5 0 10 8 10 8a18 18 0 0 1-2.1 3.2"></path><path d="M6.6 6.6C3.5 8.7 2 12 2 12s3.5 8 10 8a10.5 10.5 0 0 0 4.1-.8"></path></svg>
+</button>
 </div>
 
 <label for="confirmPassword">
@@ -2286,13 +2284,10 @@ Confirm Password
   minlength="8"
   required
 >
-<button
-  type="button"
-  class="password-toggle"
-  data-target="confirmPassword"
-  aria-label="Show password"
-  title="Show password"
-></button>
+<button type="button" class="password-toggle" data-target="confirmPassword" aria-label="Show password" title="Show password">
+<svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+<svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c6.5 0 10 8 10 8a18 18 0 0 1-2.1 3.2"></path><path d="M6.6 6.6C3.5 8.7 2 12 2 12s3.5 8 10 8a10.5 10.5 0 0 0 4.1-.8"></path></svg>
+</button>
 </div>
 
 <label class="check">
@@ -2346,9 +2341,6 @@ document
     ".password-toggle"
   )
   .forEach((toggle) => {
-    toggle.innerHTML =
-      eyeClosedIcon;
-
     toggle.addEventListener(
       "click",
       () => {
@@ -2365,10 +2357,15 @@ document
             ? "password"
             : "text";
 
-        toggle.innerHTML =
-          showing
-            ? eyeClosedIcon
-            : eyeOpenIcon;
+        toggle.querySelector(
+          ".eye-open"
+        ).style.display =
+          showing ? "" : "none";
+
+        toggle.querySelector(
+          ".eye-closed"
+        ).style.display =
+          showing ? "none" : "";
 
         toggle.setAttribute(
           "aria-label",
@@ -2565,19 +2562,20 @@ input {
 }
 
 .password-wrap input {
-  padding-right:48px;
+  padding-right:46px;
 }
 
 .password-toggle {
   position:absolute;
-  right:8px;
-  top:50%;
-  transform:translateY(-50%);
-  width:36px;
-  height:36px;
+  right:1px;
+  top:1px;
+  bottom:1px;
+  z-index:2;
+  width:44px;
   margin:0;
   padding:0;
   border:0;
+  border-radius:0 5px 5px 0;
   background:transparent;
   color:#555;
   cursor:pointer;
@@ -2601,7 +2599,7 @@ input {
   stroke-linejoin:round;
 }
 
-button {
+button:not(.password-toggle) {
   width:100%;
   margin-top:20px;
   padding:12px;
@@ -2665,13 +2663,10 @@ Password
   autocomplete="current-password"
   required
 >
-<button
-  type="button"
-  class="password-toggle"
-  data-target="password"
-  aria-label="Show password"
-  title="Show password"
-></button>
+<button type="button" class="password-toggle" data-target="password" aria-label="Show password" title="Show password">
+<svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+<svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c6.5 0 10 8 10 8a18 18 0 0 1-2.1 3.2"></path><path d="M6.6 6.6C3.5 8.7 2 12 2 12s3.5 8 10 8a10.5 10.5 0 0 0 4.1-.8"></path></svg>
+</button>
 </div>
 
 <button type="submit">
@@ -2717,9 +2712,6 @@ document
     ".password-toggle"
   )
   .forEach((toggle) => {
-    toggle.innerHTML =
-      eyeClosedIcon;
-
     toggle.addEventListener(
       "click",
       () => {
@@ -2736,10 +2728,15 @@ document
             ? "password"
             : "text";
 
-        toggle.innerHTML =
-          showing
-            ? eyeClosedIcon
-            : eyeOpenIcon;
+        toggle.querySelector(
+          ".eye-open"
+        ).style.display =
+          showing ? "" : "none";
+
+        toggle.querySelector(
+          ".eye-closed"
+        ).style.display =
+          showing ? "none" : "";
 
         toggle.setAttribute(
           "aria-label",
@@ -2876,7 +2873,7 @@ input {
   margin:10px 0;
 }
 
-button {
+button:not(.password-toggle) {
   width:100%;
   padding:12px;
   background:#222;
@@ -3036,7 +3033,7 @@ input {
 }
 
 .password-wrap input {
-  padding-right:48px;
+  padding-right:46px;
 }
 
 .password-toggle {
@@ -3072,7 +3069,7 @@ input {
   stroke-linejoin:round;
 }
 
-button {
+button:not(.password-toggle) {
   width:100%;
   padding:12px;
   background:#222;
@@ -3106,13 +3103,10 @@ button {
   placeholder="New password"
   required
 >
-<button
-  type="button"
-  class="password-toggle"
-  data-target="password"
-  aria-label="Show password"
-  title="Show password"
-></button>
+<button type="button" class="password-toggle" data-target="password" aria-label="Show password" title="Show password">
+<svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+<svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c6.5 0 10 8 10 8a18 18 0 0 1-2.1 3.2"></path><path d="M6.6 6.6C3.5 8.7 2 12 2 12s3.5 8 10 8a10.5 10.5 0 0 0 4.1-.8"></path></svg>
+</button>
 </div>
 
 <div class="password-wrap">
@@ -3123,13 +3117,10 @@ button {
   placeholder="Confirm new password"
   required
 >
-<button
-  type="button"
-  class="password-toggle"
-  data-target="confirm"
-  aria-label="Show password"
-  title="Show password"
-></button>
+<button type="button" class="password-toggle" data-target="confirm" aria-label="Show password" title="Show password">
+<svg class="eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+<svg class="eye-closed" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><path d="M3 3l18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c6.5 0 10 8 10 8a18 18 0 0 1-2.1 3.2"></path><path d="M6.6 6.6C3.5 8.7 2 12 2 12s3.5 8 10 8a10.5 10.5 0 0 0 4.1-.8"></path></svg>
+</button>
 </div>
 
 <button>
@@ -3162,9 +3153,6 @@ document
     ".password-toggle"
   )
   .forEach((toggle) => {
-    toggle.innerHTML =
-      eyeClosedIcon;
-
     toggle.addEventListener(
       "click",
       () => {
@@ -3181,10 +3169,15 @@ document
             ? "password"
             : "text";
 
-        toggle.innerHTML =
-          showing
-            ? eyeClosedIcon
-            : eyeOpenIcon;
+        toggle.querySelector(
+          ".eye-open"
+        ).style.display =
+          showing ? "" : "none";
+
+        toggle.querySelector(
+          ".eye-closed"
+        ).style.display =
+          showing ? "none" : "";
 
         toggle.setAttribute(
           "aria-label",
@@ -4885,7 +4878,6 @@ export default {
           400
         );
       }
-            }
 
       if (!story) {
         return jsonResponse(
