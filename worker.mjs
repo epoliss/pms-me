@@ -1,5 +1,10 @@
 // PMS-ME deployment trigger 4
 
+const SITE_URL =
+  "https://pms-me-site.epoliss.workers.dev";
+
+const PBKDF2_ITERATIONS = 120000;
+
 function generateAnonymousName() {
   const words = [
     "catliver",
@@ -24,39 +29,65 @@ function generateAnonymousName() {
     "noodle"
   ];
 
-  const word = words[Math.floor(Math.random() * words.length)];
-  const number = Math.floor(100 + Math.random() * 900);
+  const word =
+    words[Math.floor(Math.random() * words.length)];
+
+  const number =
+    Math.floor(100 + Math.random() * 900);
 
   return `${word}${number}`;
 }
 
-function jsonResponse(data, status = 200, extraHeaders = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      ...extraHeaders
+function jsonResponse(
+  data,
+  status = 200,
+  extraHeaders = {}
+) {
+  return new Response(
+    JSON.stringify(data),
+    {
+      status,
+      headers: {
+        "Content-Type":
+          "application/json; charset=utf-8",
+        ...extraHeaders
+      }
     }
-  });
+  );
 }
 
-function htmlResponse(html, status = 200, extraHeaders = {}) {
-  return new Response(html, {
-    status,
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      ...extraHeaders
+function htmlResponse(
+  html,
+  status = 200,
+  extraHeaders = {}
+) {
+  return new Response(
+    html,
+    {
+      status,
+      headers: {
+        "Content-Type":
+          "text/html; charset=utf-8",
+        ...extraHeaders
+      }
     }
-  });
+  );
 }
 
 function base64UrlEncode(bytes) {
   let binary = "";
   const chunkSize = 0x8000;
 
-  for (let i = 0; i < bytes.length; i += chunkSize) {
+  for (
+    let i = 0;
+    i < bytes.length;
+    i += chunkSize
+  ) {
     binary += String.fromCharCode(
-      ...bytes.subarray(i, i + chunkSize)
+      ...bytes.subarray(
+        i,
+        i + chunkSize
+      )
     );
   }
 
@@ -68,104 +99,280 @@ function base64UrlEncode(bytes) {
 
 function base64UrlDecode(value) {
   const padded =
-    value.replace(/-/g, "+").replace(/_/g, "/") +
-    "=".repeat((4 - (value.length % 4)) % 4);
+    value
+      .replace(/-/g, "+")
+      .replace(/_/g, "/") +
+    "=".repeat(
+      (4 - (value.length % 4)) % 4
+    );
 
   const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
+  const bytes =
+    new Uint8Array(binary.length);
 
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+  for (
+    let i = 0;
+    i < binary.length;
+    i++
+  ) {
+    bytes[i] =
+      binary.charCodeAt(i);
   }
 
   return bytes;
 }
 
-async function hmacSign(value, secret) {
-  const keyData = new TextEncoder().encode(secret);
+function randomToken() {
+  const bytes =
+    new Uint8Array(32);
 
-  const key = await crypto.subtle.importKey(
-    "raw",
-    keyData,
-    {
-      name: "HMAC",
-      hash: "SHA-256"
-    },
-    false,
-    ["sign"]
+  crypto.getRandomValues(bytes);
+
+  return base64UrlEncode(bytes);
+}
+
+async function sha256(value) {
+  const data =
+    new TextEncoder().encode(value);
+
+  const digest =
+    await crypto.subtle.digest(
+      "SHA-256",
+      data
+    );
+
+  return base64UrlEncode(
+    new Uint8Array(digest)
   );
+}
 
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(value)
+async function hmacSign(
+  value,
+  secret
+) {
+  const keyData =
+    new TextEncoder().encode(secret);
+
+  const key =
+    await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      {
+        name: "HMAC",
+        hash: "SHA-256"
+      },
+      false,
+      ["sign"]
+    );
+
+  const signature =
+    await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(value)
+    );
+
+  return base64UrlEncode(
+    new Uint8Array(signature)
   );
+}
 
-  return base64UrlEncode(new Uint8Array(signature));
+async function hashPassword(password) {
+  const salt =
+    new Uint8Array(16);
+
+  crypto.getRandomValues(salt);
+
+  const key =
+    await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(password),
+      {
+        name: "PBKDF2"
+      },
+      false,
+      ["deriveBits"]
+    );
+
+  const bits =
+    await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        salt,
+        iterations: PBKDF2_ITERATIONS,
+        hash: "SHA-256"
+      },
+      key,
+      256
+    );
+
+  return [
+    "pbkdf2",
+    PBKDF2_ITERATIONS,
+    base64UrlEncode(salt),
+    base64UrlEncode(
+      new Uint8Array(bits)
+    )
+  ].join("$");
+}
+
+async function verifyPassword(
+  password,
+  stored
+) {
+  try {
+    const parts =
+      stored.split("$");
+
+    if (
+      parts.length !== 4 ||
+      parts[0] !== "pbkdf2"
+    ) {
+      return false;
+    }
+
+    const iterations =
+      Number(parts[1]);
+
+    const salt =
+      base64UrlDecode(parts[2]);
+
+    const expected =
+      base64UrlDecode(parts[3]);
+
+    const key =
+      await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(password),
+        {
+          name: "PBKDF2"
+        },
+        false,
+        ["deriveBits"]
+      );
+
+    const bits =
+      await crypto.subtle.deriveBits(
+        {
+          name: "PBKDF2",
+          salt,
+          iterations,
+          hash: "SHA-256"
+        },
+        key,
+        256
+      );
+
+    const actual =
+      new Uint8Array(bits);
+
+    if (
+      actual.length !==
+      expected.length
+    ) {
+      return false;
+    }
+
+    let difference = 0;
+
+    for (
+      let i = 0;
+      i < actual.length;
+      i++
+    ) {
+      difference |=
+        actual[i] ^ expected[i];
+    }
+
+    return difference === 0;
+  } catch {
+    return false;
+  }
 }
 
 async function createModeratorSession(env) {
-  const expiresAt = Date.now() + 8 * 60 * 60 * 1000;
+  const expiresAt =
+    Date.now() +
+    8 * 60 * 60 * 1000;
 
-  const payload = base64UrlEncode(
-    new TextEncoder().encode(String(expiresAt))
-  );
+  const payload =
+    base64UrlEncode(
+      new TextEncoder().encode(
+        String(expiresAt)
+      )
+    );
 
-  const signature = await hmacSign(
-    payload,
-    env.MODERATOR_SESS_SEC
-  );
+  const signature =
+    await hmacSign(
+      payload,
+      env.MODERATOR_SESS_SEC
+    );
 
   return `${payload}.${signature}`;
 }
 
-async function isModeratorAuthenticated(request, env) {
+async function isModeratorAuthenticated(
+  request,
+  env
+) {
   if (!env.MODERATOR_SESS_SEC) {
     return false;
   }
 
-  const cookieHeader = request.headers.get("Cookie") || "";
+  const cookieHeader =
+    request.headers.get("Cookie") || "";
 
-  const match = cookieHeader.match(
-    /(?:^|;\s*)pms_me_moderator=([^;]+)/
-  );
+  const match =
+    cookieHeader.match(
+      /(?:^|;\s*)pms_me_moderator=([^;]+)/
+    );
 
   if (!match) {
     return false;
   }
 
   const token = match[1];
-  const parts = token.split(".");
+
+  const parts =
+    token.split(".");
 
   if (parts.length !== 2) {
     return false;
   }
 
-  const [payload, suppliedSignature] = parts;
+  const [
+    payload,
+    suppliedSignature
+  ] = parts;
 
   let expectedSignature;
 
   try {
-    expectedSignature = await hmacSign(
-      payload,
-      env.MODERATOR_SESS_SEC
-    );
+    expectedSignature =
+      await hmacSign(
+        payload,
+        env.MODERATOR_SESS_SEC
+      );
   } catch {
     return false;
   }
 
-  if (expectedSignature !== suppliedSignature) {
+  if (
+    expectedSignature !==
+    suppliedSignature
+  ) {
     return false;
   }
 
   let expiresAt;
 
   try {
-    expiresAt = Number(
-      new TextDecoder().decode(
-        base64UrlDecode(payload)
-      )
-    );
+    expiresAt =
+      Number(
+        new TextDecoder().decode(
+          base64UrlDecode(payload)
+        )
+      );
   } catch {
     return false;
   }
@@ -187,187 +394,152 @@ function unauthorizedResponse() {
   );
 }
 
-function moderatorLoginPage() {
-  return htmlResponse(
-    `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PMS-ME — Moderator Login</title>
-
-<style>
-  * {
-    box-sizing: border-box;
-  }
-
-  body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f4f4f4;
-    font-family: Arial, Helvetica, sans-serif;
-    color: #222;
-  }
-
-  .login-box {
-    width: min(420px, calc(100% - 32px));
-    background: white;
-    padding: 32px;
-    border-radius: 10px;
-    box-shadow: 0 2px 12px rgba(0,0,0,.12);
-  }
-
-  h1 {
-    margin: 0 0 10px;
-    font-size: 28px;
-  }
-
-  p {
-    margin: 0 0 24px;
-    color: #666;
-    line-height: 1.5;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-  }
-
-  input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #bbb;
-    border-radius: 6px;
-    font-size: 16px;
-    margin-bottom: 16px;
-  }
-
-  button {
-    width: 100%;
-    padding: 12px;
-    border: 0;
-    border-radius: 6px;
-    background: #222;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-  }
-
-  button:hover {
-    background: #444;
-  }
-
-  #error {
-    display: none;
-    margin-bottom: 16px;
-    padding: 10px;
-    border-radius: 6px;
-    background: #fbe9e7;
-    color: #b71c1c;
-  }
-</style>
-</head>
-
-<body>
-
-<div class="login-box">
-  <h1>Moderator Login</h1>
-
-  <p>
-    Enter the moderator password to access the PMS-ME moderation dashboard.
-  </p>
-
-  <div id="error"></div>
-
-  <form id="loginForm">
-    <label for="password">Password</label>
-
-    <input
-      id="password"
-      name="password"
-      type="password"
-      autocomplete="current-password"
-      required
-      autofocus
-    >
-
-    <button type="submit">Log In</button>
-  </form>
-</div>
-
-<script>
-const form = document.getElementById("loginForm");
-const password = document.getElementById("password");
-const error = document.getElementById("error");
-
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  error.style.display = "none";
-
-  try {
-    const response = await fetch("/api/moderator-login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        password: password.value
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      error.textContent =
-        data.error || "Login failed.";
-
-      error.style.display = "block";
-      password.select();
-      return;
-    }
-
-    window.location.href = "/moderate.html";
-
-  } catch (err) {
-    error.textContent =
-      "Unable to contact the server.";
-
-    error.style.display = "block";
-  }
-});
-</script>
-
-</body>
-</html>`,
-    401,
-    {
-      "Cache-Control": "no-store"
-    }
-  );
-}
-
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
-async function sendEmail(env, to, subject, text, html = null) {
+function normalizeEmail(email) {
+  return String(email || "")
+    .trim()
+    .toLowerCase();
+}
+
+function validEmail(email) {
+  return (
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      email
+    )
+  );
+}
+
+function accountCookie(token) {
+  return (
+    `pms_me_session=${token}; ` +
+    "Path=/; " +
+    "HttpOnly; " +
+    "Secure; " +
+    "SameSite=Lax; " +
+    "Max-Age=2592000"
+  );
+}
+
+function clearAccountCookie() {
+  return (
+    "pms_me_session=; " +
+    "Path=/; " +
+    "HttpOnly; " +
+    "Secure; " +
+    "SameSite=Lax; " +
+    "Max-Age=0"
+  );
+}
+
+async function createUserSession(
+  env,
+  userId
+) {
+  const token =
+    randomToken();
+
+  const tokenHash =
+    await sha256(token);
+
+  const expires =
+    new Date(
+      Date.now() +
+        30 * 24 * 60 * 60 * 1000
+    ).toISOString();
+
+  await env.pms_me_db
+    .prepare(
+      `INSERT INTO user_sessions
+       (user_id, token_hash, expires_at)
+       VALUES (?, ?, ?)`
+    )
+    .bind(
+      userId,
+      tokenHash,
+      expires
+    )
+    .run();
+
+  return token;
+}
+
+async function getCurrentUser(
+  request,
+  env
+) {
+  const cookieHeader =
+    request.headers.get("Cookie") || "";
+
+  const match =
+    cookieHeader.match(
+      /(?:^|;\s*)pms_me_session=([^;]+)/
+    );
+
+  if (!match) {
+    return null;
+  }
+
+  const token = match[1];
+
+  const tokenHash =
+    await sha256(token);
+
+  const user =
+    await env.pms_me_db
+      .prepare(
+        `SELECT
+           u.id,
+           u.email,
+           u.email_verified,
+           u.story_frequency,
+           u.sponsor_emails,
+           u.rss_enabled,
+           u.unsubscribe_token,
+           u.rss_token,
+           u.created_at,
+           s.expires_at
+         FROM user_sessions s
+         JOIN users u
+           ON u.id = s.user_id
+         WHERE s.token_hash = ?
+           AND s.expires_at > CURRENT_TIMESTAMP`
+      )
+      .bind(tokenHash)
+      .first();
+
+  return user || null;
+}
+
+async function sendEmail(
+  env,
+  to,
+  subject,
+  text,
+  html = null
+) {
   if (!env.RESEND_API_KEY) {
-    throw new Error("RESEND_API_KEY is missing");
+    throw new Error(
+      "RESEND_API_KEY is missing"
+    );
   }
 
   const emailBody = {
-    from: "PMS-ME <onboarding@resend.dev>",
+    from:
+      "PMS-ME <onboarding@resend.dev>",
     to: [to],
     subject,
     text
@@ -377,20 +549,26 @@ async function sendEmail(env, to, subject, text, html = null) {
     emailBody.html = html;
   }
 
-  const response = await fetch(
-    "https://api.resend.com/emails",
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${env.RESEND_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(emailBody)
-    }
-  );
+  const response =
+    await fetch(
+      "https://api.resend.com/emails",
+      {
+        method: "POST",
+        headers: {
+          "Authorization":
+            `Bearer ${env.RESEND_API_KEY}`,
+          "Content-Type":
+            "application/json"
+        },
+        body:
+          JSON.stringify(emailBody)
+      }
+    );
 
   if (!response.ok) {
-    const body = await response.text();
+    const body =
+      await response.text();
+
     throw new Error(
       `Email sending failed: ${body}`
     );
@@ -399,20 +577,222 @@ async function sendEmail(env, to, subject, text, html = null) {
   return response.json();
 }
 
-async function sendNewStoryNotification(env, story) {
-  const settings = await env.pms_me_db
-    .prepare(
-      `SELECT email, frequency
-       FROM notification_settings
-       WHERE id = 1`
-    )
-    .first();
+function accountLink(path) {
+  return `${SITE_URL}${path}`;
+}
 
-  if (!settings || !settings.email) {
+function storyLink(id) {
+  return (
+    `${SITE_URL}/?story=${encodeURIComponent(id)}`
+  );
+}
+
+function makeStoryHeading(story) {
+  const title =
+    story.title ||
+    "PMS-ME Story";
+
+  const category =
+    story.category ||
+    "";
+
+  const city =
+    story.city ||
+    "";
+
+  const publicName =
+    story.public_name ||
+    "Anonymous";
+
+  const pieces = [
+    title
+  ];
+
+  if (category) {
+    pieces.push(category);
+  }
+
+  if (city) {
+    pieces.push(city);
+  }
+
+  if (publicName) {
+    pieces.push(publicName);
+  }
+
+  return (
+    `${pieces[0]}: ` +
+    pieces.slice(1).join(", ")
+  );
+}
+
+function makeTeaser(
+  storyText,
+  maxLength = 180
+) {
+  const clean =
+    String(storyText || "")
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  if (clean.length <= maxLength) {
+    return clean;
+  }
+
+  let teaser =
+    clean.slice(
+      0,
+      maxLength
+    );
+
+  const lastSpace =
+    teaser.lastIndexOf(" ");
+
+  if (lastSpace > 80) {
+    teaser =
+      teaser.slice(
+        0,
+        lastSpace
+      );
+  }
+
+  return `${teaser}....`;
+}
+
+function storyEmailText(story) {
+  const heading =
+    makeStoryHeading(story);
+
+  const teaser =
+    makeTeaser(story.story);
+
+  return (
+    `${heading}\n\n` +
+    `${teaser}\n\n` +
+    `Read the full story on PMS-ME:\n` +
+    `${storyLink(story.id)}\n\n` +
+    `Manage your PMS-ME email preferences:\n` +
+    `${accountLink("/account")}\n\n` +
+    `Unsubscribe from PMS-ME account emails:\n` +
+    `${accountLink(
+      `/unsubscribe?token=${encodeURIComponent(
+        story._unsubscribeToken || ""
+      )}`
+    )}`
+  );
+}
+
+function storyEmailHtml(
+  story,
+  unsubscribeToken
+) {
+  const heading =
+    escapeHtml(
+      makeStoryHeading(story)
+    );
+
+  const teaser =
+    escapeHtml(
+      makeTeaser(story.story)
+    );
+
+  const fullStoryUrl =
+    escapeHtml(
+      storyLink(story.id)
+    );
+
+  const settingsUrl =
+    escapeHtml(
+      accountLink("/account")
+    );
+
+  const unsubscribeUrl =
+    escapeHtml(
+      accountLink(
+        `/unsubscribe?token=${encodeURIComponent(
+          unsubscribeToken
+        )}`
+      )
+    );
+
+  return `
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+</head>
+
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#222;">
+
+<div style="padding:30px 15px;background:#f4f4f4;">
+
+<div style="max-width:680px;margin:0 auto;background:#fff;border:1px solid #ddd;padding:32px 36px;">
+
+<h2 style="margin:0 0 20px 0;font-size:22px;line-height:1.35;">
+${heading}
+</h2>
+
+<p style="font-size:16px;line-height:1.6;margin:0 0 24px 0;">
+${teaser}
+</p>
+
+<p style="margin:0 0 28px 0;">
+<a href="${fullStoryUrl}"
+   style="display:inline-block;padding:12px 18px;background:#222;color:#fff;text-decoration:none;border-radius:5px;">
+Read the Full Story
+</a>
+</p>
+
+<p style="font-size:14px;line-height:1.5;margin:0 0 12px 0;">
+<a href="${settingsUrl}">
+Manage your PMS-ME email preferences
+</a>
+</p>
+
+<p style="font-size:13px;line-height:1.5;margin:0;color:#666;">
+<a href="${unsubscribeUrl}">
+Unsubscribe from PMS-ME account emails
+</a>
+</p>
+
+</div>
+
+</div>
+
+</body>
+</html>`;
+}
+
+async function sendNewStoryNotification(
+  env,
+  story
+) {
+  const settings =
+    await env.pms_me_db
+      .prepare(
+        `SELECT
+           email,
+           frequency,
+           last_digest_at
+         FROM notification_settings
+         WHERE id = 1`
+      )
+      .first();
+
+  if (
+    !settings ||
+    !settings.email
+  ) {
     return;
   }
 
-  if (settings.frequency !== "immediately") {
+  if (
+    settings.frequency !==
+    "immediately"
+  ) {
     return;
   }
 
@@ -428,10 +808,15 @@ City: ${story.city || "(not provided)"}
 
 Category: ${story.category}
 
-Display Name: ${story.display_name || "(not provided)"}
+Display Name: ${
+  story.display_name ||
+  "(not provided)"
+}
 
 Anonymous Requested: ${
-  story.anonymous_requested ? "Yes" : "No"
+  story.anonymous_requested
+    ? "Yes"
+    : "No"
 }
 
 Story:
@@ -439,7 +824,8 @@ Story:
 ${story.story}
 
 Review it in the moderator dashboard:
-https://pms-me-site.epoliss.workers.dev/moderate.html`;
+
+${SITE_URL}/moderate.html`;
 
   await sendEmail(
     env,
@@ -449,7 +835,11 @@ https://pms-me-site.epoliss.workers.dev/moderate.html`;
   );
 }
 
-async function sendRejectionEmail(env, story, reason) {
+async function sendRejectionEmail(
+  env,
+  story,
+  reason
+) {
   if (!story.email) {
     return;
   }
@@ -458,7 +848,8 @@ async function sendRejectionEmail(env, story, reason) {
     "PMS-ME — Story Submission Update";
 
   const greetingName =
-    story.display_name || "there";
+    story.display_name ||
+    "there";
 
   const safeGreetingName =
     escapeHtml(greetingName);
@@ -466,7 +857,7 @@ async function sendRejectionEmail(env, story, reason) {
   const safeModeratorNotes =
     escapeHtml(
       reason ||
-      "The submission did not meet the site's submission guidelines."
+        "The submission did not meet the site's submission guidelines."
     );
 
   const safeStory =
@@ -474,16 +865,20 @@ async function sendRejectionEmail(env, story, reason) {
 
   const safeTitle =
     escapeHtml(
-      story.title || "(not provided)"
+      story.title ||
+        "(not provided)"
     );
 
   const safeCity =
     escapeHtml(
-      story.city || "(not provided)"
+      story.city ||
+        "(not provided)"
     );
 
   const safeCategory =
-    escapeHtml(story.category);
+    escapeHtml(
+      story.category
+    );
 
   const text =
 `Hello ${greetingName},
@@ -491,15 +886,24 @@ async function sendRejectionEmail(env, story, reason) {
 Thank you for submitting your story to PMS-ME.
 After review, your submission was not approved for publication.
 
-Title: ${story.title || "(not provided)"}
+Title: ${
+  story.title ||
+  "(not provided)"
+}
 
-City: ${story.city || "(not provided)"}
+City: ${
+  story.city ||
+  "(not provided)"
+}
 
 Category: ${story.category}
 
 MODERATOR'S COMMENT:
 
-${reason || "The submission did not meet the site's submission guidelines."}
+${
+  reason ||
+  "The submission did not meet the site's submission guidelines."
+}
 
 YOUR SUBMITTED STORY:
 
@@ -514,77 +918,80 @@ PMS-ME`;
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
 </head>
 
 <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#222;">
 
-  <div style="margin:0;padding:30px 15px;background:#f4f4f4;">
+<div style="margin:0;padding:30px 15px;background:#f4f4f4;">
 
-    <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #ddd;padding:32px 36px;">
+<div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #ddd;padding:32px 36px;">
 
-      <p style="font-size:16px;margin:0 0 22px 0;">
-        Hello ${safeGreetingName},
-      </p>
+<p style="font-size:16px;margin:0 0 22px 0;">
+Hello ${safeGreetingName},
+</p>
 
-      <p style="font-size:16px;line-height:1.6;margin:0 0 22px 0;">
-        Thank you for submitting your story to PMS-ME.
-        After review, your submission was not approved for publication.
-      </p>
+<p style="font-size:16px;line-height:1.6;margin:0 0 22px 0;">
+Thank you for submitting your story to PMS-ME.
+After review, your submission was not approved for publication.
+</p>
 
-      <table style="width:100%;border-collapse:collapse;margin:0 0 25px 0;font-size:15px;">
-        <tr>
-          <td style="padding:7px 10px 7px 0;font-weight:bold;width:90px;vertical-align:top;">
-            Title:
-          </td>
-          <td style="padding:7px 0;">
-            ${safeTitle}
-          </td>
-        </tr>
+<table style="width:100%;border-collapse:collapse;margin:0 0 25px 0;font-size:15px;">
 
-        <tr>
-          <td style="padding:7px 10px 7px 0;font-weight:bold;vertical-align:top;">
-            City:
-          </td>
-          <td style="padding:7px 0;">
-            ${safeCity}
-          </td>
-        </tr>
+<tr>
+<td style="padding:7px 10px 7px 0;font-weight:bold;width:90px;vertical-align:top;">
+Title:
+</td>
+<td style="padding:7px 0;">
+${safeTitle}
+</td>
+</tr>
 
-        <tr>
-          <td style="padding:7px 10px 7px 0;font-weight:bold;vertical-align:top;">
-            Category:
-          </td>
-          <td style="padding:7px 0;">
-            ${safeCategory}
-          </td>
-        </tr>
-      </table>
+<tr>
+<td style="padding:7px 10px 7px 0;font-weight:bold;vertical-align:top;">
+City:
+</td>
+<td style="padding:7px 0;">
+${safeCity}
+</td>
+</tr>
 
-      <p style="font-size:15px;font-weight:bold;margin:0 0 8px 0;">
-        MODERATOR'S COMMENT:
-      </p>
+<tr>
+<td style="padding:7px 10px 7px 0;font-weight:bold;vertical-align:top;">
+Category:
+</td>
+<td style="padding:7px 0;">
+${safeCategory}
+</td>
+</tr>
 
-      <div style="margin:0 0 25px 0;padding:15px 18px;background:#f3f3f3;border-left:4px solid #999;font-family:Georgia,serif;font-size:15px;line-height:1.6;white-space:pre-wrap;">
-        ${safeModeratorNotes}
-      </div>
+</table>
 
-      <p style="font-size:15px;font-weight:bold;margin:0 0 8px 0;">
-        YOUR SUBMITTED STORY:
-      </p>
+<p style="font-size:15px;font-weight:bold;margin:0 0 8px 0;">
+MODERATOR'S COMMENT:
+</p>
 
-      <div style="margin:0 0 25px 0;padding:15px 18px;background:#f3f3f3;border-left:4px solid #999;font-family:Georgia,serif;font-size:15px;line-height:1.6;white-space:pre-wrap;">
-        ${safeStory}
-      </div>
+<div style="margin:0 0 25px 0;padding:15px 18px;background:#f3f3f3;border-left:4px solid #999;font-family:Georgia,serif;font-size:15px;line-height:1.6;white-space:pre-wrap;">
+${safeModeratorNotes}
+</div>
 
-      <p style="font-size:16px;line-height:1.6;margin:0 0 22px 0;">
-        Thank you,<br>
-        <strong>PMS-ME</strong>
-      </p>
+<p style="font-size:15px;font-weight:bold;margin:0 0 8px 0;">
+YOUR SUBMITTED STORY:
+</p>
 
-    </div>
+<div style="margin:0 0 25px 0;padding:15px 18px;background:#f3f3f3;border-left:4px solid #999;font-family:Georgia,serif;font-size:15px;line-height:1.6;white-space:pre-wrap;">
+${safeStory}
+</div>
 
-  </div>
+<p style="font-size:16px;line-height:1.6;margin:0;">
+Thank you,<br>
+<strong>PMS-ME</strong>
+</p>
+
+</div>
+
+</div>
 
 </body>
 </html>`;
@@ -598,14 +1005,368 @@ PMS-ME`;
   );
 }
 
-async function sendDailyDigest(env) {
-  const settings = await env.pms_me_db
+async function sendVerificationEmail(
+  env,
+  email,
+  token
+) {
+  const url =
+    accountLink(
+      `/verify-email?token=${encodeURIComponent(
+        token
+      )}`
+    );
+
+  const text =
+`Welcome to PMS-ME.
+
+Please verify your email address by opening this link:
+
+${url}
+
+After verification, your PMS-ME account will be ready.
+
+If you did not create this account, you can ignore this email.`;
+
+  const html =
+`<!doctype html>
+<html>
+<body style="margin:0;padding:30px;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+
+<div style="max-width:650px;margin:auto;background:#fff;border:1px solid #ddd;padding:32px;">
+
+<h2>Welcome to PMS-ME</h2>
+
+<p>Please verify your email address to activate your account.</p>
+
+<p>
+<a href="${escapeHtml(url)}"
+style="display:inline-block;padding:12px 18px;background:#222;color:#fff;text-decoration:none;border-radius:5px;">
+Verify My Email
+</a>
+</p>
+
+<p style="font-size:13px;color:#666;">
+If you did not create this account, you can ignore this email.
+</p>
+
+</div>
+
+</body>
+</html>`;
+
+  await sendEmail(
+    env,
+    email,
+    "PMS-ME — Verify Your Email",
+    text,
+    html
+  );
+}
+
+async function sendPasswordResetEmail(
+  env,
+  email,
+  token
+) {
+  const url =
+    accountLink(
+      `/reset-password?token=${encodeURIComponent(
+        token
+      )}`
+    );
+
+  const text =
+`A password reset was requested for your PMS-ME account.
+
+Reset your password here:
+
+${url}
+
+This link expires in one hour.
+
+If you did not request this, you can ignore this email.`;
+
+  await sendEmail(
+    env,
+    email,
+    "PMS-ME — Password Reset",
+    text
+  );
+}
+
+async function sendImmediatePublishedStoryEmail(
+  env,
+  user,
+  story
+) {
+  const subject =
+    `PMS-ME — ${makeStoryHeading(
+      story
+    )}`;
+
+  const text =
+`A new PMS-ME story has been published.
+
+${makeStoryHeading(story)}
+
+${makeTeaser(story.story)}
+
+Read the full story:
+
+${storyLink(story.id)}
+
+Manage your PMS-ME email preferences:
+
+${accountLink("/account")}
+
+Unsubscribe from PMS-ME account emails:
+
+${accountLink(
+  `/unsubscribe?token=${encodeURIComponent(
+    user.unsubscribe_token
+  )}`
+)}`;
+
+  const html =
+    storyEmailHtml(
+      story,
+      user.unsubscribe_token
+    );
+
+  await sendEmail(
+    env,
+    user.email,
+    subject,
+    text,
+    html
+  );
+
+  await env.pms_me_db
     .prepare(
-      `SELECT email, frequency, last_digest_at
-       FROM notification_settings
-       WHERE id = 1`
+      `INSERT INTO email_deliveries
+       (user_id, story_id, email_type)
+       VALUES (?, ?, 'immediate')`
     )
-    .first();
+    .bind(
+      user.id,
+      story.id
+    )
+    .run();
+}
+
+async function sendPublishedStoryNotifications(
+  env,
+  story
+) {
+  const users =
+    await env.pms_me_db
+      .prepare(
+        `SELECT
+           id,
+           email,
+           story_frequency,
+           unsubscribe_token
+         FROM users
+         WHERE email_verified = 1
+           AND story_frequency = 'immediate'`
+      )
+      .all();
+
+  if (
+    !users.results ||
+    users.results.length === 0
+  ) {
+    return;
+  }
+
+  for (
+    const user of users.results
+  ) {
+    try {
+      const alreadySent =
+        await env.pms_me_db
+          .prepare(
+            `SELECT id
+             FROM email_deliveries
+             WHERE user_id = ?
+               AND story_id = ?
+               AND email_type = 'immediate'
+             LIMIT 1`
+          )
+          .bind(
+            user.id,
+            story.id
+          )
+          .first();
+
+      if (alreadySent) {
+        continue;
+      }
+
+      await sendImmediatePublishedStoryEmail(
+        env,
+        user,
+        story
+      );
+    } catch (error) {
+      console.error(
+        "Published story email failed:",
+        user.email,
+        error
+      );
+    }
+  }
+}
+
+async function sendWeeklyDigests(
+  env
+) {
+  const users =
+    await env.pms_me_db
+      .prepare(
+        `SELECT
+           id,
+           email,
+           story_frequency,
+           unsubscribe_token
+         FROM users
+         WHERE email_verified = 1
+           AND story_frequency = 'weekly'`
+      )
+      .all();
+
+  if (
+    !users.results ||
+    users.results.length === 0
+  ) {
+    return;
+  }
+
+  const stories =
+    await env.pms_me_db
+      .prepare(
+        `SELECT
+           id,
+           title,
+           city,
+           story,
+           category,
+           public_name,
+           published_at
+         FROM stories
+         WHERE status = 'published'
+           AND published_at IS NOT NULL
+           AND published_at >= datetime(
+             'now',
+             '-7 days'
+           )
+         ORDER BY published_at DESC`
+      )
+      .all();
+
+  if (
+    !stories.results ||
+    stories.results.length === 0
+  ) {
+    return;
+  }
+
+  for (
+    const user of users.results
+  ) {
+    try {
+      const recentDigest =
+        await env.pms_me_db
+          .prepare(
+            `SELECT id
+             FROM email_deliveries
+             WHERE user_id = ?
+               AND email_type = 'weekly_digest'
+               AND sent_at >= datetime(
+                 'now',
+                 '-7 days'
+               )
+             LIMIT 1`
+          )
+          .bind(user.id)
+          .first();
+
+      if (recentDigest) {
+        continue;
+      }
+
+      const blocks = [];
+
+      for (
+        const story of stories.results
+      ) {
+        blocks.push(
+          `${makeStoryHeading(story)}\n\n` +
+          `${makeTeaser(story.story)}\n\n` +
+          `Read the full story:\n` +
+          `${storyLink(story.id)}`
+        );
+      }
+
+      const text =
+`Here are the latest stories published on PMS-ME.
+
+${blocks.join(
+  "\n\n------------------------------\n\n"
+)}
+
+Manage your PMS-ME email preferences:
+
+${accountLink("/account")}
+
+Unsubscribe from PMS-ME account emails:
+
+${accountLink(
+  `/unsubscribe?token=${encodeURIComponent(
+    user.unsubscribe_token
+  )}`
+)}`;
+
+      await sendEmail(
+        env,
+        user.email,
+        "PMS-ME — Weekly Story Digest",
+        text
+      );
+
+      await env.pms_me_db
+        .prepare(
+          `INSERT INTO email_deliveries
+           (user_id, story_id, email_type)
+           VALUES (?, NULL, 'weekly_digest')`
+        )
+        .bind(user.id)
+        .run();
+    } catch (error) {
+      console.error(
+        "Weekly digest failed:",
+        user.email,
+        error
+      );
+    }
+  }
+}
+
+async function sendDailyDigest(
+  env
+) {
+  const settings =
+    await env.pms_me_db
+      .prepare(
+        `SELECT
+           email,
+           frequency,
+           last_digest_at
+         FROM notification_settings
+         WHERE id = 1`
+      )
+      .first();
 
   if (
     !settings ||
@@ -615,17 +1376,28 @@ async function sendDailyDigest(env) {
     return;
   }
 
-  const stories = await env.pms_me_db
-    .prepare(
-      `SELECT id, title, city, story, category, display_name,
-              anonymous_requested, created_at
-       FROM stories
-       WHERE status = 'pending'
-       ORDER BY created_at ASC`
-    )
-    .all();
+  const stories =
+    await env.pms_me_db
+      .prepare(
+        `SELECT
+           id,
+           title,
+           city,
+           story,
+           category,
+           display_name,
+           anonymous_requested,
+           created_at
+         FROM stories
+         WHERE status = 'pending'
+         ORDER BY created_at ASC`
+      )
+      .all();
 
-  if (!stories.results || stories.results.length === 0) {
+  if (
+    !stories.results ||
+    stories.results.length === 0
+  ) {
     return;
   }
 
@@ -634,33 +1406,68 @@ async function sendDailyDigest(env) {
   lines.push(
     "The following PMS-ME stories are awaiting moderation."
   );
+
   lines.push("");
 
-  for (const story of stories.results) {
-    lines.push(`ID: ${story.id}`);
-    lines.push(`Title: ${story.title || "(not provided)"}`);
-    lines.push(`City: ${story.city || "(not provided)"}`);
-    lines.push(`Category: ${story.category}`);
+  for (
+    const story of stories.results
+  ) {
     lines.push(
-      `Display Name: ${story.display_name || "(not provided)"}`
+      `ID: ${story.id}`
     );
+
     lines.push(
-      `Anonymous Requested: ${
-        story.anonymous_requested ? "Yes" : "No"
+      `Title: ${
+        story.title ||
+        "(not provided)"
       }`
     );
+
+    lines.push(
+      `City: ${
+        story.city ||
+        "(not provided)"
+      }`
+    );
+
+    lines.push(
+      `Category: ${story.category}`
+    );
+
+    lines.push(
+      `Display Name: ${
+        story.display_name ||
+        "(not provided)"
+      }`
+    );
+
+    lines.push(
+      `Anonymous Requested: ${
+        story.anonymous_requested
+          ? "Yes"
+          : "No"
+      }`
+    );
+
     lines.push("");
+
     lines.push(story.story);
+
     lines.push("");
-    lines.push("------------------------------");
+
+    lines.push(
+      "------------------------------"
+    );
+
     lines.push("");
   }
 
   lines.push(
     "Moderator dashboard:"
   );
+
   lines.push(
-    "https://pms-me-site.epoliss.workers.dev/moderate.html"
+    `${SITE_URL}/moderate.html`
   );
 
   await sendEmail(
@@ -673,23 +1480,2636 @@ async function sendDailyDigest(env) {
   await env.pms_me_db
     .prepare(
       `UPDATE notification_settings
-       SET last_digest_at = CURRENT_TIMESTAMP
+       SET last_digest_at =
+         CURRENT_TIMESTAMP
        WHERE id = 1`
     )
     .run();
 }
 
+function moderatorLoginPage() {
+  return htmlResponse(
+`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+<title>PMS-ME — Moderator Login</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f4f4;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #222;
+}
+
+.login-box {
+  width: min(420px, calc(100% - 32px));
+  background: white;
+  padding: 32px;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.12);
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+}
+
+p {
+  margin: 0 0 24px;
+  color: #666;
+  line-height: 1.5;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #222;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #444;
+}
+
+#error {
+  display: none;
+  margin-bottom: 16px;
+  padding: 10px;
+  border-radius: 6px;
+  background: #fbe9e7;
+  color: #b71c1c;
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-box">
+
+<h1>Moderator Login</h1>
+
+<p>
+Enter the moderator password to access the PMS-ME moderation dashboard.
+</p>
+
+<div id="error"></div>
+
+<form id="loginForm">
+
+<label for="password">
+Password
+</label>
+
+<input
+  id="password"
+  name="password"
+  type="password"
+  autocomplete="current-password"
+  required
+  autofocus
+>
+
+<button type="submit">
+Log In
+</button>
+
+</form>
+
+</div>
+
+<script>
+const form =
+  document.getElementById("loginForm");
+
+const password =
+  document.getElementById("password");
+
+const error =
+  document.getElementById("error");
+
+form.addEventListener(
+  "submit",
+  async (event) => {
+    event.preventDefault();
+
+    error.style.display = "none";
+
+    try {
+      const response =
+        await fetch(
+          "/api/moderator-login",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            credentials:
+              "same-origin",
+            body:
+              JSON.stringify({
+                password:
+                  password.value
+              })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        error.textContent =
+          data.error ||
+          "Login failed.";
+
+        error.style.display =
+          "block";
+
+        password.select();
+
+        return;
+      }
+
+      window.location.href =
+        "/moderate.html";
+
+    } catch (err) {
+      error.textContent =
+        "Unable to contact the server.";
+
+      error.style.display =
+        "block";
+    }
+  }
+);
+</script>
+
+</body>
+</html>`,
+    401,
+    {
+      "Cache-Control":
+        "no-store"
+    }
+  );
+}
+
+function accountPage(
+  user
+) {
+  const verified =
+    !!user.email_verified;
+
+  return htmlResponse(
+`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+<title>PMS-ME — My Account</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f4f4f4;
+  color: #222;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+header {
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  padding: 24px 15px;
+  text-align: center;
+}
+
+.logo {
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: -2px;
+}
+
+.container {
+  width: min(680px, calc(100% - 30px));
+  margin: 30px auto;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+h1 {
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 20px;
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  margin: 14px 0 7px;
+  font-weight: bold;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #bbb;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+button {
+  margin-top: 20px;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 5px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #777;
+}
+
+.notice {
+  padding: 12px;
+  background: #f5f5f5;
+  border-left: 4px solid #777;
+  margin-bottom: 20px;
+}
+
+.success {
+  color: #176b2c;
+}
+
+.error {
+  color: #b71c1c;
+}
+
+a {
+  color: #222;
+}
+
+.small {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<a href="/"
+style="color:inherit;text-decoration:none;">
+<div class="logo">PMS-ME</div>
+</a>
+</header>
+
+<div class="container">
+
+<div class="card">
+
+<h1>My PMS-ME Account</h1>
+
+<p>
+<strong>${escapeHtml(
+  user.email
+)}</strong>
+</p>
+
+${
+  !verified
+    ? `
+<div class="notice">
+Your email address has not yet been verified.
+Please check your email for the verification link.
+</div>
+`
+    : ""
+}
+
+<div id="message"></div>
+
+<h2>Email Updates</h2>
+
+<p class="small">
+Choose how often you want to hear about newly published PMS-ME stories.
+</p>
+
+<label for="frequency">
+Story updates
+</label>
+
+<select id="frequency">
+<option value="weekly"
+${
+  user.story_frequency ===
+  "weekly"
+    ? "selected"
+    : ""
+}>
+Weekly Digest
+</option>
+
+<option value="immediate"
+${
+  user.story_frequency ===
+  "immediate"
+    ? "selected"
+    : ""
+}>
+Immediate Updates
+</option>
+
+<option value="off"
+${
+  user.story_frequency ===
+  "off"
+    ? "selected"
+    : ""
+}>
+Unsubscribe
+</option>
+</select>
+
+<h2 style="margin-top:30px;">
+Other PMS-ME Communications
+</h2>
+
+<label>
+<input
+  id="sponsorEmails"
+  type="checkbox"
+  style="width:auto;margin-right:8px;"
+  ${
+    user.sponsor_emails
+      ? "checked"
+      : ""
+  }
+>
+Receive occasional sponsor emails
+</label>
+
+<p class="small">
+Sponsor communications are not being sent yet. This setting is being provided now so your account is ready for future sponsor communications.
+</p>
+
+<label>
+<input
+  id="rssEnabled"
+  type="checkbox"
+  style="width:auto;margin-right:8px;"
+  ${
+    user.rss_enabled
+      ? "checked"
+      : ""
+  }
+>
+Enable my PMS-ME RSS feed
+</label>
+
+<p class="small">
+Your personal RSS feed will be available here:
+<br>
+<strong id="rssUrl">
+${escapeHtml(
+  accountLink(
+    `/rss.xml?token=${encodeURIComponent(
+      user.rss_token
+    )}`
+  )
+)}
+</strong>
+</p>
+
+<button id="saveButton">
+Save Preferences
+</button>
+
+<button
+  id="logoutButton"
+  class="secondary"
+  type="button">
+Log Out
+</button>
+
+</div>
+
+<div class="card">
+
+<h2>Account Email</h2>
+
+<p class="small">
+Account security messages such as email verification and password recovery may still be sent when necessary.
+</p>
+
+<p>
+<a href="/forgot-password">
+Reset Password
+</a>
+</p>
+
+</div>
+
+</div>
+
+<script>
+const frequency =
+  document.getElementById(
+    "frequency"
+  );
+
+const sponsorEmails =
+  document.getElementById(
+    "sponsorEmails"
+  );
+
+const rssEnabled =
+  document.getElementById(
+    "rssEnabled"
+  );
+
+const saveButton =
+  document.getElementById(
+    "saveButton"
+  );
+
+const logoutButton =
+  document.getElementById(
+    "logoutButton"
+  );
+
+const message =
+  document.getElementById(
+    "message"
+  );
+
+saveButton.addEventListener(
+  "click",
+  async () => {
+
+    message.className = "";
+    message.textContent =
+      "Saving...";
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/account/preferences",
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            credentials:
+              "same-origin",
+            body:
+              JSON.stringify({
+                frequency:
+                  frequency.value,
+                sponsor_emails:
+                  sponsorEmails.checked,
+                rss_enabled:
+                  rssEnabled.checked
+              })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          "Unable to save preferences."
+        );
+      }
+
+      message.className =
+        "success";
+
+      message.textContent =
+        "Your preferences have been saved.";
+
+    } catch (error) {
+
+      message.className =
+        "error";
+
+      message.textContent =
+        error.message;
+    }
+  }
+);
+
+logoutButton.addEventListener(
+  "click",
+  async () => {
+
+    await fetch(
+      "/api/account/logout",
+      {
+        method: "POST",
+        credentials:
+          "same-origin"
+      }
+    );
+
+    window.location.href =
+      "/";
+  }
+);
+</script>
+
+</body>
+</html>`,
+    200,
+    {
+      "Cache-Control":
+        "no-store"
+    }
+  );
+}
+
+function registerPage() {
+  return htmlResponse(
+`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+<title>PMS-ME — Create Account</title>
+
+<style>
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  background:#f4f4f4;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#222;
+}
+
+header {
+  background:#fff;
+  border-bottom:1px solid #ddd;
+  padding:24px;
+  text-align:center;
+}
+
+.logo {
+  font-size:38px;
+  font-weight:900;
+  letter-spacing:-2px;
+}
+
+.container {
+  width:min(520px,calc(100% - 30px));
+  margin:30px auto;
+}
+
+.card {
+  background:#fff;
+  border:1px solid #ddd;
+  padding:28px;
+}
+
+h1 {
+  margin-top:0;
+}
+
+label {
+  display:block;
+  margin:15px 0 7px;
+  font-weight:bold;
+}
+
+input[type=email],
+input[type=password] {
+  width:100%;
+  padding:11px;
+  border:1px solid #bbb;
+  border-radius:5px;
+  font-size:16px;
+}
+
+.check {
+  font-weight:normal;
+  line-height:1.5;
+}
+
+button {
+  width:100%;
+  margin-top:20px;
+  padding:12px;
+  border:0;
+  border-radius:5px;
+  background:#222;
+  color:#fff;
+  font-size:16px;
+  cursor:pointer;
+}
+
+#error {
+  display:none;
+  color:#b71c1c;
+  margin-bottom:15px;
+}
+
+.small {
+  color:#666;
+  font-size:14px;
+  line-height:1.5;
+}
+
+a {
+  color:#222;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<a href="/"
+style="color:inherit;text-decoration:none;">
+<div class="logo">PMS-ME</div>
+</a>
+</header>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Create Your PMS-ME Account</h1>
+
+<p>
+Create an account to receive updates when new stories are published.
+</p>
+
+<div id="error"></div>
+
+<form id="registerForm">
+
+<label for="email">
+Email Address
+</label>
+
+<input
+  id="email"
+  type="email"
+  autocomplete="email"
+  required
+>
+
+<label for="password">
+Password
+</label>
+
+<input
+  id="password"
+  type="password"
+  autocomplete="new-password"
+  minlength="8"
+  required
+>
+
+<label for="confirmPassword">
+Confirm Password
+</label>
+
+<input
+  id="confirmPassword"
+  type="password"
+  autocomplete="new-password"
+  minlength="8"
+  required
+>
+
+<label class="check">
+<input
+  id="terms"
+  type="checkbox"
+  required
+>
+I agree to the
+<a href="/terms-of-service.pdf"
+target="_blank">
+PMS-ME Terms of Service
+</a>.
+</label>
+
+<button type="submit">
+Create Account
+</button>
+
+</form>
+
+<p class="small"
+style="margin-top:20px;">
+Already have an account?
+<a href="/login">
+Log In
+</a>
+</p>
+
+</div>
+
+</div>
+
+<script>
+const form =
+  document.getElementById(
+    "registerForm"
+  );
+
+const error =
+  document.getElementById(
+    "error"
+  );
+
+form.addEventListener(
+  "submit",
+  async (event) => {
+
+    event.preventDefault();
+
+    error.style.display =
+      "none";
+
+    const password =
+      document.getElementById(
+        "password"
+      ).value;
+
+    const confirmPassword =
+      document.getElementById(
+        "confirmPassword"
+      ).value;
+
+    if (
+      password !==
+      confirmPassword
+    ) {
+      error.textContent =
+        "The passwords do not match.";
+
+      error.style.display =
+        "block";
+
+      return;
+    }
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/account/register",
+          {
+            method:"POST",
+            headers:{
+              "Content-Type":
+                "application/json"
+            },
+            body:
+              JSON.stringify({
+                email:
+                  document.getElementById(
+                    "email"
+                  ).value,
+                password,
+                terms_accepted:
+                  document.getElementById(
+                    "terms"
+                  ).checked
+              })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          "Unable to create account."
+        );
+      }
+
+      document.querySelector(
+        ".card"
+      ).innerHTML =
+        "<h1>Check Your Email</h1>" +
+        "<p>Your PMS-ME account has been created.</p>" +
+        "<p>We sent a verification link to <strong>" +
+        data.email +
+        "</strong>.</p>" +
+        "<p>Please verify your email address before using your account.</p>" +
+        "<p><a href='/login'>Go to Login</a></p>";
+
+    } catch (error) {
+
+      error.textContent =
+        error.message;
+
+      error.style.display =
+        "block";
+    }
+  }
+);
+</script>
+
+</body>
+</html>`,
+    200,
+    {
+      "Cache-Control":
+        "no-store"
+    }
+  );
+}
+
+function loginPage() {
+  return htmlResponse(
+`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+<title>PMS-ME — Log In</title>
+
+<style>
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  background:#f4f4f4;
+  font-family:Arial,Helvetica,sans-serif;
+  color:#222;
+}
+
+header {
+  background:#fff;
+  border-bottom:1px solid #ddd;
+  padding:24px;
+  text-align:center;
+}
+
+.logo {
+  font-size:38px;
+  font-weight:900;
+  letter-spacing:-2px;
+}
+
+.container {
+  width:min(480px,calc(100% - 30px));
+  margin:30px auto;
+}
+
+.card {
+  background:#fff;
+  border:1px solid #ddd;
+  padding:28px;
+}
+
+h1 {
+  margin-top:0;
+}
+
+label {
+  display:block;
+  margin:15px 0 7px;
+  font-weight:bold;
+}
+
+input {
+  width:100%;
+  padding:11px;
+  border:1px solid #bbb;
+  border-radius:5px;
+  font-size:16px;
+}
+
+button {
+  width:100%;
+  margin-top:20px;
+  padding:12px;
+  border:0;
+  border-radius:5px;
+  background:#222;
+  color:#fff;
+  font-size:16px;
+}
+
+#error {
+  display:none;
+  color:#b71c1c;
+  margin-bottom:15px;
+}
+
+a {
+  color:#222;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<a href="/"
+style="color:inherit;text-decoration:none;">
+<div class="logo">PMS-ME</div>
+</a>
+</header>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Log In</h1>
+
+<div id="error"></div>
+
+<form id="loginForm">
+
+<label for="email">
+Email Address
+</label>
+
+<input
+  id="email"
+  type="email"
+  autocomplete="email"
+  required
+>
+
+<label for="password">
+Password
+</label>
+
+<input
+  id="password"
+  type="password"
+  autocomplete="current-password"
+  required
+>
+
+<button type="submit">
+Log In
+</button>
+
+</form>
+
+<p>
+<a href="/forgot-password">
+Forgot your password?
+</a>
+</p>
+
+<p>
+Don't have an account?
+<a href="/register">
+Create one
+</a>
+</p>
+
+</div>
+
+</div>
+
+<script>
+const form =
+  document.getElementById(
+    "loginForm"
+  );
+
+const error =
+  document.getElementById(
+    "error"
+  );
+
+form.addEventListener(
+  "submit",
+  async (event) => {
+
+    event.preventDefault();
+
+    error.style.display =
+      "none";
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/account/login",
+          {
+            method:"POST",
+            headers:{
+              "Content-Type":
+                "application/json"
+            },
+            credentials:
+              "same-origin",
+            body:
+              JSON.stringify({
+                email:
+                  document.getElementById(
+                    "email"
+                  ).value,
+                password:
+                  document.getElementById(
+                    "password"
+                  ).value
+              })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          "Login failed."
+        );
+      }
+
+      window.location.href =
+        "/account";
+
+    } catch (err) {
+
+      error.textContent =
+        err.message;
+
+      error.style.display =
+        "block";
+    }
+  }
+);
+</script>
+
+</body>
+</html>`,
+    200,
+    {
+      "Cache-Control":
+        "no-store"
+    }
+  );
+}
+
+function forgotPasswordPage() {
+  return htmlResponse(
+`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+<title>PMS-ME — Reset Password</title>
+
+<style>
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  background:#f4f4f4;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+.container {
+  width:min(480px,calc(100% - 30px));
+  margin:60px auto;
+}
+
+.card {
+  background:#fff;
+  border:1px solid #ddd;
+  padding:30px;
+}
+
+input {
+  width:100%;
+  padding:11px;
+  font-size:16px;
+  margin:10px 0;
+}
+
+button {
+  width:100%;
+  padding:12px;
+  background:#222;
+  color:#fff;
+  border:0;
+  cursor:pointer;
+}
+
+#error {
+  color:#b71c1c;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Reset Password</h1>
+
+<div id="error"></div>
+
+<form id="form">
+
+<input
+  id="email"
+  type="email"
+  placeholder="Email address"
+  required
+>
+
+<button>
+Send Reset Link
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+<script>
+document
+  .getElementById("form")
+  .addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+      const error =
+        document.getElementById(
+          "error"
+        );
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/account/forgot-password",
+            {
+              method:"POST",
+              headers:{
+                "Content-Type":
+                  "application/json"
+              },
+              body:
+                JSON.stringify({
+                  email:
+                    document.getElementById(
+                      "email"
+                    ).value
+                })
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+            "Unable to process request."
+          );
+        }
+
+        document.querySelector(
+          ".card"
+        ).innerHTML =
+          "<h1>Check Your Email</h1>" +
+          "<p>If an account exists for that email address, a password-reset link has been sent.</p>";
+
+      } catch (err) {
+
+        error.textContent =
+          err.message;
+      }
+    }
+  );
+</script>
+
+</body>
+</html>`,
+    200,
+    {
+      "Cache-Control":
+        "no-store"
+    }
+  );
+}
+
+function resetPasswordPage(
+  token
+) {
+  return htmlResponse(
+`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+<title>PMS-ME — Choose New Password</title>
+
+<style>
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  background:#f4f4f4;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+.container {
+  width:min(480px,calc(100% - 30px));
+  margin:60px auto;
+}
+
+.card {
+  background:#fff;
+  border:1px solid #ddd;
+  padding:30px;
+}
+
+input {
+  width:100%;
+  padding:11px;
+  font-size:16px;
+  margin:10px 0 16px;
+}
+
+button {
+  width:100%;
+  padding:12px;
+  background:#222;
+  color:#fff;
+  border:0;
+}
+
+#error {
+  color:#b71c1c;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Choose a New Password</h1>
+
+<div id="error"></div>
+
+<form id="form">
+
+<input
+  id="password"
+  type="password"
+  minlength="8"
+  placeholder="New password"
+  required
+>
+
+<input
+  id="confirm"
+  type="password"
+  minlength="8"
+  placeholder="Confirm new password"
+  required
+>
+
+<button>
+Set New Password
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+<script>
+const token =
+  ${JSON.stringify(token)};
+
+document
+  .getElementById("form")
+  .addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+      const error =
+        document.getElementById(
+          "error"
+        );
+
+      const password =
+        document.getElementById(
+          "password"
+        ).value;
+
+      const confirm =
+        document.getElementById(
+          "confirm"
+        ).value;
+
+      if (
+        password !== confirm
+      ) {
+        error.textContent =
+          "The passwords do not match.";
+
+        return;
+      }
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/account/reset-password",
+            {
+              method:"POST",
+              headers:{
+                "Content-Type":
+                  "application/json"
+              },
+              body:
+                JSON.stringify({
+                  token,
+                  password
+                })
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+            "Unable to reset password."
+          );
+        }
+
+        document.querySelector(
+          ".card"
+        ).innerHTML =
+          "<h1>Password Updated</h1>" +
+          "<p>Your password has been changed.</p>" +
+          "<p><a href='/login'>Log In</a></p>";
+
+      } catch (err) {
+
+        error.textContent =
+          err.message;
+      }
+    }
+  );
+</script>
+
+</body>
+</html>`,
+    200,
+    {
+      "Cache-Control":
+        "no-store"
+    }
+  );
+}
+
+function verifyEmailPage(
+  success
+) {
+  return htmlResponse(
+`<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+<title>PMS-ME — Email Verification</title>
+<style>
+body {
+  margin:0;
+  background:#f4f4f4;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+.card {
+  width:min(560px,calc(100% - 30px));
+  margin:80px auto;
+  background:#fff;
+  border:1px solid #ddd;
+  padding:30px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h1>
+${
+  success
+    ? "Email Verified"
+    : "Verification Problem"
+}
+</h1>
+
+<p>
+${
+  success
+    ? "Your PMS-ME account is now active."
+    : "This verification link is invalid or has expired."
+}
+</p>
+
+<p>
+<a href="${
+  success
+    ? "/account"
+    : "/login"
+}">
+${
+  success
+    ? "Go to My Account"
+    : "Go to Login"
+}
+</a>
+</p>
+
+</div>
+
+</body>
+</html>`,
+    200,
+    {
+      "Cache-Control":
+        "no-store"
+    }
+  );
+}
+
+function unsubscribePage() {
+  return htmlResponse(
+`<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+<title>PMS-ME — Unsubscribe</title>
+<style>
+body {
+  margin:0;
+  background:#f4f4f4;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+.card {
+  width:min(560px,calc(100% - 30px));
+  margin:80px auto;
+  background:#fff;
+  border:1px solid #ddd;
+  padding:30px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h1>PMS-ME Email Preferences</h1>
+
+<p>
+Your PMS-ME account email updates have been turned off.
+</p>
+
+<p>
+You can change your preferences at any time by logging into your account.
+</p>
+
+<p>
+<a href="/login">
+Log In
+</a>
+</p>
+
+</div>
+
+</body>
+</html>`,
+    200,
+    {
+      "Cache-Control":
+        "no-store"
+    }
+  );
+}
+
+function rssXml(
+  stories
+) {
+  const items =
+    stories.map(
+      story => {
+
+        const title =
+          escapeHtml(
+            makeStoryHeading(
+              story
+            )
+          );
+
+        const description =
+          escapeHtml(
+            makeTeaser(
+              story.story,
+              300
+            )
+          );
+
+        const link =
+          escapeHtml(
+            storyLink(
+              story.id
+            )
+          );
+
+        const pubDate =
+          new Date(
+            story.published_at
+          ).toUTCString();
+
+        return `
+<item>
+<title>${title}</title>
+<link>${link}</link>
+<guid>${link}</guid>
+<description>${description}</description>
+<pubDate>${pubDate}</pubDate>
+</item>`;
+      }
+    ).join("");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>PMS-ME — Property Manager Stories</title>
+<link>${SITE_URL}</link>
+<description>Latest published stories from PMS-ME.</description>
+${items}
+</channel>
+</rss>`;
+}
+
 export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
+
+  async fetch(
+    request,
+    env
+  ) {
+
+    const url =
+      new URL(request.url);
+
+    /*
+     * =========================================================
+     * ACCOUNT PAGES
+     * =========================================================
+     */
+
+    if (
+      url.pathname === "/register" &&
+      request.method === "GET"
+    ) {
+      return registerPage();
+    }
+
+    if (
+      url.pathname === "/login" &&
+      request.method === "GET"
+    ) {
+      const user =
+        await getCurrentUser(
+          request,
+          env
+        );
+
+      if (user) {
+        return new Response(
+          null,
+          {
+            status: 302,
+            headers: {
+              Location:
+                "/account"
+            }
+          }
+        );
+      }
+
+      return loginPage();
+    }
+
+    if (
+      url.pathname === "/account" &&
+      request.method === "GET"
+    ) {
+      const user =
+        await getCurrentUser(
+          request,
+          env
+        );
+
+      if (!user) {
+        return new Response(
+          null,
+          {
+            status: 302,
+            headers: {
+              Location:
+                "/login"
+            }
+          }
+        );
+      }
+
+      return accountPage(
+        user
+      );
+    }
+
+    if (
+      url.pathname === "/forgot-password" &&
+      request.method === "GET"
+    ) {
+      return forgotPasswordPage();
+    }
+
+    if (
+      url.pathname === "/reset-password" &&
+      request.method === "GET"
+    ) {
+      const token =
+        url.searchParams.get(
+          "token"
+        ) || "";
+
+      if (!token) {
+        return htmlResponse(
+          "<h1>Invalid reset link.</h1>",
+          400
+        );
+      }
+
+      return resetPasswordPage(
+        token
+      );
+    }
+
+    /*
+     * =========================================================
+     * ACCOUNT REGISTRATION
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/api/account/register" &&
+      request.method === "POST"
+    ) {
+
+      let body;
+
+      try {
+        body =
+          await request.json();
+      } catch {
+        return jsonResponse(
+          {
+            error:
+              "Invalid request body."
+          },
+          400
+        );
+      }
+
+      const email =
+        normalizeEmail(
+          body.email
+        );
+
+      const password =
+        typeof body.password ===
+        "string"
+          ? body.password
+          : "";
+
+      if (!validEmail(email)) {
+        return jsonResponse(
+          {
+            error:
+              "Please enter a valid email address."
+          },
+          400
+        );
+      }
+
+      if (
+        password.length < 8
+      ) {
+        return jsonResponse(
+          {
+            error:
+              "Password must be at least 8 characters."
+          },
+          400
+        );
+      }
+
+      if (
+        !body.terms_accepted
+      ) {
+        return jsonResponse(
+          {
+            error:
+              "You must agree to the Terms of Service."
+          },
+          400
+        );
+      }
+
+      const existing =
+        await env.pms_me_db
+          .prepare(
+            `SELECT
+               id,
+               email_verified
+             FROM users
+             WHERE email = ?`
+          )
+          .bind(email)
+          .first();
+
+      if (existing) {
+
+        if (
+          !existing.email_verified
+        ) {
+
+          return jsonResponse(
+            {
+              error:
+                "An account already exists for this email address. Please check your email for the verification link."
+            },
+            409
+          );
+        }
+
+        return jsonResponse(
+          {
+            error:
+              "An account already exists for this email address. Please log in instead."
+          },
+          409
+        );
+      }
+
+      const passwordHash =
+        await hashPassword(
+          password
+        );
+
+      const unsubscribeToken =
+        randomToken();
+
+      const rssToken =
+        randomToken();
+
+      const result =
+        await env.pms_me_db
+          .prepare(
+            `INSERT INTO users
+             (
+               email,
+               password_hash,
+               email_verified,
+               story_frequency,
+               sponsor_emails,
+               rss_enabled,
+               unsubscribe_token,
+               rss_token,
+               terms_accepted_at
+             )
+             VALUES (
+               ?, ?, 0, 'weekly', 0, 1, ?, ?, CURRENT_TIMESTAMP
+             )`
+          )
+          .bind(
+            email,
+            passwordHash,
+            unsubscribeToken,
+            rssToken
+          )
+          .run();
+
+      const userId =
+        result.meta.last_row_id;
+
+      const token =
+        randomToken();
+
+      const tokenHash =
+        await sha256(token);
+
+      const expires =
+        new Date(
+          Date.now() +
+            24 * 60 * 60 * 1000
+        ).toISOString();
+
+      await env.pms_me_db
+        .prepare(
+          `INSERT INTO
+           email_verification_tokens
+           (
+             user_id,
+             token_hash,
+             expires_at
+           )
+           VALUES (?, ?, ?)`
+        )
+        .bind(
+          userId,
+          tokenHash,
+          expires
+        )
+        .run();
+
+      try {
+        await sendVerificationEmail(
+          env,
+          email,
+          token
+        );
+      } catch (error) {
+        console.error(
+          "Verification email failed:",
+          error
+        );
+      }
+
+      return jsonResponse(
+        {
+          ok: true,
+          email
+        },
+        201
+      );
+    }
+
+    /*
+     * =========================================================
+     * EMAIL VERIFICATION
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/verify-email" &&
+      request.method === "GET"
+    ) {
+
+      const token =
+        url.searchParams.get(
+          "token"
+        ) || "";
+
+      if (!token) {
+        return verifyEmailPage(
+          false
+        );
+      }
+
+      const tokenHash =
+        await sha256(token);
+
+      const verification =
+        await env.pms_me_db
+          .prepare(
+            `SELECT
+               id,
+               user_id
+             FROM email_verification_tokens
+             WHERE token_hash = ?
+               AND expires_at > CURRENT_TIMESTAMP`
+          )
+          .bind(tokenHash)
+          .first();
+
+      if (!verification) {
+        return verifyEmailPage(
+          false
+        );
+      }
+
+      await env.pms_me_db
+        .prepare(
+          `UPDATE users
+           SET email_verified = 1
+           WHERE id = ?`
+        )
+        .bind(
+          verification.user_id
+        )
+        .run();
+
+      await env.pms_me_db
+        .prepare(
+          `DELETE FROM
+           email_verification_tokens
+           WHERE id = ?`
+        )
+        .bind(
+          verification.id
+        )
+        .run();
+
+      return verifyEmailPage(
+        true
+      );
+    }
+
+    /*
+     * =========================================================
+     * ACCOUNT LOGIN
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/api/account/login" &&
+      request.method === "POST"
+    ) {
+
+      let body;
+
+      try {
+        body =
+          await request.json();
+      } catch {
+        return jsonResponse(
+          {
+            error:
+              "Invalid request body."
+          },
+          400
+        );
+      }
+
+      const email =
+        normalizeEmail(
+          body.email
+        );
+
+      const password =
+        typeof body.password ===
+        "string"
+          ? body.password
+          : "";
+
+      const user =
+        await env.pms_me_db
+          .prepare(
+            `SELECT *
+             FROM users
+             WHERE email = ?`
+          )
+          .bind(email)
+          .first();
+
+      if (
+        !user ||
+        !(await verifyPassword(
+          password,
+          user.password_hash
+        ))
+      ) {
+        return jsonResponse(
+          {
+            error:
+              "Invalid email address or password."
+          },
+          401
+        );
+      }
+
+      if (!user.email_verified) {
+        return jsonResponse(
+          {
+            error:
+              "Please verify your email address before logging in."
+          },
+          403
+        );
+      }
+
+      const session =
+        await createUserSession(
+          env,
+          user.id
+        );
+
+      await env.pms_me_db
+        .prepare(
+          `UPDATE users
+           SET last_login_at =
+             CURRENT_TIMESTAMP
+           WHERE id = ?`
+        )
+        .bind(user.id)
+        .run();
+
+      return jsonResponse(
+        {
+          ok: true
+        },
+        200,
+        {
+          "Set-Cookie":
+            accountCookie(session),
+          "Cache-Control":
+            "no-store"
+        }
+      );
+    }
+
+    /*
+     * =========================================================
+     * ACCOUNT LOGOUT
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/api/account/logout" &&
+      request.method === "POST"
+    ) {
+
+      const cookieHeader =
+        request.headers.get(
+          "Cookie"
+        ) || "";
+
+      const match =
+        cookieHeader.match(
+          /(?:^|;\s*)pms_me_session=([^;]+)/
+        );
+
+      if (match) {
+        const tokenHash =
+          await sha256(
+            match[1]
+          );
+
+        await env.pms_me_db
+          .prepare(
+            `DELETE FROM
+             user_sessions
+             WHERE token_hash = ?`
+          )
+          .bind(tokenHash)
+          .run();
+      }
+
+      return jsonResponse(
+        {
+          ok: true
+        },
+        200,
+        {
+          "Set-Cookie":
+            clearAccountCookie(),
+          "Cache-Control":
+            "no-store"
+        }
+      );
+    }
+
+    /*
+     * =========================================================
+     * ACCOUNT PREFERENCES
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/api/account/preferences" &&
+      request.method === "PUT"
+    ) {
+
+      const user =
+        await getCurrentUser(
+          request,
+          env
+        );
+
+      if (!user) {
+        return unauthorizedResponse();
+      }
+
+      let body;
+
+      try {
+        body =
+          await request.json();
+      } catch {
+        return jsonResponse(
+          {
+            error:
+              "Invalid request body."
+          },
+          400
+        );
+      }
+
+      const frequency =
+        [
+          "weekly",
+          "immediate",
+          "off"
+        ].includes(
+          body.frequency
+        )
+          ? body.frequency
+          : "weekly";
+
+      const sponsorEmails =
+        body.sponsor_emails
+          ? 1
+          : 0;
+
+      const rssEnabled =
+        body.rss_enabled
+          ? 1
+          : 0;
+
+      await env.pms_me_db
+        .prepare(
+          `UPDATE users
+           SET story_frequency = ?,
+               sponsor_emails = ?,
+               rss_enabled = ?
+           WHERE id = ?`
+        )
+        .bind(
+          frequency,
+          sponsorEmails,
+          rssEnabled,
+          user.id
+        )
+        .run();
+
+      return jsonResponse({
+        ok: true,
+        frequency,
+        sponsor_emails:
+          sponsorEmails,
+        rss_enabled:
+          rssEnabled
+      });
+    }
+
+    /*
+     * =========================================================
+     * FORGOT PASSWORD
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/api/account/forgot-password" &&
+      request.method === "POST"
+    ) {
+
+      let body;
+
+      try {
+        body =
+          await request.json();
+      } catch {
+        return jsonResponse(
+          {
+            error:
+              "Invalid request body."
+          },
+          400
+        );
+      }
+
+      const email =
+        normalizeEmail(
+          body.email
+        );
+
+      const user =
+        await env.pms_me_db
+          .prepare(
+            `SELECT id, email
+             FROM users
+             WHERE email = ?`
+          )
+          .bind(email)
+          .first();
+
+      /*
+       * Always return the same response whether
+       * the email exists or not.
+       */
+
+      if (user) {
+
+        const token =
+          randomToken();
+
+        const tokenHash =
+          await sha256(token);
+
+        const expires =
+          new Date(
+            Date.now() +
+              60 * 60 * 1000
+          ).toISOString();
+
+        await env.pms_me_db
+          .prepare(
+            `DELETE FROM
+             password_reset_tokens
+             WHERE user_id = ?`
+          )
+          .bind(user.id)
+          .run();
+
+        await env.pms_me_db
+          .prepare(
+            `INSERT INTO
+             password_reset_tokens
+             (
+               user_id,
+               token_hash,
+               expires_at
+             )
+             VALUES (?, ?, ?)`
+          )
+          .bind(
+            user.id,
+            tokenHash,
+            expires
+          )
+          .run();
+
+        try {
+          await sendPasswordResetEmail(
+            env,
+            user.email,
+            token
+          );
+        } catch (error) {
+          console.error(
+            "Password reset email failed:",
+            error
+          );
+        }
+      }
+
+      return jsonResponse({
+        ok: true
+      });
+    }
+
+    /*
+     * =========================================================
+     * RESET PASSWORD
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/api/account/reset-password" &&
+      request.method === "POST"
+    ) {
+
+      let body;
+
+      try {
+        body =
+          await request.json();
+      } catch {
+        return jsonResponse(
+          {
+            error:
+              "Invalid request body."
+          },
+          400
+        );
+      }
+
+      const token =
+        typeof body.token ===
+        "string"
+          ? body.token
+          : "";
+
+      const password =
+        typeof body.password ===
+        "string"
+          ? body.password
+          : "";
+
+      if (
+        password.length < 8
+      ) {
+        return jsonResponse(
+          {
+            error:
+              "Password must be at least 8 characters."
+          },
+          400
+        );
+      }
+
+      const tokenHash =
+        await sha256(token);
+
+      const reset =
+        await env.pms_me_db
+          .prepare(
+            `SELECT
+               id,
+               user_id
+             FROM password_reset_tokens
+             WHERE token_hash = ?
+               AND expires_at > CURRENT_TIMESTAMP`
+          )
+          .bind(tokenHash)
+          .first();
+
+      if (!reset) {
+        return jsonResponse(
+          {
+            error:
+              "This password-reset link is invalid or has expired."
+          },
+          400
+        );
+      }
+
+      const passwordHash =
+        await hashPassword(
+          password
+        );
+
+      await env.pms_me_db
+        .prepare(
+          `UPDATE users
+           SET password_hash = ?
+           WHERE id = ?`
+        )
+        .bind(
+          passwordHash,
+          reset.user_id
+        )
+        .run();
+
+      await env.pms_me_db
+        .prepare(
+          `DELETE FROM
+           password_reset_tokens
+           WHERE id = ?`
+        )
+        .bind(reset.id)
+        .run();
+
+      await env.pms_me_db
+        .prepare(
+          `DELETE FROM
+           user_sessions
+           WHERE user_id = ?`
+        )
+        .bind(
+          reset.user_id
+        )
+        .run();
+
+      return jsonResponse({
+        ok: true
+      });
+    }
+
+    /*
+     * =========================================================
+     * UNSUBSCRIBE
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/unsubscribe" &&
+      request.method === "GET"
+    ) {
+
+      const token =
+        url.searchParams.get(
+          "token"
+        ) || "";
+
+      if (token) {
+
+        await env.pms_me_db
+          .prepare(
+            `UPDATE users
+             SET story_frequency = 'off',
+                 sponsor_emails = 0
+             WHERE unsubscribe_token = ?`
+          )
+          .bind(token)
+          .run();
+      }
+
+      return unsubscribePage();
+    }
+
+    /*
+     * =========================================================
+     * RSS FEED
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/rss.xml" &&
+      request.method === "GET"
+    ) {
+
+      const token =
+        url.searchParams.get(
+          "token"
+        );
+
+      if (token) {
+
+        const user =
+          await env.pms_me_db
+            .prepare(
+              `SELECT id
+               FROM users
+               WHERE rss_token = ?
+                 AND rss_enabled = 1
+                 AND email_verified = 1`
+            )
+            .bind(token)
+            .first();
+
+        if (!user) {
+          return new Response(
+            "RSS feed not available.",
+            {
+              status: 403,
+              headers: {
+                "Content-Type":
+                  "text/plain; charset=utf-8"
+              }
+            }
+          );
+        }
+      }
+
+      const stories =
+        await env.pms_me_db
+          .prepare(
+            `SELECT
+               id,
+               title,
+               city,
+               story,
+               category,
+               public_name,
+               published_at
+             FROM stories
+             WHERE status = 'published'
+             ORDER BY published_at DESC
+             LIMIT 50`
+          )
+          .all();
+
+      return new Response(
+        rssXml(
+          stories.results || []
+        ),
+        {
+          status: 200,
+          headers: {
+            "Content-Type":
+              "application/rss+xml; charset=utf-8",
+            "Cache-Control":
+              "no-cache"
+          }
+        }
+      );
+    }
 
     /*
      * =========================================================
      * MODERATOR PAGE
      * =========================================================
      */
-    if (url.pathname === "/moderate.html") {
-      if (!(await isModeratorAuthenticated(request, env))) {
+
+    if (
+      url.pathname ===
+        "/moderate.html"
+    ) {
+      if (
+        !(await isModeratorAuthenticated(
+          request,
+          env
+        ))
+      ) {
         return moderatorLoginPage();
       }
     }
@@ -699,14 +4119,18 @@ export default {
      * MODERATOR LOGIN
      * =========================================================
      */
+
     if (
-      url.pathname === "/api/moderator-login" &&
+      url.pathname ===
+        "/api/moderator-login" &&
       request.method === "POST"
     ) {
+
       if (!env.MODERATOR_PASSWORD) {
         return jsonResponse(
           {
-            error: "MODERATOR_PASSWORD is missing"
+            error:
+              "MODERATOR_PASSWORD is missing"
           },
           500
         );
@@ -715,7 +4139,8 @@ export default {
       if (!env.MODERATOR_SESS_SEC) {
         return jsonResponse(
           {
-            error: "MODERATOR_SESS_SEC is missing"
+            error:
+              "MODERATOR_SESS_SEC is missing"
           },
           500
         );
@@ -724,36 +4149,54 @@ export default {
       let body;
 
       try {
-        body = await request.json();
+        body =
+          await request.json();
       } catch {
         return jsonResponse(
-          { error: "Invalid request body" },
+          {
+            error:
+              "Invalid request body"
+          },
           400
         );
       }
 
       if (
         !body ||
-        typeof body.password !== "string"
+        typeof body.password !==
+          "string"
       ) {
         return jsonResponse(
-          { error: "Password is required" },
+          {
+            error:
+              "Password is required"
+          },
           400
         );
       }
 
-      if (body.password !== env.MODERATOR_PASSWORD) {
+      if (
+        body.password !==
+        env.MODERATOR_PASSWORD
+      ) {
         return jsonResponse(
-          { error: "Invalid password" },
+          {
+            error:
+              "Invalid password"
+          },
           401
         );
       }
 
       const session =
-        await createModeratorSession(env);
+        await createModeratorSession(
+          env
+        );
 
       return jsonResponse(
-        { ok: true },
+        {
+          ok: true
+        },
         200,
         {
           "Set-Cookie":
@@ -763,7 +4206,8 @@ export default {
             "Secure; " +
             "SameSite=Strict; " +
             "Max-Age=28800",
-          "Cache-Control": "no-store"
+          "Cache-Control":
+            "no-store"
         }
       );
     }
@@ -773,12 +4217,17 @@ export default {
      * MODERATOR LOGOUT
      * =========================================================
      */
+
     if (
-      url.pathname === "/api/moderator-logout" &&
+      url.pathname ===
+        "/api/moderator-logout" &&
       request.method === "POST"
     ) {
+
       return jsonResponse(
-        { ok: true },
+        {
+          ok: true
+        },
         200,
         {
           "Set-Cookie":
@@ -788,7 +4237,8 @@ export default {
             "Secure; " +
             "SameSite=Strict; " +
             "Max-Age=0",
-          "Cache-Control": "no-store"
+          "Cache-Control":
+            "no-store"
         }
       );
     }
@@ -798,20 +4248,32 @@ export default {
      * MODERATOR API AUTHENTICATION
      * =========================================================
      */
+
     const isModeratorApi =
-      url.pathname === "/api/notification-settings" ||
+      url.pathname ===
+        "/api/notification-settings" ||
       (
-        url.pathname.startsWith("/api/stories") &&
+        url.pathname.startsWith(
+          "/api/stories"
+        ) &&
         (
-          url.searchParams.has("status") ||
-          request.method === "PATCH" ||
-          request.method === "DELETE"
+          url.searchParams.has(
+            "status"
+          ) ||
+          request.method ===
+            "PATCH" ||
+          request.method ===
+            "DELETE"
         )
       );
 
     if (isModeratorApi) {
+
       if (
-        !(await isModeratorAuthenticated(request, env))
+        !(await isModeratorAuthenticated(
+          request,
+          env
+        ))
       ) {
         return unauthorizedResponse();
       }
@@ -822,14 +4284,23 @@ export default {
      * NOTIFICATION SETTINGS
      * =========================================================
      */
+
     if (
-      url.pathname === "/api/notification-settings"
+      url.pathname ===
+        "/api/notification-settings"
     ) {
-      if (request.method === "GET") {
+
+      if (
+        request.method === "GET"
+      ) {
+
         const settings =
           await env.pms_me_db
             .prepare(
-              `SELECT email, frequency, last_digest_at
+              `SELECT
+                 email,
+                 frequency,
+                 last_digest_at
                FROM notification_settings
                WHERE id = 1`
             )
@@ -844,25 +4315,37 @@ export default {
         );
       }
 
-      if (request.method === "PUT") {
+      if (
+        request.method === "PUT"
+      ) {
+
         let body;
 
         try {
-          body = await request.json();
+          body =
+            await request.json();
         } catch {
           return jsonResponse(
-            { error: "Invalid request body" },
+            {
+              error:
+                "Invalid request body"
+            },
             400
           );
         }
 
         const email =
-          typeof body.email === "string"
+          typeof body.email ===
+          "string"
             ? body.email.trim()
             : "";
 
         const frequency =
-          ["off", "immediately", "daily"].includes(
+          [
+            "off",
+            "immediately",
+            "daily"
+          ].includes(
             body.frequency
           )
             ? body.frequency
@@ -871,10 +4354,14 @@ export default {
         await env.pms_me_db
           .prepare(
             `UPDATE notification_settings
-             SET email = ?, frequency = ?
+             SET email = ?,
+                 frequency = ?
              WHERE id = 1`
           )
-          .bind(email || null, frequency)
+          .bind(
+            email || null,
+            frequency
+          )
           .run();
 
         return jsonResponse({
@@ -885,7 +4372,10 @@ export default {
       }
 
       return jsonResponse(
-        { error: "Method not allowed" },
+        {
+          error:
+            "Method not allowed"
+        },
         405
       );
     }
@@ -895,14 +4385,20 @@ export default {
      * STORIES — GET
      * =========================================================
      */
+
     if (
-      url.pathname === "/api/stories" &&
+      url.pathname ===
+        "/api/stories" &&
       request.method === "GET"
     ) {
+
       const status =
-        url.searchParams.get("status");
+        url.searchParams.get(
+          "status"
+        );
 
       if (status) {
+
         const result =
           await env.pms_me_db
             .prepare(
@@ -964,55 +4460,73 @@ export default {
      * STORIES — POST
      * =========================================================
      */
+
     if (
-      url.pathname === "/api/stories" &&
+      url.pathname ===
+        "/api/stories" &&
       request.method === "POST"
     ) {
+
       let body;
 
       try {
-        body = await request.json();
+        body =
+          await request.json();
       } catch {
         return jsonResponse(
-          { error: "Invalid request body" },
+          {
+            error:
+              "Invalid request body"
+          },
           400
         );
       }
 
       const title =
-        typeof body.title === "string"
+        typeof body.title ===
+        "string"
           ? body.title.trim()
           : "";
 
       const city =
-        typeof body.city === "string"
+        typeof body.city ===
+        "string"
           ? body.city.trim()
           : "";
 
       const story =
-        typeof body.story === "string"
+        typeof body.story ===
+        "string"
           ? body.story.trim()
           : "";
 
       const category =
-        typeof body.category === "string"
+        typeof body.category ===
+        "string"
           ? body.category.trim()
           : "";
 
       const displayName =
-        typeof body.display_name === "string"
+        typeof body.display_name ===
+        "string"
           ? body.display_name.trim()
           : "";
 
       const email =
-        typeof body.email === "string"
+        typeof body.email ===
+        "string"
           ? body.email.trim()
           : "";
 
       const anonymousRequested =
-        body.anonymous_requested ? 1 : 0;
+        body.anonymous_requested
+          ? 1
+          : 0;
 
-      if (!anonymousRequested && !displayName) {
+      if (
+        !anonymousRequested &&
+        !displayName
+      ) {
         return jsonResponse(
           {
             error:
@@ -1024,26 +4538,37 @@ export default {
 
       if (!city) {
         return jsonResponse(
-          { error: "City is required" },
+          {
+            error:
+              "City is required"
+          },
           400
         );
       }
 
       if (!story) {
         return jsonResponse(
-          { error: "Story is required" },
+          {
+            error:
+              "Story is required"
+          },
           400
         );
       }
 
       if (!category) {
         return jsonResponse(
-          { error: "Category is required" },
+          {
+            error:
+              "Category is required"
+          },
           400
         );
       }
 
-      if (title.length > 150) {
+      if (
+        title.length > 150
+      ) {
         return jsonResponse(
           {
             error:
@@ -1053,7 +4578,9 @@ export default {
         );
       }
 
-      if (city.length > 100) {
+      if (
+        city.length > 100
+      ) {
         return jsonResponse(
           {
             error:
@@ -1063,7 +4590,9 @@ export default {
         );
       }
 
-      if (story.length > 2000) {
+      if (
+        story.length > 2000
+      ) {
         return jsonResponse(
           {
             error:
@@ -1081,9 +4610,16 @@ export default {
         "Audit This"
       ];
 
-      if (!allowedCategories.includes(category)) {
+      if (
+        !allowedCategories.includes(
+          category
+        )
+      ) {
         return jsonResponse(
-          { error: "Invalid category" },
+          {
+            error:
+              "Invalid category"
+          },
           400
         );
       }
@@ -1101,7 +4637,9 @@ export default {
                anonymous_requested,
                status
              )
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`
+             VALUES (
+               ?, ?, ?, ?, ?, ?, ?, 'pending'
+             )`
           )
           .bind(
             title || null,
@@ -1124,7 +4662,9 @@ export default {
              FROM stories
              WHERE id = ?`
           )
-          .bind(insertedId)
+          .bind(
+            insertedId
+          )
           .first();
 
       try {
@@ -1153,17 +4693,31 @@ export default {
      * STORIES — REACTIONS
      * =========================================================
      */
+
     if (
-      url.pathname.startsWith("/api/stories/") &&
-      url.pathname.endsWith("/reaction") &&
+      url.pathname.startsWith(
+        "/api/stories/"
+      ) &&
+      url.pathname.endsWith(
+        "/reaction"
+      ) &&
       request.method === "POST"
     ) {
-      const parts = url.pathname.split("/");
-      const id = parts[3];
 
-      if (!/^\d+$/.test(id)) {
+      const parts =
+        url.pathname.split("/");
+
+      const id =
+        parts[3];
+
+      if (
+        !/^\d+$/.test(id)
+      ) {
         return jsonResponse(
-          { error: "Invalid story ID" },
+          {
+            error:
+              "Invalid story ID"
+          },
           400
         );
       }
@@ -1171,28 +4725,43 @@ export default {
       let body;
 
       try {
-        body = await request.json();
+        body =
+          await request.json();
       } catch {
         return jsonResponse(
-          { error: "Invalid request body" },
+          {
+            error:
+              "Invalid request body"
+          },
           400
         );
       }
 
       const reaction =
-        typeof body.reaction === "string"
+        typeof body.reaction ===
+        "string"
           ? body.reaction
           : "";
 
       let column;
 
-      if (reaction === "trainwreck") {
-        column = "reaction_been_there";
-      } else if (reaction === "right") {
-        column = "reaction_funny";
+      if (
+        reaction ===
+        "trainwreck"
+      ) {
+        column =
+          "reaction_been_there";
+      } else if (
+        reaction === "right"
+      ) {
+        column =
+          "reaction_funny";
       } else {
         return jsonResponse(
-          { error: "Invalid reaction" },
+          {
+            error:
+              "Invalid reaction"
+          },
           400
         );
       }
@@ -1200,16 +4769,23 @@ export default {
       const existing =
         await env.pms_me_db
           .prepare(
-            `SELECT id, reaction_been_there, reaction_funny
+            `SELECT
+               id,
+               reaction_been_there,
+               reaction_funny
              FROM stories
-             WHERE id = ? AND status = 'published'`
+             WHERE id = ?
+               AND status = 'published'`
           )
           .bind(id)
           .first();
 
       if (!existing) {
         return jsonResponse(
-          { error: "Story not found" },
+          {
+            error:
+              "Story not found"
+          },
           404
         );
       }
@@ -1217,8 +4793,13 @@ export default {
       await env.pms_me_db
         .prepare(
           `UPDATE stories
-           SET ${column} = COALESCE(${column}, 0) + 1
-           WHERE id = ? AND status = 'published'`
+           SET ${column} =
+             COALESCE(
+               ${column},
+               0
+             ) + 1
+           WHERE id = ?
+             AND status = 'published'`
         )
         .bind(id)
         .run();
@@ -1226,7 +4807,9 @@ export default {
       const updated =
         await env.pms_me_db
           .prepare(
-            `SELECT reaction_been_there, reaction_funny
+            `SELECT
+               reaction_been_there,
+               reaction_funny
              FROM stories
              WHERE id = ?`
           )
@@ -1236,9 +4819,11 @@ export default {
       return jsonResponse({
         ok: true,
         reaction_been_there:
-          updated.reaction_been_there || 0,
+          updated.reaction_been_there ||
+          0,
         reaction_funny:
-          updated.reaction_funny || 0
+          updated.reaction_funny ||
+          0
       });
     }
 
@@ -1247,16 +4832,27 @@ export default {
      * STORIES — PATCH
      * =========================================================
      */
+
     if (
-      url.pathname.startsWith("/api/stories/") &&
+      url.pathname.startsWith(
+        "/api/stories/"
+      ) &&
       request.method === "PATCH"
     ) {
-      const id =
-        url.pathname.split("/").pop();
 
-      if (!/^\d+$/.test(id)) {
+      const id =
+        url.pathname
+          .split("/")
+          .pop();
+
+      if (
+        !/^\d+$/.test(id)
+      ) {
         return jsonResponse(
-          { error: "Invalid story ID" },
+          {
+            error:
+              "Invalid story ID"
+          },
           400
         );
       }
@@ -1264,10 +4860,14 @@ export default {
       let body;
 
       try {
-        body = await request.json();
+        body =
+          await request.json();
       } catch {
         return jsonResponse(
-          { error: "Invalid request body" },
+          {
+            error:
+              "Invalid request body"
+          },
           400
         );
       }
@@ -1284,42 +4884,58 @@ export default {
 
       if (!existing) {
         return jsonResponse(
-          { error: "Story not found" },
+          {
+            error:
+              "Story not found"
+          },
           404
         );
       }
 
       const action =
-        typeof body.action === "string"
+        typeof body.action ===
+        "string"
           ? body.action
           : "";
 
       const moderatorNotes =
-        typeof body.moderator_notes === "string"
+        typeof body.moderator_notes ===
+        "string"
           ? body.moderator_notes.trim()
           : "";
 
       const title =
-        typeof body.title === "string"
+        typeof body.title ===
+        "string"
           ? body.title.trim()
           : "";
 
       const category =
-        typeof body.category === "string"
+        typeof body.category ===
+        "string"
           ? body.category.trim()
           : "";
 
       if (
-        !["approve", "approve_anonymously", "reject"]
-          .includes(action)
+        ![
+          "approve",
+          "approve_anonymously",
+          "reject"
+        ].includes(action)
       ) {
         return jsonResponse(
-          { error: "Invalid moderation action" },
+          {
+            error:
+              "Invalid moderation action"
+          },
           400
         );
       }
 
-      if (action === "reject") {
+      if (
+        action === "reject"
+      ) {
+
         await env.pms_me_db
           .prepare(
             `UPDATE stories
@@ -1328,7 +4944,8 @@ export default {
              WHERE id = ?`
           )
           .bind(
-            moderatorNotes || null,
+            moderatorNotes ||
+              null,
             id
           )
           .run();
@@ -1361,7 +4978,9 @@ export default {
         );
       }
 
-      if (title.length > 150) {
+      if (
+        title.length > 150
+      ) {
         return jsonResponse(
           {
             error:
@@ -1380,19 +4999,24 @@ export default {
       ];
 
       const finalCategory =
-        allowedCategories.includes(category)
+        allowedCategories.includes(
+          category
+        )
           ? category
           : existing.category;
 
       const anonymize =
-        action === "approve_anonymously";
+        action ===
+        "approve_anonymously";
 
       let publicName;
 
       if (anonymize) {
         publicName =
           generateAnonymousName();
-      } else if (existing.anonymous_requested) {
+      } else if (
+        existing.anonymous_requested
+      ) {
         publicName =
           generateAnonymousName();
       } else {
@@ -1409,7 +5033,8 @@ export default {
                status = 'published',
                public_name = ?,
                moderator_notes = ?,
-               published_at = CURRENT_TIMESTAMP,
+               published_at =
+                 CURRENT_TIMESTAMP,
                force_anonymous = ?
            WHERE id = ?`
         )
@@ -1417,17 +5042,49 @@ export default {
           title,
           finalCategory,
           publicName,
-          moderatorNotes || null,
+          moderatorNotes ||
+            null,
           anonymize ? 1 : 0,
           id
         )
         .run();
 
+      const publishedStory =
+        await env.pms_me_db
+          .prepare(
+            `SELECT
+               id,
+               title,
+               city,
+               story,
+               category,
+               public_name,
+               published_at
+             FROM stories
+             WHERE id = ?`
+          )
+          .bind(id)
+          .first();
+
+      try {
+        await sendPublishedStoryNotifications(
+          env,
+          publishedStory
+        );
+      } catch (error) {
+        console.error(
+          "Published-story notifications failed:",
+          error
+        );
+      }
+
       return jsonResponse({
         ok: true,
-        public_name: publicName,
+        public_name:
+          publicName,
         title,
-        category: finalCategory
+        category:
+          finalCategory
       });
     }
 
@@ -1436,16 +5093,27 @@ export default {
      * STORIES — DELETE
      * =========================================================
      */
+
     if (
-      url.pathname.startsWith("/api/stories/") &&
+      url.pathname.startsWith(
+        "/api/stories/"
+      ) &&
       request.method === "DELETE"
     ) {
-      const id =
-        url.pathname.split("/").pop();
 
-      if (!/^\d+$/.test(id)) {
+      const id =
+        url.pathname
+          .split("/")
+          .pop();
+
+      if (
+        !/^\d+$/.test(id)
+      ) {
         return jsonResponse(
-          { error: "Invalid story ID" },
+          {
+            error:
+              "Invalid story ID"
+          },
           400
         );
       }
@@ -1464,7 +5132,10 @@ export default {
         result.meta.changes === 0
       ) {
         return jsonResponse(
-          { error: "Story not found" },
+          {
+            error:
+              "Story not found"
+          },
           404
         );
       }
@@ -1479,17 +5150,27 @@ export default {
      * STATIC ASSETS
      * =========================================================
      */
+
     const assetResponse =
-      await env.ASSETS.fetch(request);
+      await env.ASSETS.fetch(
+        request
+      );
 
     const contentType =
-      assetResponse.headers.get("Content-Type") || "";
+      assetResponse.headers.get(
+        "Content-Type"
+      ) || "";
 
     if (
-      contentType.toLowerCase().includes("text/html")
+      contentType
+        .toLowerCase()
+        .includes("text/html")
     ) {
+
       const headers =
-        new Headers(assetResponse.headers);
+        new Headers(
+          assetResponse.headers
+        );
 
       headers.set(
         "Cache-Control",
@@ -1509,8 +5190,10 @@ export default {
       return new Response(
         assetResponse.body,
         {
-          status: assetResponse.status,
-          statusText: assetResponse.statusText,
+          status:
+            assetResponse.status,
+          statusText:
+            assetResponse.statusText,
           headers
         }
       );
@@ -1519,12 +5202,29 @@ export default {
     return assetResponse;
   },
 
-  async scheduled(event, env) {
+  async scheduled(
+    event,
+    env
+  ) {
+
     try {
-      await sendDailyDigest(env);
+      await sendDailyDigest(
+        env
+      );
     } catch (error) {
       console.error(
-        "Daily digest failed:",
+        "Moderator daily digest failed:",
+        error
+      );
+    }
+
+    try {
+      await sendWeeklyDigests(
+        env
+      );
+    } catch (error) {
+      console.error(
+        "Weekly user digest failed:",
         error
       );
     }
