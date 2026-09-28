@@ -461,6 +461,49 @@ footer{
   }
 }
 
+
+/* SUBMIT STORY MODAL */
+body.submit-modal-open{overflow:hidden}
+.submit-modal{display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);padding:24px 15px;overflow:auto}
+.submit-modal.open{display:block}
+.submit-modal-card{background:#fff;max-width:700px;margin:3vh auto;border:1px solid #ddd;border-radius:7px;padding:24px;position:relative;box-shadow:0 8px 30px rgba(0,0,0,.28)}
+.submit-modal-card h1{margin:0 40px 22px 0;font-size:24px}
+.submit-modal-card label{display:block;font-weight:bold;font-size:14px;margin:18px 0 7px}
+.submit-modal-card textarea,.submit-modal-card input,.submit-modal-card select{width:100%;border:1px solid #ccc;border-radius:4px;padding:11px;font-family:Arial,Helvetica,sans-serif;font-size:15px}
+.submit-modal-card textarea{min-height:180px;resize:vertical}
+.submit-help{color:#777;font-size:12px;margin-top:5px}
+.submit-checkbox,.submit-terms-agreement{display:flex;align-items:flex-start;gap:9px;margin-top:18px}
+.submit-checkbox input,.submit-terms-agreement input{width:auto;margin-top:2px}
+.submit-checkbox label,.submit-terms-agreement label{margin:0;font-weight:normal;line-height:1.4}
+.submit-terms-box{margin-top:20px;padding:14px;background:#f7f7f7;border:1px solid #ddd;border-radius:5px}
+.submit-terms-box a{color:#333;font-weight:bold}
+.submit-terms-agreement{margin-top:12px}
+.submit-guidelines-button{margin-top:16px;background:#eee;color:#333;border:1px solid #ccc}
+.submit-guidelines-button:hover{background:#ddd}
+.submit-buttons{display:flex;gap:10px;margin-top:24px}
+.submit-buttons button,.submit-guidelines-button{border:0;border-radius:5px;padding:11px 16px;font-size:14px;font-weight:bold;cursor:pointer}
+.submit-buttons .submit-cancel{background:#eee;color:#333}
+.submit-buttons .submit-cancel:hover{background:#ddd}
+.submit-buttons .submit-send{background:rgba(64,224,208,.78);color:#000}
+.submit-message{display:none;margin-top:18px;padding:12px;border-radius:4px;font-size:14px}
+.submit-modal-close{position:absolute;top:10px;right:13px;border:0;background:transparent;color:#333;font-size:30px;line-height:1;padding:4px 8px;cursor:pointer}
+.submit-modal-close:hover{background:transparent;color:#000}
+.guidelines-overlay{display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.55);padding:20px;overflow:auto}
+.guidelines-overlay.open{display:block}
+.guidelines-content{background:#fff;max-width:650px;margin:7vh auto;border-radius:7px;padding:25px;position:relative;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.guidelines-content h2{margin:0 35px 18px 0;font-size:22px}
+.guidelines-content p{line-height:1.55;margin:0 0 15px}
+html[data-theme="dark"] .submit-modal-card,html[data-theme="dark"] .guidelines-content{background:#242424;color:#e8e8e8;border-color:#444}
+html[data-theme="dark"] .submit-modal-card textarea,html[data-theme="dark"] .submit-modal-card input,html[data-theme="dark"] .submit-modal-card select{background:#303030;color:#e8e8e8;border-color:#555}
+html[data-theme="dark"] .submit-terms-box{background:#303030;border-color:#555}
+html[data-theme="dark"] .submit-terms-box a{color:#ddd}
+html[data-theme="dark"] .submit-modal-close{color:#ddd}
+@media(max-width:600px){
+  .submit-modal{padding:12px}
+  .submit-modal-card{margin:1vh auto;padding:18px}
+  .submit-buttons{flex-direction:column}
+}
+
 /* PMS-ME DARK MODE TOGGLE */
 html[data-theme="dark"]{color-scheme:dark}
 html[data-theme="dark"] body{background:#181818;color:#e8e8e8}
@@ -539,7 +582,7 @@ html[data-theme="dark"] .theme-toggle-label{color:#aaa}
   <button
     type="button"
     class="submit-story"
-    onclick="window.location.href='/submit.html'"
+    id="openSubmitStory"
   >
     Submit a Story
   </button>
@@ -595,6 +638,78 @@ html[data-theme="dark"] .theme-toggle-label{color:#aaa}
   Property Manager Stories · PMS-ME<br>
   Because sometimes you just have to laugh.
 </footer>
+
+<div class="submit-modal" id="submitStoryModal" aria-hidden="true">
+  <div class="submit-modal-card" role="dialog" aria-modal="true" aria-labelledby="submitStoryHeading">
+    <button type="button" class="submit-modal-close" id="closeSubmitStory" aria-label="Close">×</button>
+    <h1 id="submitStoryHeading">Submit a Story</h1>
+
+    <form id="storyForm">
+      <label for="submitTitle">Story Title</label>
+      <input id="submitTitle" maxlength="150" placeholder="Give your story a title">
+      <div class="submit-help">A title is requested, but if you leave it blank, a moderator may create one before publication.</div>
+
+      <label for="submitCity">City</label>
+      <input id="submitCity" maxlength="100" required placeholder="City where this happened">
+      <div class="submit-help">Please provide the city where the property or incident is located.</div>
+
+      <label for="submitStory">Your Story</label>
+      <textarea id="submitStory" required maxlength="2000" placeholder="Tell us what happened..."></textarea>
+      <div class="submit-help">Maximum 2,000 characters.</div>
+
+      <label for="submitCategory">Category</label>
+      <select id="submitCategory" required>
+        <option value="">Select a category</option>
+        <option value="Owner Moaner">Owner Moaner</option>
+        <option value="Vendor Woes">Vendor Woes</option>
+        <option value="Legally Blunt">Legally Blunt</option>
+        <option value="Board to Tears">Board to Tears</option>
+        <option value="Audit This">Audit This</option>
+      </select>
+
+      <label for="submitName">Display Name</label>
+      <input id="submitName" maxlength="50" placeholder="How should your name appear?">
+
+      <div class="submit-checkbox">
+        <input type="checkbox" id="submitAnonymous">
+        <label for="submitAnonymous">Publish this story anonymously</label>
+      </div>
+
+      <label for="submitEmail">Email</label>
+      <input id="submitEmail" type="email" maxlength="200" placeholder="Your email address">
+      <div class="submit-help">Your email will not be displayed publicly.</div>
+
+      <button type="button" class="submit-guidelines-button" id="submitGuidelinesButton">Guidelines for Submitting Content</button>
+
+      <div class="submit-terms-box">
+        <div>
+          Before submitting, please read the
+          <a href="/terms-of-service.pdf" target="_blank" rel="noopener">PMS-ME Terms of Service</a>.
+        </div>
+        <div class="submit-terms-agreement">
+          <input type="checkbox" id="submitTermsAgreement" required>
+          <label for="submitTermsAgreement">I have read and agree to the PMS-ME Terms of Service.</label>
+        </div>
+      </div>
+
+      <div class="submit-buttons">
+        <button type="button" class="submit-cancel" id="cancelSubmitStory">Back to Stories</button>
+        <button type="submit" class="submit-send">Submit Story</button>
+      </div>
+
+      <div class="submit-message" id="submitMessage"></div>
+    </form>
+  </div>
+</div>
+
+<div class="guidelines-overlay" id="submitGuidelinesModal" aria-hidden="true">
+  <div class="guidelines-content" role="dialog" aria-modal="true" aria-labelledby="guidelinesHeading">
+    <button type="button" class="submit-modal-close" id="closeSubmitGuidelines" aria-label="Close">×</button>
+    <h2 id="guidelinesHeading">Guidelines for Submitting Content</h2>
+    <p>This website is intended to be a place for property managers to come blow off steam. If you are a homeowner, you guys already have plenty other social media forums to bitch about your management company - go back to those forums and reviews to spew your venom and don't do that here... but you are welcome to hang out here, and you might learn a thing or two of how the other half sees you.</p>
+    <p>Don't use this space to spam or sell or advertise services. Defamatory statements will be weeded out, but so will calculated praise, so anonymize the names and places.</p>
+  </div>
+</div>
 
 <script>
 const buttons =
@@ -1295,6 +1410,148 @@ buttons.forEach(
     );
   }
 );
+
+
+const openSubmitStory = document.getElementById('openSubmitStory');
+const submitStoryModal = document.getElementById('submitStoryModal');
+const closeSubmitStory = document.getElementById('closeSubmitStory');
+const cancelSubmitStory = document.getElementById('cancelSubmitStory');
+const storyForm = document.getElementById('storyForm');
+const submitMessage = document.getElementById('submitMessage');
+const submitName = document.getElementById('submitName');
+const submitAnonymous = document.getElementById('submitAnonymous');
+const submitGuidelinesButton = document.getElementById('submitGuidelinesButton');
+const submitGuidelinesModal = document.getElementById('submitGuidelinesModal');
+const closeSubmitGuidelines = document.getElementById('closeSubmitGuidelines');
+
+function openStorySubmission(){
+  submitStoryModal.classList.add('open');
+  submitStoryModal.setAttribute('aria-hidden','false');
+  document.body.classList.add('submit-modal-open');
+
+  const activeCategory = document.querySelector('#categories button[data-category].active');
+  const categorySelect = document.getElementById('submitCategory');
+  if(activeCategory && activeCategory.dataset.category && activeCategory.dataset.category !== 'All'){
+    categorySelect.value = activeCategory.dataset.category;
+  }
+
+  setTimeout(() => document.getElementById('submitTitle').focus(), 0);
+}
+
+function closeStorySubmission(){
+  submitStoryModal.classList.remove('open');
+  submitStoryModal.setAttribute('aria-hidden','true');
+  document.body.classList.remove('submit-modal-open');
+}
+
+function updateSubmitDisplayNameRequirement(){
+  submitName.required = !submitAnonymous.checked;
+}
+
+openSubmitStory.addEventListener('click', openStorySubmission);
+closeSubmitStory.addEventListener('click', closeStorySubmission);
+cancelSubmitStory.addEventListener('click', closeStorySubmission);
+
+submitStoryModal.addEventListener('click', event => {
+  if(event.target === submitStoryModal){
+    closeStorySubmission();
+  }
+});
+
+submitAnonymous.addEventListener('change', updateSubmitDisplayNameRequirement);
+updateSubmitDisplayNameRequirement();
+
+submitGuidelinesButton.addEventListener('click', () => {
+  submitGuidelinesModal.classList.add('open');
+  submitGuidelinesModal.setAttribute('aria-hidden','false');
+});
+
+closeSubmitGuidelines.addEventListener('click', () => {
+  submitGuidelinesModal.classList.remove('open');
+  submitGuidelinesModal.setAttribute('aria-hidden','true');
+});
+
+submitGuidelinesModal.addEventListener('click', event => {
+  if(event.target === submitGuidelinesModal){
+    submitGuidelinesModal.classList.remove('open');
+    submitGuidelinesModal.setAttribute('aria-hidden','true');
+  }
+});
+
+document.addEventListener('keydown', event => {
+  if(event.key !== 'Escape') return;
+  if(submitGuidelinesModal.classList.contains('open')){
+    submitGuidelinesModal.classList.remove('open');
+    submitGuidelinesModal.setAttribute('aria-hidden','true');
+    return;
+  }
+  if(submitStoryModal.classList.contains('open')){
+    closeStorySubmission();
+  }
+});
+
+storyForm.addEventListener('submit', async event => {
+  event.preventDefault();
+
+  const title = document.getElementById('submitTitle').value.trim();
+  const city = document.getElementById('submitCity').value.trim();
+  const story = document.getElementById('submitStory').value.trim();
+  const category = document.getElementById('submitCategory').value.trim();
+  const displayName = submitName.value.trim();
+  const anonymous = submitAnonymous.checked;
+  const email = document.getElementById('submitEmail').value.trim();
+  const termsAgreement = document.getElementById('submitTermsAgreement').checked;
+
+  submitMessage.style.display = 'block';
+
+  if(!city || !story || !category){
+    submitMessage.textContent = 'Please enter the city, your story, and select a category.';
+    return;
+  }
+
+  if(!anonymous && !displayName){
+    submitMessage.textContent = 'Please enter a Display Name or choose Publish this story anonymously.';
+    submitName.focus();
+    return;
+  }
+
+  if(!termsAgreement){
+    submitMessage.textContent = 'Please read and agree to the Terms of Service before submitting.';
+    return;
+  }
+
+  submitMessage.textContent = 'Submitting...';
+
+  try{
+    const response = await fetch('/api/stories',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        title,
+        city,
+        story,
+        category,
+        display_name:displayName,
+        email,
+        anonymous_requested:anonymous,
+        terms_accepted:true
+      })
+    });
+
+    const result = await response.json();
+
+    if(!response.ok){
+      throw new Error(result.error || 'Submission failed');
+    }
+
+    submitMessage.textContent = 'Thank you! Your story has been submitted for review.';
+    storyForm.reset();
+    updateSubmitDisplayNameRequirement();
+
+  }catch(error){
+    submitMessage.textContent = error.message || 'Something went wrong. Please try again.';
+  }
+});
 
 loadStories();
 </script>
