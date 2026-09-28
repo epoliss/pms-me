@@ -312,6 +312,19 @@ footer{
 .rejected-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .restore-pending{background:#222;color:#fff}
 .share-rejected{background:#eee;color:#333}
+.fry-rejected{
+  background:linear-gradient(180deg,#ff3b1f 0%,#d40000 55%,#8b0000 100%);
+  color:#fff;
+  border:1px solid #8b0000;
+  box-shadow:0 0 10px rgba(255,55,20,.45);
+  font-weight:900;
+  letter-spacing:.5px
+}
+.fry-rejected:hover{
+  opacity:1;
+  filter:brightness(1.08);
+  box-shadow:0 0 14px rgba(255,55,20,.65)
+}
 
 .archive-card{
   background:#fff;
@@ -902,6 +915,28 @@ async function restoreRejectedStory(id) {
   }
 }
 
+async function fryRejectedStory(id) {
+  const confirmed=window.confirm(
+    'FRY IT? This will permanently delete this rejected story RIGHT NOW. It cannot be restored and the 30-day recovery period will be bypassed.'
+  );
+  if(!confirmed) return;
+
+  message.style.display='block';
+  message.textContent='Frying story...';
+  try {
+    const response=await fetch('/api/stories/'+id,{
+      method:'DELETE',
+      credentials:'same-origin'
+    });
+    const result=await response.json();
+    if(!response.ok) throw new Error(result.error || 'Permanent delete failed.');
+    message.textContent='Story permanently deleted.';
+    await loadRejectedStories();
+  } catch(error) {
+    message.textContent=error.message || 'Something went wrong.';
+  }
+}
+
 async function loadRejectedStories() {
   try {
     const response=await fetch('/api/stories?status=rejected',{credentials:'same-origin'});
@@ -983,7 +1018,16 @@ async function loadRejectedStories() {
         restoreRejectedStory(story.id);
       });
 
-      actions.append(share,restore);
+      const fry=document.createElement('button');
+      fry.type='button';
+      fry.className='fry-rejected';
+      fry.textContent='🔥 FRY IT';
+      fry.addEventListener('click',event=>{
+        event.stopPropagation();
+        fryRejectedStory(story.id);
+      });
+
+      actions.append(share,restore,fry);
       body.append(fullMeta,text,details,comment,actions);
 
       header.addEventListener('click',()=>{
