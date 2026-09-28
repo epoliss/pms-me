@@ -311,6 +311,58 @@ footer{
 .rejected-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .restore-pending{background:#222;color:#fff}
 .share-rejected{background:#eee;color:#333}
+
+.archive-card{
+  background:#fff;
+  border:1px solid #d5d5d5;
+  border-radius:6px;
+  margin:0 0 -1px;
+  overflow:hidden
+}
+.archive-card + .archive-card{margin-top:7px}
+.archive-card-header{
+  width:100%;
+  border:0;
+  border-radius:0;
+  background:#fff;
+  color:#222;
+  padding:13px 16px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  text-align:left;
+  cursor:pointer
+}
+.archive-card-header:hover{background:#f7f7f7;opacity:1}
+.archive-card-title{
+  flex:1;
+  min-width:0;
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+.archive-card-meta{
+  color:#777;
+  font-size:12px;
+  white-space:nowrap
+}
+.archive-card-arrow{
+  font-size:18px;
+  line-height:1;
+  transition:transform .15s ease
+}
+.archive-card.open .archive-card-arrow{transform:rotate(180deg)}
+.archive-card-body{
+  display:none;
+  border-top:1px solid #e2e2e2;
+  padding:18px 20px 20px
+}
+.archive-card.open .archive-card-body{display:block}
+@media(max-width:600px){
+  .archive-card-header{width:100%;align-items:flex-start}
+  .archive-card-meta{white-space:normal}
+}
 </style>
 </head>
 <body>
@@ -685,112 +737,80 @@ async function loadPendingStories() {
 }
 async function loadPublishedStories() {
   try {
-    const response =
-      await fetch(
-        '/api/stories?status=published',
-        {
-          credentials:'same-origin'
-        }
-      );
-    if (!response.ok) {
-      const errorText =
-        await response.text();
-      console.error(
-        'Published stories request failed:',
-        response.status,
-        errorText
-      );
-      throw new Error(
-        'Unable to load published stories.'
-      );
-    }
-    const data =
-      await response.json();
-    const stories =
-      Array.isArray(data)
-        ? data
-        : (data.results || []);
-    publishedStoriesContainer.innerHTML =
-      '';
-    if (!stories.length) {
-      publishedStoriesContainer.innerHTML =
-        '<div class="empty">There are no published stories.</div>';
+    const response=await fetch('/api/stories?status=published',{credentials:'same-origin'});
+    if(!response.ok) throw new Error('Unable to load published stories.');
+    const data=await response.json();
+    const stories=Array.isArray(data)?data:(data.results||[]);
+    publishedStoriesContainer.innerHTML='';
+    if(!stories.length){
+      publishedStoriesContainer.innerHTML='<div class="empty">There are no published stories.</div>';
       return;
     }
-    stories.forEach(
-      story => {
-        const article =
-          document.createElement('article');
-        article.className =
-          'story';
-        const meta =
-          document.createElement('div');
-        meta.className =
-          'meta';
-        meta.textContent =
-          `#${story.id} · ${story.category} · ${story.city || 'City not provided'} · Published ${story.published_at || story.created_at}`;
-        const title =
-          document.createElement('div');
-        title.className =
-          'story-title';
-        title.textContent =
-          story.title ||
-          '(No title)';
-        const text =
-          document.createElement('p');
-        text.textContent =
-          story.story;
-        const details =
-          document.createElement('div');
-        details.className =
-          'details';
-        details.innerHTML =
-          `<strong>City:</strong> ${story.city || '(none)'}<br>` +
-          `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
-          `<strong>Anonymous:</strong> ${
-            story.force_anonymous ||
-            story.anonymous_requested
-              ? 'Yes'
-              : 'No'
-          }`;
-        const moderation =
-          document.createElement('div');
-        moderation.className =
-          'moderation';
-        const actions =
-          document.createElement('div');
-        actions.className =
-          'actions';
-        const deleteButton =
-          document.createElement('button');
-        deleteButton.className =
-          'delete';
-        deleteButton.textContent =
-          'Delete Story';
-        deleteButton.addEventListener(
-          'click',
-          () =>
-            deletePublishedStory(
-              story.id
-            )
-        );
-        actions.appendChild(deleteButton);
-        moderation.appendChild(actions);
-        article.appendChild(meta);
-        article.appendChild(title);
-        article.appendChild(text);
-        article.appendChild(details);
-        article.appendChild(moderation);
-        publishedStoriesContainer.appendChild(article);
-      }
-    );
-  } catch (error) {
-    console.error(
-      'Published stories error:',
-      error
-    );
-    publishedStoriesContainer.innerHTML =
-      '<div class="empty">Unable to load published stories.</div>';
+    stories.forEach(story=>{
+      const article=document.createElement('article');
+      article.className='archive-card';
+
+      const header=document.createElement('button');
+      header.type='button';
+      header.className='archive-card-header';
+      header.setAttribute('aria-expanded','false');
+
+      const title=document.createElement('span');
+      title.className='archive-card-title';
+      title.textContent=story.title||'(No title)';
+
+      const meta=document.createElement('span');
+      meta.className='archive-card-meta';
+      meta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided');
+
+      const arrow=document.createElement('span');
+      arrow.className='archive-card-arrow';
+      arrow.textContent='⌄';
+
+      header.append(title,meta,arrow);
+
+      const body=document.createElement('div');
+      body.className='archive-card-body';
+
+      const fullMeta=document.createElement('div');
+      fullMeta.className='meta';
+      fullMeta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided')+' · Published '+(story.published_at||story.created_at);
+
+      const text=document.createElement('p');
+      text.textContent=story.story;
+
+      const details=document.createElement('div');
+      details.className='details';
+      details.innerHTML='<strong>City:</strong> '+(story.city||'(none)')+'<br>'+
+        '<strong>Public name:</strong> '+(story.public_name||'(none)')+'<br>'+
+        '<strong>Anonymous:</strong> '+((story.force_anonymous||story.anonymous_requested)?'Yes':'No');
+
+      const moderation=document.createElement('div');
+      moderation.className='moderation';
+      const actions=document.createElement('div');
+      actions.className='actions';
+      const deleteButton=document.createElement('button');
+      deleteButton.className='delete';
+      deleteButton.textContent='Delete Story';
+      deleteButton.addEventListener('click',event=>{
+        event.stopPropagation();
+        deletePublishedStory(story.id);
+      });
+      actions.appendChild(deleteButton);
+      moderation.appendChild(actions);
+      body.append(fullMeta,text,details,moderation);
+
+      header.addEventListener('click',()=>{
+        const open=article.classList.toggle('open');
+        header.setAttribute('aria-expanded',open?'true':'false');
+      });
+
+      article.append(header,body);
+      publishedStoriesContainer.appendChild(article);
+    });
+  } catch(error) {
+    console.error('Published stories error:',error);
+    publishedStoriesContainer.innerHTML='<div class="empty">Unable to load published stories.</div>';
   }
 }
 async function deletePublishedStory(
@@ -894,15 +914,33 @@ async function loadRejectedStories() {
     }
     stories.forEach(story=>{
       const article=document.createElement('article');
-      article.className='story';
+      article.className='archive-card';
 
-      const meta=document.createElement('div');
-      meta.className='meta';
-      meta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided')+' · Rejected '+(story.published_at||story.created_at);
+      const header=document.createElement('button');
+      header.type='button';
+      header.className='archive-card-header';
+      header.setAttribute('aria-expanded','false');
 
-      const title=document.createElement('div');
-      title.className='story-title';
+      const title=document.createElement('span');
+      title.className='archive-card-title';
       title.textContent=story.title||'(No title)';
+
+      const meta=document.createElement('span');
+      meta.className='archive-card-meta';
+      meta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided');
+
+      const arrow=document.createElement('span');
+      arrow.className='archive-card-arrow';
+      arrow.textContent='⌄';
+
+      header.append(title,meta,arrow);
+
+      const body=document.createElement('div');
+      body.className='archive-card-body';
+
+      const fullMeta=document.createElement('div');
+      fullMeta.className='meta';
+      fullMeta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided')+' · Rejected '+(story.published_at||story.created_at);
 
       const text=document.createElement('p');
       text.textContent=story.story;
@@ -930,16 +968,29 @@ async function loadRejectedStories() {
       share.type='button';
       share.className='share-rejected';
       share.textContent='Share';
-      share.addEventListener('click',()=>shareRejectedStory(story));
+      share.addEventListener('click',event=>{
+        event.stopPropagation();
+        shareRejectedStory(story);
+      });
 
       const restore=document.createElement('button');
       restore.type='button';
       restore.className='restore-pending';
       restore.textContent='Return to Pending';
-      restore.addEventListener('click',()=>restoreRejectedStory(story.id));
+      restore.addEventListener('click',event=>{
+        event.stopPropagation();
+        restoreRejectedStory(story.id);
+      });
 
       actions.append(share,restore);
-      article.append(meta,title,text,details,comment,actions);
+      body.append(fullMeta,text,details,comment,actions);
+
+      header.addEventListener('click',()=>{
+        const open=article.classList.toggle('open');
+        header.setAttribute('aria-expanded',open?'true':'false');
+      });
+
+      article.append(header,body);
       rejectedStoriesContainer.appendChild(article);
     });
   } catch(error) {
