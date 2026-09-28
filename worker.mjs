@@ -3666,13 +3666,71 @@ export default {
         if (
           !existing.email_verified
         ) {
+          const token =
+            randomToken();
+
+          const tokenHash =
+            await sha256(token);
+
+          const expires =
+            new Date(
+              Date.now() +
+                24 * 60 * 60 * 1000
+            ).toISOString();
+
+          await env.pms_me_db
+            .prepare(
+              `DELETE FROM
+               email_verification_tokens
+               WHERE user_id = ?`
+            )
+            .bind(existing.id)
+            .run();
+
+          await env.pms_me_db
+            .prepare(
+              `INSERT INTO
+               email_verification_tokens
+               (
+                 user_id,
+                 token_hash,
+                 expires_at
+               )
+               VALUES (?, ?, ?)`
+            )
+            .bind(
+              existing.id,
+              tokenHash,
+              expires
+            )
+            .run();
+
+          try {
+            await sendVerificationEmail(
+              env,
+              email,
+              token
+            );
+          } catch (error) {
+            return jsonResponse(
+              {
+                error:
+                  "Verification email failed: " +
+                  (error && error.message
+                    ? error.message
+                    : String(error))
+              },
+              500
+            );
+          }
 
           return jsonResponse(
             {
-              error:
-                "An account already exists for this email address. Please check your email for the verification link."
+              ok: true,
+              email,
+              resent: true
             },
-            409
+            200
           );
         }
 
@@ -3763,9 +3821,15 @@ export default {
           token
         );
       } catch (error) {
-        console.error(
-          "Verification email failed:",
-          error
+        return jsonResponse(
+          {
+            error:
+              "Verification email failed: " +
+              (error && error.message
+                ? error.message
+                : String(error))
+          },
+          500
         );
       }
 
