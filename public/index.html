@@ -404,13 +404,37 @@ footer{
   }
 
   nav{
-    padding:12px 6px
+    padding:4px 3px;
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-rows:repeat(2,30px);
+    gap:2px;
+    height:66px;
+    overflow:visible;
+    white-space:normal
   }
 
   nav button{
-    padding:7px 9px;
-    margin:2px 1px;
-    font-size:13px
+    min-width:0;
+    width:100%;
+    height:30px;
+    padding:3px 2px;
+    margin:0;
+    font-size:10px;
+    line-height:1.05;
+    white-space:normal;
+    display:flex;
+    align-items:center;
+    justify-content:center
+  }
+
+  nav button.submit-story{
+    font-weight:700
+  }
+
+  :root{
+    --header-height:109px;
+    --nav-height:66px
   }
 
   .topbar{
