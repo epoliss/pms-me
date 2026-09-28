@@ -377,6 +377,17 @@ footer{
   .archive-card-header{width:100%;align-items:flex-start}
   .archive-card-meta{white-space:normal}
 }
+
+.spam-analyst-flag{
+  margin:12px 0 4px;
+  padding:11px 13px;
+  border:2px solid #c62828;
+  border-radius:5px;
+  background:#fff0f0;
+  color:#8b0000;
+  font-weight:800;
+  line-height:1.4
+}
 </style>
 </head>
 <body>
@@ -631,6 +642,18 @@ async function loadPendingStories() {
           `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
           `<strong>Anonymous requested:</strong> ${story.anonymous_requested ? 'Yes' : 'No'}<br>` +
           `<strong>Email:</strong> ${story.email || '(none)'}`;
+        const spamFlag =
+          document.createElement('div');
+        if (
+          story.moderator_notes &&
+          story.moderator_notes.startsWith('[SPAM ANALYST]')
+        ) {
+          spamFlag.className =
+            'spam-analyst-flag';
+          spamFlag.textContent =
+            '⚠ SUSPECTED SPAM — ' +
+            story.moderator_notes.replace('[SPAM ANALYST]', '').trim();
+        }
         const moderation =
           document.createElement('div');
         moderation.className =
@@ -736,6 +759,9 @@ async function loadPendingStories() {
         article.appendChild(titleRow);
         article.appendChild(text);
         article.appendChild(details);
+        if (spamFlag.className) {
+          article.appendChild(spamFlag);
+        }
         article.appendChild(moderation);
         storiesContainer.appendChild(article);
       }
