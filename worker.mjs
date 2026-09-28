@@ -3,7 +3,7 @@
 const SITE_URL =
   "https://pms-me-site.epoliss.workers.dev";
 
-const PBKDF2_ITERATIONS = 120000;
+const PBKDF2_ITERATIONS = 100000;
 
 function generateAnonymousName() {
   const words = [
@@ -3589,8 +3589,6 @@ export default {
       request.method === "POST"
     ) {
 
-      try {
-
       let body;
 
       try {
@@ -3778,20 +3776,6 @@ export default {
         },
         201
       );
-      } catch (error) {
-        console.error("Account registration failed:", error);
-        return jsonResponse(
-          {
-            error:
-              "Registration failed: " +
-              (error && error.message
-                ? error.message
-                : String(error))
-          },
-          500
-        );
-      }
-
     }
 
     /*
