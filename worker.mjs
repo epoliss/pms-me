@@ -5151,6 +5151,65 @@ export default {
 
     /*
      * =========================================================
+     * STORY SUBMISSION — ANTI-SPAM SESSION / TURNSTILE CONFIG
+     * =========================================================
+     */
+
+    if (
+      url.pathname === "/api/submission-session" &&
+      request.method === "POST"
+    ) {
+      await env.pms_me_db
+        .prepare(
+          `CREATE TABLE IF NOT EXISTS submission_sessions (
+             token_hash TEXT PRIMARY KEY,
+             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+           )`
+        )
+        .run();
+
+      await env.pms_me_db
+        .prepare(
+          `DELETE FROM submission_sessions
+           WHERE created_at <= datetime('now', '-30 minutes')`
+        )
+        .run();
+
+      const token = randomToken();
+      const tokenHash = await sha256(token);
+
+      await env.pms_me_db
+        .prepare(
+          `INSERT INTO submission_sessions (token_hash)
+           VALUES (?)`
+        )
+        .bind(tokenHash)
+        .run();
+
+      return jsonResponse({ token });
+    }
+
+    if (
+      url.pathname === "/api/turnstile-config" &&
+      request.method === "GET"
+    ) {
+      const enabled =
+        Boolean(
+          env.TURNSTILE_SITE_KEY &&
+          env.TURNSTILE_SECRET_KEY
+        );
+
+      return jsonResponse({
+        enabled,
+        sitekey:
+          enabled
+            ? env.TURNSTILE_SITE_KEY
+            : null
+      });
+    }
+
+    /*
+     * =========================================================
      * STORIES — GET
      * =========================================================
      */
@@ -5249,6 +5308,196 @@ export default {
           },
           400
         );
+      }
+
+      const clientIp =
+        request.headers.get("CF-Connecting-IP") ||
+        "unknown";
+
+      const ipHash =
+        await sha256(clientIp);
+
+      await env.pms_me_db
+        .prepare(
+          `CREATE TABLE IF NOT EXISTS story_submission_events (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             ip_hash TEXT NOT NULL,
+             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+           )`
+        )
+        .run();
+
+      await env.pms_me_db
+        .prepare(
+          `DELETE FROM story_submission_events
+           WHERE created_at <= datetime('now', '-24 hours')`
+        )
+        .run();
+
+      const recent15 =
+        await env.pms_me_db
+          .prepare(
+            `SELECT COUNT(*) AS count
+             FROM story_submission_events
+             WHERE ip_hash = ?
+               AND created_at > datetime('now', '-15 minutes')`
+          )
+          .bind(ipHash)
+          .first();
+
+      const recent24 =
+        await env.pms_me_db
+          .prepare(
+            `SELECT COUNT(*) AS count
+             FROM story_submission_events
+             WHERE ip_hash = ?
+               AND created_at > datetime('now', '-24 hours')`
+          )
+          .bind(ipHash)
+          .first();
+
+      if (
+        Number(recent15?.count || 0) >= 3 ||
+        Number(recent24?.count || 0) >= 10
+      ) {
+        return jsonResponse(
+          {
+            error:
+              "Too many story submissions from this connection. Please wait and try again later."
+          },
+          429
+        );
+      }
+
+      await env.pms_me_db
+        .prepare(
+          `INSERT INTO story_submission_events (ip_hash)
+           VALUES (?)`
+        )
+        .bind(ipHash)
+        .run();
+
+      const spamReasons = [];
+
+      const honeypot =
+        typeof body.website === "string"
+          ? body.website.trim()
+          : "";
+
+      if (honeypot) {
+        spamReasons.push(
+          "Hidden honeypot field was populated."
+        );
+      }
+
+      const submissionSession =
+        typeof body.submission_session === "string"
+          ? body.submission_session
+          : "";
+
+      if (submissionSession) {
+        await env.pms_me_db
+          .prepare(
+            `CREATE TABLE IF NOT EXISTS submission_sessions (
+               token_hash TEXT PRIMARY KEY,
+               created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+             )`
+          )
+          .run();
+
+        const sessionHash =
+          await sha256(submissionSession);
+
+        const sessionRow =
+          await env.pms_me_db
+            .prepare(
+              `SELECT
+                 created_at,
+                 (julianday('now') - julianday(created_at)) * 86400 AS age_seconds
+               FROM submission_sessions
+               WHERE token_hash = ?`
+            )
+            .bind(sessionHash)
+            .first();
+
+        await env.pms_me_db
+          .prepare(
+            `DELETE FROM submission_sessions
+             WHERE token_hash = ?`
+          )
+          .bind(sessionHash)
+          .run();
+
+        if (
+          sessionRow &&
+          Number(sessionRow.age_seconds) < 3
+        ) {
+          spamReasons.push(
+            "Form was submitted in under 3 seconds."
+          );
+        }
+      } else {
+        spamReasons.push(
+          "Submission did not include a valid form-session marker."
+        );
+      }
+
+      if (
+        env.TURNSTILE_SITE_KEY &&
+        env.TURNSTILE_SECRET_KEY
+      ) {
+        const turnstileToken =
+          typeof body.turnstile_token === "string"
+            ? body.turnstile_token
+            : "";
+
+        let turnstileValid = false;
+
+        if (turnstileToken) {
+          try {
+            const verification =
+              await fetch(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                    secret:
+                      env.TURNSTILE_SECRET_KEY,
+                    response:
+                      turnstileToken,
+                    remoteip:
+                      clientIp
+                  })
+                }
+              );
+
+            const verificationResult =
+              await verification.json();
+
+            turnstileValid =
+              Boolean(
+                verificationResult.success
+              );
+          } catch (error) {
+            console.error(
+              "Turnstile verification failed:",
+              error
+            );
+          }
+        }
+
+        if (!turnstileValid) {
+          return jsonResponse(
+            {
+              error:
+                "Security verification failed. Please try submitting again."
+            },
+            403
+          );
+        }
       }
 
       const title =
@@ -5404,10 +5653,11 @@ export default {
                display_name,
                email,
                anonymous_requested,
-               status
+               status,
+               moderator_notes
              )
              VALUES (
-               ?, ?, ?, ?, ?, ?, ?, 'pending'
+               ?, ?, ?, ?, ?, ?, ?, 'pending', ?
              )`
           )
           .bind(
@@ -5417,7 +5667,10 @@ export default {
             category,
             displayName || null,
             email || null,
-            anonymousRequested
+            anonymousRequested,
+            spamReasons.length
+              ? "[SPAM ANALYST] " + spamReasons.join(" ")
+              : null
           )
           .run();
 
