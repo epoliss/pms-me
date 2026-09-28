@@ -374,6 +374,37 @@ footer{
       id="settingsStatus"
     ></div>
   </section>
+
+  <section class="settings">
+    <h2>
+      Account Management
+    </h2>
+    <p class="settings-description">
+      Permanently purge a PMS-ME user account by email address. Stories submitted by the user are not deleted.
+    </p>
+    <div class="setting-row">
+      <label for="purgeAccountEmail">
+        User email address
+      </label>
+      <input
+        type="email"
+        id="purgeAccountEmail"
+        placeholder="user@example.com"
+      >
+    </div>
+    <button
+      class="delete"
+      id="purgeAccountButton"
+      type="button"
+    >
+      Purge Account
+    </button>
+    <div
+      class="settings-status"
+      id="purgeAccountStatus"
+    ></div>
+  </section>
+
   <div
     class="message"
     id="message"
@@ -415,6 +446,12 @@ const saveSettingsButton =
   document.getElementById('saveSettings');
 const settingsStatus =
   document.getElementById('settingsStatus');
+const purgeAccountEmail =
+  document.getElementById('purgeAccountEmail');
+const purgeAccountButton =
+  document.getElementById('purgeAccountButton');
+const purgeAccountStatus =
+  document.getElementById('purgeAccountStatus');
 const categories = [
   "Owner Moaner",
   "Vendor Woes",
@@ -923,6 +960,78 @@ async function saveNotificationSettings() {
 saveSettingsButton.addEventListener(
   'click',
   saveNotificationSettings
+);
+
+purgeAccountButton.addEventListener(
+  'click',
+  async () => {
+    const email =
+      purgeAccountEmail.value.trim();
+
+    if (!email) {
+      purgeAccountStatus.style.display =
+        'block';
+      purgeAccountStatus.textContent =
+        'Enter the account email address.';
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        'Permanently purge the PMS-ME account for ' +
+        email +
+        '? This cannot be undone. Stories will not be deleted.'
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    purgeAccountStatus.style.display =
+      'block';
+    purgeAccountStatus.textContent =
+      'Purging account...';
+
+    try {
+      const response =
+        await fetch(
+          '/api/moderator/accounts/purge',
+          {
+            method:'DELETE',
+            headers:{
+              'Content-Type':
+                'application/json'
+            },
+            credentials:'same-origin',
+            body:
+              JSON.stringify({
+                email
+              })
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+          'Unable to purge account.'
+        );
+      }
+
+      purgeAccountStatus.textContent =
+        'Account purged: ' +
+        result.email;
+
+      purgeAccountEmail.value =
+        '';
+    } catch (error) {
+      purgeAccountStatus.textContent =
+        error.message ||
+        'Unable to purge account.';
+    }
+  }
 );
 loadNotificationSettings();
 loadPendingStories();
