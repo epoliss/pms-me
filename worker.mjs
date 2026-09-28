@@ -56,13 +56,157 @@ function jsonResponse(
   );
 }
 
+function applyThemeControls(html) {
+  const themeHead = `
+<style id="pms-me-theme-styles">
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+html[data-theme="dark"] body {
+  background:#181818 !important;
+  color:#e8e8e8 !important;
+}
+html[data-theme="dark"] nav,
+html[data-theme="dark"] .story,
+html[data-theme="dark"] .loading,
+html[data-theme="dark"] .empty,
+html[data-theme="dark"] .settings,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] form {
+  background:#242424 !important;
+  color:#e8e8e8 !important;
+  border-color:#444 !important;
+}
+html[data-theme="dark"] nav button {
+  color:#d8d8d8;
+}
+html[data-theme="dark"] .story-title,
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] label,
+html[data-theme="dark"] strong {
+  color:#f2f2f2 !important;
+}
+html[data-theme="dark"] .meta,
+html[data-theme="dark"] .small,
+html[data-theme="dark"] footer,
+html[data-theme="dark"] .settings-description,
+html[data-theme="dark"] .title-help {
+  color:#aaa !important;
+}
+html[data-theme="dark"] input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select {
+  background:#303030 !important;
+  color:#f2f2f2 !important;
+  border-color:#555 !important;
+}
+html[data-theme="dark"] .reaction {
+  background:#303030;
+  color:#ddd;
+  border-color:#555;
+}
+html[data-theme="dark"] .actions,
+html[data-theme="dark"] .share-actions,
+html[data-theme="dark"] .bottom-account-links {
+  border-color:#444 !important;
+}
+#pmsThemeToggle {
+  position:fixed;
+  right:14px;
+  bottom:14px;
+  z-index:99999;
+  width:44px;
+  height:44px;
+  border:1px solid #bbb;
+  border-radius:50%;
+  background:#fff;
+  color:#222;
+  padding:0;
+  margin:0;
+  font-size:21px;
+  line-height:1;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+#pmsThemeToggle:hover {
+  transform:translateY(-1px);
+}
+html[data-theme="dark"] #pmsThemeToggle {
+  background:#2d2d2d;
+  color:#fff;
+  border-color:#666;
+}
+</style>
+<script>
+(function(){
+  try {
+    var saved = localStorage.getItem('pmsme_theme');
+    var theme = saved === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+})();
+</script>`;
+
+  const themeBody = `
+<button id="pmsThemeToggle" type="button" aria-label="Switch to dark mode" title="Dark mode">☾</button>
+<script>
+(function(){
+  var button = document.getElementById('pmsThemeToggle');
+  if (!button) return;
+
+  function syncButton() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    button.textContent = dark ? '☀' : '☾';
+    button.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    button.setAttribute('title', dark ? 'Light mode' : 'Dark mode');
+  }
+
+  button.addEventListener('click', function(){
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var next = dark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try {
+      localStorage.setItem('pmsme_theme', next);
+    } catch (e) {}
+    syncButton();
+  });
+
+  syncButton();
+})();
+</script>`;
+
+  let output = String(html || "");
+
+  if (/<\/head>/i.test(output)) {
+    output = output.replace(/<\/head>/i, themeHead + "\n</head>");
+  } else {
+    output = themeHead + output;
+  }
+
+  if (/<\/body>/i.test(output)) {
+    output = output.replace(/<\/body>/i, themeBody + "\n</body>");
+  } else {
+    output += themeBody;
+  }
+
+  return output;
+}
+
 function htmlResponse(
   html,
   status = 200,
   extraHeaders = {}
 ) {
   return new Response(
-    html,
+    applyThemeControls(html),
     {
       status,
       headers: {
@@ -5812,8 +5956,15 @@ export default {
         "0"
       );
 
+      const html =
+        await assetResponse.text();
+
+      headers.delete(
+        "Content-Length"
+      );
+
       return new Response(
-        assetResponse.body,
+        applyThemeControls(html),
         {
           status:
             assetResponse.status,
