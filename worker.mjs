@@ -3762,6 +3762,9 @@ export default {
             )
             .run();
 
+          let verificationEmailSent =
+            true;
+
           try {
             await sendVerificationEmail(
               env,
@@ -3769,22 +3772,21 @@ export default {
               token
             );
           } catch (error) {
-            return jsonResponse(
-              {
-                error:
-                  "Verification email failed: " +
-                  (error && error.message
-                    ? error.message
-                    : String(error))
-              },
-              500
+            verificationEmailSent =
+              false;
+
+            console.error(
+              "Verification email resend failed:",
+              error
             );
           }
 
           return jsonResponse(
             {
               error:
-                "Your account already exists, but your email address still needs to be confirmed. Please check your email for the verification link."
+                verificationEmailSent
+                  ? "Your account already exists, but your email address still needs to be confirmed. Please check your email for the verification link."
+                  : "Your account already exists, but your email address still needs to be confirmed. Verification email delivery is temporarily unavailable; please try again later."
             },
             409
           );
