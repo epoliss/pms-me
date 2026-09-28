@@ -478,6 +478,10 @@ html[data-theme="dark"] .share-actions,
 html[data-theme="dark"] .bottom-account-links{border-color:#444}
 #pmsThemeToggle{width:44px;height:44px;border:1px solid #bbb;border-radius:50%;background:#fff;color:#222;padding:0;margin:0 0 0 6px;font-size:21px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;flex:0 0 44px}
 html[data-theme="dark"] #pmsThemeToggle{background:#2d2d2d;color:#fff;border-color:#666}
+.theme-toggle-wrap{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;margin-left:6px}
+.theme-toggle-wrap #pmsThemeToggle{margin:0}
+.theme-toggle-label{font-size:10px;line-height:1.2;margin-top:3px;color:#777;white-space:nowrap}
+html[data-theme="dark"] .theme-toggle-label{color:#aaa}
 </style>
 
 <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "295908aca52842f8b3cf49bc507c63b6"}'></script>
@@ -554,8 +558,6 @@ html[data-theme="dark"] #pmsThemeToggle{background:#2d2d2d;color:#fff;border-col
       Create Account
     </a>
 
-    <button id="pmsThemeToggle" type="button" aria-label="Switch to dark mode" title="Dark mode">☾</button>
-
   </div>
 
   <section id="stories">
@@ -579,6 +581,11 @@ html[data-theme="dark"] #pmsThemeToggle{background:#2d2d2d;color:#fff;border-col
     <a class="account-link" href="/register">
       Create Account
     </a>
+
+    <div class="theme-toggle-wrap">
+      <button id="pmsThemeToggle" type="button" aria-label="Switch to dark mode" title="Dark mode">☾</button>
+      <div class="theme-toggle-label">Dark Mode</div>
+    </div>
 
   </div>
 
