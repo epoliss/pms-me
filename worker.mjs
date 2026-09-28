@@ -3589,6 +3589,8 @@ export default {
       request.method === "POST"
     ) {
 
+      try {
+
       let body;
 
       try {
@@ -3776,6 +3778,20 @@ export default {
         },
         201
       );
+      } catch (error) {
+        console.error("Account registration failed:", error);
+        return jsonResponse(
+          {
+            error:
+              "Registration failed: " +
+              (error && error.message
+                ? error.message
+                : String(error))
+          },
+          500
+        );
+      }
+
     }
 
     /*
