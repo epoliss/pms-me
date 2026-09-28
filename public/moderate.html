@@ -301,6 +301,15 @@ footer{
     width:100%
   }
 }
+
+.rejected-section{margin-top:30px}
+.rejected-intro{color:#666;font-size:13px;line-height:1.5;margin:0 0 14px}
+.rejection-comment{margin-top:16px;padding:14px 16px;border-left:4px solid #b54848;background:#fff1f1;border-radius:4px}
+.rejection-comment-label{display:block;margin-bottom:6px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#8d3030}
+.rejection-comment-text{white-space:pre-wrap;line-height:1.45;color:#4d2929}
+.rejected-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.restore-pending{background:#222;color:#fff}
+.share-rejected{background:#eee;color:#333}
 </style>
 </head>
 <body>
@@ -427,6 +436,11 @@ footer{
       </div>
     </section>
   </section>
+  <section class="rejected-section">
+    <h2>Rejected Stories</h2>
+    <p class="rejected-intro">Rejected stories are preserved for 30 days with the moderator's rejection comment, then permanently deleted unless restored to Pending.</p>
+    <section id="rejectedStories"><div class="empty">Loading...</div></section>
+  </section>
 </main>
 <footer>
   Property Manager Stories · PMS-ME
@@ -436,6 +450,8 @@ const storiesContainer =
   document.getElementById('stories');
 const publishedStoriesContainer =
   document.getElementById('publishedStories');
+const rejectedStoriesContainer =
+  document.getElementById('rejectedStories');
 const message =
   document.getElementById('message');
 const notificationFrequency =
@@ -816,6 +832,121 @@ async function deletePublishedStory(
       'Something went wrong.';
   }
 }
+async function shareRejectedStory(story) {
+  const text =
+    (story.title ? story.title + '\n\n' : '') +
+    story.story +
+    '\n\nCategory: ' + story.category +
+    (story.city ? '\nCity: ' + story.city : '') +
+    '\n\nRejection comment: ' +
+    (story.moderator_notes || 'No rejection comment was entered.');
+
+  if (navigator.share) {
+    try {
+      await navigator.share({title:story.title || 'PMS-ME Rejected Story',text});
+      return;
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    message.style.display='block';
+    message.textContent='Rejected story copied to clipboard for sharing.';
+  } catch {
+    message.style.display='block';
+    message.textContent='Unable to share this story from this browser.';
+  }
+}
+
+async function restoreRejectedStory(id) {
+  if (!window.confirm('Return this rejected story to the Pending moderation queue?')) return;
+  message.style.display='block';
+  message.textContent='Returning story to Pending...';
+  try {
+    const response=await fetch('/api/stories/'+id,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      credentials:'same-origin',
+      body:JSON.stringify({action:'restore_pending'})
+    });
+    const result=await response.json();
+    if(!response.ok) throw new Error(result.error || 'Unable to restore story.');
+    message.textContent='Story returned to the Pending moderation queue.';
+    await loadRejectedStories();
+    await loadPendingStories();
+  } catch(error) {
+    message.textContent=error.message || 'Something went wrong.';
+  }
+}
+
+async function loadRejectedStories() {
+  try {
+    const response=await fetch('/api/stories?status=rejected',{credentials:'same-origin'});
+    if(!response.ok) throw new Error('Unable to load rejected stories.');
+    const data=await response.json();
+    const stories=Array.isArray(data)?data:(data.results||[]);
+    rejectedStoriesContainer.innerHTML='';
+    if(!stories.length){
+      rejectedStoriesContainer.innerHTML='<div class="empty">There are no rejected stories.</div>';
+      return;
+    }
+    stories.forEach(story=>{
+      const article=document.createElement('article');
+      article.className='story';
+
+      const meta=document.createElement('div');
+      meta.className='meta';
+      meta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided')+' · Rejected '+(story.published_at||story.created_at);
+
+      const title=document.createElement('div');
+      title.className='story-title';
+      title.textContent=story.title||'(No title)';
+
+      const text=document.createElement('p');
+      text.textContent=story.story;
+
+      const details=document.createElement('div');
+      details.className='details';
+      details.innerHTML='<strong>Display Name:</strong> '+(story.display_name||'(not provided)')+'<br>'+
+        '<strong>Email:</strong> '+(story.email||'(not provided)')+'<br>'+
+        '<strong>Anonymous Requested:</strong> '+(story.anonymous_requested?'Yes':'No');
+
+      const comment=document.createElement('div');
+      comment.className='rejection-comment';
+      const commentLabel=document.createElement('span');
+      commentLabel.className='rejection-comment-label';
+      commentLabel.textContent='Rejection Comment';
+      const commentText=document.createElement('div');
+      commentText.className='rejection-comment-text';
+      commentText.textContent=story.moderator_notes||'No rejection comment was entered.';
+      comment.append(commentLabel,commentText);
+
+      const actions=document.createElement('div');
+      actions.className='rejected-actions';
+
+      const share=document.createElement('button');
+      share.type='button';
+      share.className='share-rejected';
+      share.textContent='Share';
+      share.addEventListener('click',()=>shareRejectedStory(story));
+
+      const restore=document.createElement('button');
+      restore.type='button';
+      restore.className='restore-pending';
+      restore.textContent='Return to Pending';
+      restore.addEventListener('click',()=>restoreRejectedStory(story.id));
+
+      actions.append(share,restore);
+      article.append(meta,title,text,details,comment,actions);
+      rejectedStoriesContainer.appendChild(article);
+    });
+  } catch(error) {
+    console.error('Rejected stories error:',error);
+    rejectedStoriesContainer.innerHTML='<div class="empty">Unable to load rejected stories.</div>';
+  }
+}
+
 async function updateStory(
   id,
   action,
@@ -867,6 +998,9 @@ async function updateStory(
         'Story rejected.';
     }
     await loadPendingStories();
+    if (action === 'reject') {
+      await loadRejectedStories();
+    }
     if (
       action === 'approve' ||
       action === 'approve_anonymously'
@@ -1036,6 +1170,7 @@ purgeAccountButton.addEventListener(
 loadNotificationSettings();
 loadPendingStories();
 loadPublishedStories();
+loadRejectedStories();
 setInterval(
   () => {
     const activeElement =
@@ -1055,6 +1190,7 @@ setInterval(
     }
     loadPendingStories();
     loadPublishedStories();
+    loadRejectedStories();
   },
   30000
 );
