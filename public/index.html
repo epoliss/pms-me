@@ -12,15 +12,20 @@
   --nav-height:44px
 }
 
+html,
 body{
   margin:0;
+  padding:0
+}
+
+body{
   font-family:Arial,Helvetica,sans-serif;
   background:#f3f3f3;
   color:#222
 }
 
 header{
-  background:rgba(64,224,208,.78);
+  background:rgb(64,224,208);
   color:#a6a6a6;
   text-align:center;
   padding:18px 20px 22px;
@@ -30,7 +35,8 @@ header{
   left:0;
   right:0;
   height:var(--header-height);
-  z-index:20
+  z-index:20;
+  isolation:isolate
 }
 
 .logo{
@@ -92,11 +98,11 @@ nav{
   height:var(--nav-height);
   z-index:19;
   overflow-x:auto;
-  white-space:nowrap
+  white-space:nowrap;
+  isolation:isolate
 }
 
-nav button,
-nav .nav-link{
+nav button{
   border:0;
   background:transparent;
   padding:7px 10px;
@@ -104,15 +110,11 @@ nav .nav-link{
   font-size:14px;
   cursor:pointer;
   color:#555;
-  border-radius:4px;
-  text-decoration:none;
-  display:inline-block;
-  vertical-align:middle
+  border-radius:4px
 }
 
 nav button:hover,
-nav button.active,
-nav .nav-link:hover{
+nav button.active{
   background:rgba(64,224,208,.78);
   color:#000
 }
@@ -392,8 +394,7 @@ footer{
     padding:12px 6px
   }
 
-  nav button,
-  nav .nav-link{
+  nav button{
     padding:7px 9px;
     margin:2px 1px;
     font-size:13px
@@ -448,7 +449,9 @@ footer{
   }
 }
 </style>
+
 <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "295908aca52842f8b3cf49bc507c63b6"}'></script>
+
 </head>
 <body>
 
@@ -457,9 +460,11 @@ footer{
     <div class="brand-line brand-property">
       <span class="black">P</span><span class="gray">ROPERTY</span>
     </div>
+
     <div class="brand-line brand-management">
       <span class="black">M</span><span class="gray">ANAGEMENT</span>
     </div>
+
     <div class="brand-line brand-stories">
       <span class="black">S</span><span class="gray">TORIES</span>
       <span class="brand-tagline">. . . for every day</span>
@@ -468,6 +473,7 @@ footer{
 </header>
 
 <nav id="categories">
+
   <button class="active" data-category="All">
     All
   </button>
@@ -492,14 +498,16 @@ footer{
     Audit This
   </button>
 
-  <a class="nav-link" href="/submit.html">
+  <button type="button" onclick="window.location.href='/submit.html'">
     Submit a Story
-  </a>
+  </button>
+
 </nav>
 
 <main class="container">
 
   <div class="topbar">
+
     <a class="account-link" href="/login">
       Log In
     </a>
@@ -507,12 +515,15 @@ footer{
     <a class="account-link" href="/register">
       Create Account
     </a>
+
   </div>
 
   <section id="stories">
+
     <div class="loading" id="loading">
       Loading stories...
     </div>
+
   </section>
 
   <div class="empty" id="empty">
@@ -520,6 +531,7 @@ footer{
   </div>
 
   <div class="bottom-account-links">
+
     <a class="account-link" href="/login">
       Log In
     </a>
@@ -527,6 +539,7 @@ footer{
     <a class="account-link" href="/register">
       Create Account
     </a>
+
   </div>
 
 </main>
@@ -539,7 +552,7 @@ footer{
 <script>
 const buttons =
   document.querySelectorAll(
-    '#categories button'
+    '#categories button[data-category]'
   );
 
 const storiesContainer =
@@ -1238,5 +1251,6 @@ buttons.forEach(
 
 loadStories();
 </script>
+
 </body>
 </html>
