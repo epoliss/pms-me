@@ -93,13 +93,12 @@ nav button.active{
   display:flex;
   justify-content:flex-end;
   align-items:center;
-  margin-bottom:18px
+  margin-bottom:18px;
+  gap:8px;
+  flex-wrap:wrap
 }
-h1{
-  margin:0;
-  font-size:24px
-}
-.submit{
+.submit,
+.account-link{
   background:rgba(64,224,208,.78);
   color:#000;
   text-decoration:none;
@@ -108,7 +107,8 @@ h1{
   font-weight:bold;
   font-size:14px
 }
-.submit:hover{
+.submit:hover,
+.account-link:hover{
   background:rgba(64,224,208,1);
   color:#000
 }
@@ -306,9 +306,10 @@ footer{
   .topbar{
     align-items:flex-start;
     flex-direction:column;
-    gap:12px
+    gap:8px
   }
-  .submit{
+  .submit,
+  .account-link{
     align-self:stretch;
     text-align:center
   }
@@ -377,6 +378,14 @@ footer{
 
 <main class="container">
   <div class="topbar">
+    <a class="account-link" href="/login">
+      Log In
+    </a>
+
+    <a class="account-link" href="/register">
+      Create Account
+    </a>
+
     <a class="submit" href="/submit.html">
       Submit a Story
     </a>
