@@ -6,19 +6,33 @@
 <title>PMS-ME — Property Manager Stories</title>
 <style>
 *{box-sizing:border-box}
+
+:root{
+  --header-height:156px;
+  --nav-height:44px
+}
+
 body{
   margin:0;
   font-family:Arial,Helvetica,sans-serif;
   background:#f3f3f3;
   color:#222
 }
+
 header{
   background:rgba(64,224,208,.78);
   color:#a6a6a6;
   text-align:center;
   padding:18px 20px 22px;
-  overflow:hidden
+  overflow:hidden;
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:var(--header-height);
+  z-index:20
 }
+
 .logo{
   display:block;
   width:max-content;
@@ -30,21 +44,27 @@ header{
   line-height:.92;
   white-space:nowrap
 }
+
 .brand-line{
   display:block
 }
+
 .brand-management{
   margin-left:1.4em
 }
+
 .brand-stories{
   margin-left:calc(2.7em + 1ch)
 }
+
 .black{
   color:#000
 }
+
 .gray{
   color:#a6a6a6
 }
+
 .brand-tagline{
   color:#000;
   font-size:24px;
@@ -52,24 +72,31 @@ header{
   margin-left:8px;
   vertical-align:middle
 }
+
 .subtitle{
   margin-top:8px;
   color:#000;
   font-size:13px;
   font-weight:600
 }
+
 nav{
   background:#fff;
   border-bottom:1px solid #ddd;
   padding:12px 10px;
   text-align:center;
-  position:sticky;
-  top:0;
-  z-index:5;
+  position:fixed;
+  top:var(--header-height);
+  left:0;
+  right:0;
+  height:var(--nav-height);
+  z-index:19;
   overflow-x:auto;
   white-space:nowrap
 }
-nav button{
+
+nav button,
+nav .nav-link{
   border:0;
   background:transparent;
   padding:7px 10px;
@@ -77,18 +104,25 @@ nav button{
   font-size:14px;
   cursor:pointer;
   color:#555;
-  border-radius:4px
+  border-radius:4px;
+  text-decoration:none;
+  display:inline-block;
+  vertical-align:middle
 }
+
 nav button:hover,
-nav button.active{
+nav button.active,
+nav .nav-link:hover{
   background:rgba(64,224,208,.78);
   color:#000
 }
+
 .container{
   max-width:850px;
-  margin:24px auto;
-  padding:0 15px
+  margin:0 auto;
+  padding:calc(var(--header-height) + var(--nav-height) + 24px) 15px 0
 }
+
 .topbar{
   display:flex;
   justify-content:flex-end;
@@ -97,6 +131,7 @@ nav button.active{
   gap:8px;
   flex-wrap:wrap
 }
+
 .submit,
 .account-link{
   background:rgba(64,224,208,.78);
@@ -107,11 +142,13 @@ nav button.active{
   font-weight:bold;
   font-size:14px
 }
+
 .submit:hover,
 .account-link:hover{
   background:rgba(64,224,208,1);
   color:#000
 }
+
 .story{
   background:#fff;
   border:1px solid #ddd;
@@ -120,14 +157,17 @@ nav button.active{
   margin-bottom:14px;
   box-shadow:0 1px 2px rgba(0,0,0,.04)
 }
+
 .story.highlighted{
   box-shadow:0 0 0 3px #222
 }
+
 .meta{
   color:#888;
   font-size:12px;
   margin-bottom:12px
 }
+
 .story-title{
   font-size:19px;
   font-weight:800;
@@ -135,11 +175,13 @@ nav button.active{
   margin:0 0 10px;
   color:#000
 }
+
 .story p{
   font-size:17px;
   line-height:1.55;
   margin:0 0 14px
 }
+
 .actions{
   border-top:1px solid #eee;
   padding-top:12px;
@@ -149,6 +191,7 @@ nav button.active{
   gap:14px;
   flex-wrap:wrap
 }
+
 .reaction{
   border:1px solid #d5d5d5;
   background:#f7f7f7;
@@ -166,34 +209,41 @@ nav button.active{
   align-items:center;
   gap:7px
 }
+
 .reaction .count{
   font-weight:800
 }
+
 .reaction-left:hover{
   background:#b9dcf5;
   color:#fff;
   border-color:#9bc9e8
 }
+
 .reaction-left.selected{
   background:#8fc7ee;
   color:#fff;
   border-color:#78b8e2;
   cursor:default
 }
+
 .reaction-right:hover{
   background:#e58b32;
   color:#fff;
   border-color:#d77a1e
 }
+
 .reaction-right.selected{
   background:#d9781c;
   color:#fff;
   border-color:#c86a12;
   cursor:default
 }
+
 .reaction:disabled{
   opacity:1
 }
+
 .share-actions{
   border-top:1px solid #eee;
   margin-top:18px;
@@ -203,6 +253,7 @@ nav button.active{
   gap:22px;
   flex-wrap:wrap
 }
+
 .share-button{
   width:32px;
   height:32px;
@@ -219,19 +270,23 @@ nav button.active{
     opacity .15s ease,
     box-shadow .15s ease
 }
+
 .share-button:hover{
   transform:translateY(-1px);
   opacity:.88;
   box-shadow:0 2px 5px rgba(0,0,0,.18)
 }
+
 .share-button:active{
   transform:translateY(0);
   box-shadow:none
 }
+
 .share-button:focus-visible{
   outline:2px solid #222;
   outline-offset:3px
 }
+
 .share-x{
   background:#000;
   color:#fff;
@@ -239,6 +294,7 @@ nav button.active{
   font-size:23px;
   font-weight:700
 }
+
 .share-facebook{
   background:#1877f2;
   color:#fff;
@@ -248,6 +304,7 @@ nav button.active{
   font-weight:700;
   padding-top:3px
 }
+
 .share-native{
   background:#555;
   color:#fff;
@@ -255,9 +312,22 @@ nav button.active{
   font-size:19px;
   font-weight:700
 }
+
 .mobile-share{
   display:inline-flex
 }
+
+.bottom-account-links{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:30px 0 0;
+  padding:22px 0;
+  border-top:1px solid #ddd
+}
+
 .empty{
   display:none;
   background:#fff;
@@ -266,6 +336,7 @@ nav button.active{
   text-align:center;
   color:#777
 }
+
 .loading{
   background:#fff;
   border:1px solid #ddd;
@@ -273,73 +344,114 @@ nav button.active{
   text-align:center;
   color:#777
 }
+
 footer{
   text-align:center;
   color:#888;
   font-size:12px;
-  padding:30px 15px 45px
+  padding:10px 15px 45px
 }
+
 @media(max-width:600px){
+
+  :root{
+    --header-height:109px;
+    --nav-height:44px
+  }
+
   header{
     padding:16px 12px 18px
   }
+
   .logo{
     font-size:27px;
     margin-left:auto;
     margin-right:auto
   }
+
   .brand-management{
     margin-left:1.3em
   }
+
   .brand-stories{
     margin-left:calc(2.5em + 1ch)
   }
+
   .brand-tagline{
     font-size:15px;
     letter-spacing:.2px;
     margin-left:3px
   }
+
   .subtitle{
     margin-top:7px;
     font-size:12px
   }
+
+  nav{
+    padding:12px 6px
+  }
+
+  nav button,
+  nav .nav-link{
+    padding:7px 9px;
+    margin:2px 1px;
+    font-size:13px
+  }
+
   .topbar{
     align-items:flex-start;
     flex-direction:column;
     gap:8px
   }
-  .submit,
+
   .account-link{
     align-self:stretch;
     text-align:center
   }
+
   .desktop-share{
     display:inline-flex
   }
+
   .mobile-share{
     display:inline-flex
   }
+
   .share-actions{
     gap:22px;
     margin-top:18px
   }
+
   .share-button{
     width:32px;
     height:32px;
     min-width:32px
   }
+
   .actions{
     gap:10px
   }
+
   .reaction{
     font-size:12px;
     padding:7px 8px
+  }
+
+  .bottom-account-links{
+    flex-direction:column;
+    align-items:stretch
+  }
+
+  .bottom-account-links .account-link{
+    text-align:center
   }
 }
 </style>
 <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "295908aca52842f8b3cf49bc507c63b6"}'></script>
 </head>
 <body>
+
 <header>
   <div class="logo">
     <div class="brand-line brand-property">
@@ -359,24 +471,34 @@ footer{
   <button class="active" data-category="All">
     All
   </button>
+
   <button data-category="Owner Moaner">
     Owner Moaner
   </button>
+
   <button data-category="Vendor Woes">
     Vendor Woes
   </button>
+
   <button data-category="Legally Blunt">
     Legally Blunt
   </button>
+
   <button data-category="Board to Tears">
     Board to Tears
   </button>
+
   <button data-category="Audit This">
     Audit This
   </button>
+
+  <a class="nav-link" href="/submit.html">
+    Submit a Story
+  </a>
 </nav>
 
 <main class="container">
+
   <div class="topbar">
     <a class="account-link" href="/login">
       Log In
@@ -384,10 +506,6 @@ footer{
 
     <a class="account-link" href="/register">
       Create Account
-    </a>
-
-    <a class="submit" href="/submit.html">
-      Submit a Story
     </a>
   </div>
 
@@ -400,6 +518,17 @@ footer{
   <div class="empty" id="empty">
     No stories in this category yet.
   </div>
+
+  <div class="bottom-account-links">
+    <a class="account-link" href="/login">
+      Log In
+    </a>
+
+    <a class="account-link" href="/register">
+      Create Account
+    </a>
+  </div>
+
 </main>
 
 <footer>
