@@ -5710,7 +5710,8 @@ export default {
           .prepare(
             `UPDATE stories
              SET status = 'rejected',
-                 moderator_notes = ?
+                 moderator_notes = ?,
+                 published_at = CURRENT_TIMESTAMP
              WHERE id = ?`
           )
           .bind(
@@ -5744,7 +5745,8 @@ export default {
         await env.pms_me_db
           .prepare(
             `UPDATE stories
-             SET status = 'pending'
+             SET status = 'pending',
+                 published_at = NULL
              WHERE id = ?`
           )
           .bind(id)
@@ -6000,6 +6002,22 @@ export default {
     event,
     env
   ) {
+
+    try {
+      await env.pms_me_db
+        .prepare(
+          `DELETE FROM stories
+           WHERE status = 'rejected'
+             AND published_at IS NOT NULL
+             AND published_at <= datetime('now', '-30 days')`
+        )
+        .run();
+    } catch (error) {
+      console.error(
+        "Rejected story cleanup failed:",
+        error
+      );
+    }
 
     try {
       await sendDailyDigest(
