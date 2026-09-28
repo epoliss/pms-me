@@ -1,12 +1,78 @@
-Create Your Account
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Your Account</title>
+  <style>
+    body { font-family: sans-serif; max-width: 400px; margin: 40px auto; padding: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 100%; padding: 10px; box-sizing: border-box; margin-bottom: 5px;
+    }
+    button { width: 100%; padding: 10px; cursor: pointer; background: #0066cc; color: #fff; border: none; border-radius: 4px; }
+    .divider { text-align: center; margin: 20px 0; border-bottom: 1px solid #ccc; line-height: 0.1em; }
+    .divider span { background: #fff; padding: 0 10px; color: #666; }
+    .social-btn { display: block; text-align: center; padding: 10px; margin-top: 10px; text-decoration: none; border-radius: 4px; color: white; }
+    .btn-google { background-color: #db4437; }
+    .btn-facebook { background-color: #4267b2; }
+    .error { color: red; font-size: 0.9em; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
 
-Create Account
-Display Name
-Email
-Password
-Sign Up with Email
+  <h2>Create Account</h2>
+  <div id="error-message" class="error"></div>
 
-OR
+  <form id="signup-form">
+    <div class="form-group">
+      <label for="name">Display Name</label>
+      <input type="text" id="name" required />
+    </div>
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" required />
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" required minlength="8" />
+    </div>
+    <button type="submit">Sign Up with Email</button>
+  </form>
 
-Continue with Google
-Continue with Facebook
+  <div class="divider"><span>OR</span></div>
+
+  <a href="/api/auth/google" class="social-btn btn-google">Continue with Google</a>
+  <a href="/api/auth/facebook" class="social-btn btn-facebook">Continue with Facebook</a>
+
+  <script>
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorDiv = document.getElementById('error-message');
+      errorDiv.textContent = '';
+
+      const payload = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      };
+
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Signup failed');
+
+        window.location.href = '/dashboard.html';
+      } catch (err) {
+        errorDiv.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>
