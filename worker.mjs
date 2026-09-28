@@ -1154,7 +1154,6 @@ ${accountLink(
     )
     .run();
 }
-
 async function sendPublishedStoryNotifications(
   env,
   story
@@ -2078,7 +2077,6 @@ logoutButton.addEventListener(
     }
   );
 }
-
 function registerPage() {
   return htmlResponse(
 `<!doctype html>
@@ -2136,12 +2134,54 @@ label {
 }
 
 input[type=email],
-input[type=password] {
+input[type=password],
+input[type=text] {
   width:100%;
   padding:11px;
   border:1px solid #bbb;
   border-radius:5px;
   font-size:16px;
+}
+
+.password-wrap {
+  position:relative;
+}
+
+.password-wrap input {
+  padding-right:48px;
+}
+
+.password-toggle {
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  width:36px;
+  height:36px;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#555;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.password-toggle:hover {
+  background:transparent;
+  color:#000;
+}
+
+.password-toggle svg {
+  width:22px;
+  height:22px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
 }
 
 .check {
@@ -2217,6 +2257,7 @@ Email Address
 Password
 </label>
 
+<div class="password-wrap">
 <input
   id="password"
   type="password"
@@ -2224,11 +2265,20 @@ Password
   minlength="8"
   required
 >
+<button
+  type="button"
+  class="password-toggle"
+  data-target="password"
+  aria-label="Show password"
+  title="Show password"
+></button>
+</div>
 
 <label for="confirmPassword">
 Confirm Password
 </label>
 
+<div class="password-wrap">
 <input
   id="confirmPassword"
   type="password"
@@ -2236,6 +2286,14 @@ Confirm Password
   minlength="8"
   required
 >
+<button
+  type="button"
+  class="password-toggle"
+  data-target="confirmPassword"
+  aria-label="Show password"
+  title="Show password"
+></button>
+</div>
 
 <label class="check">
 <input
@@ -2269,6 +2327,64 @@ Log In
 </div>
 
 <script>
+const eyeOpenIcon =
+  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12"></path>' +
+  '<circle cx="12" cy="12" r="3"></circle>' +
+  '</svg>';
+
+const eyeClosedIcon =
+  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M3 3l18 18"></path>' +
+  '<path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path>' +
+  '<path d="M9.9 4.2A11.4 11.4 0 0 1 12 4c6.5 0 10 8 10 8a18.4 18.4 0 0 1-2.1 3.2"></path>' +
+  '<path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.5 8 10 8a10 10 0 0 0 5.4-1.6"></path>' +
+  '</svg>';
+
+document
+  .querySelectorAll(
+    ".password-toggle"
+  )
+  .forEach((toggle) => {
+    toggle.innerHTML =
+      eyeClosedIcon;
+
+    toggle.addEventListener(
+      "click",
+      () => {
+        const input =
+          document.getElementById(
+            toggle.dataset.target
+          );
+
+        const showing =
+          input.type === "text";
+
+        input.type =
+          showing
+            ? "password"
+            : "text";
+
+        toggle.innerHTML =
+          showing
+            ? eyeClosedIcon
+            : eyeOpenIcon;
+
+        toggle.setAttribute(
+          "aria-label",
+          showing
+            ? "Show password"
+            : "Hide password"
+        );
+
+        toggle.title =
+          showing
+            ? "Show password"
+            : "Hide password";
+      }
+    );
+  });
+
 const form =
   document.getElementById(
     "registerForm"
@@ -2358,10 +2474,10 @@ form.addEventListener(
         "<p>Please verify your email address before using your account.</p>" +
         "<p><a href='/login'>Go to Login</a></p>";
 
-    } catch (error) {
+    } catch (err) {
 
       error.textContent =
-        error.message;
+        err.message;
 
       error.style.display =
         "block";
@@ -2444,6 +2560,47 @@ input {
   font-size:16px;
 }
 
+.password-wrap {
+  position:relative;
+}
+
+.password-wrap input {
+  padding-right:48px;
+}
+
+.password-toggle {
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  width:36px;
+  height:36px;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#555;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.password-toggle:hover {
+  background:transparent;
+  color:#000;
+}
+
+.password-toggle svg {
+  width:22px;
+  height:22px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
 button {
   width:100%;
   margin-top:20px;
@@ -2501,12 +2658,21 @@ Email Address
 Password
 </label>
 
+<div class="password-wrap">
 <input
   id="password"
   type="password"
   autocomplete="current-password"
   required
 >
+<button
+  type="button"
+  class="password-toggle"
+  data-target="password"
+  aria-label="Show password"
+  title="Show password"
+></button>
+</div>
 
 <button type="submit">
 Log In
@@ -2532,6 +2698,64 @@ Create one
 </div>
 
 <script>
+const eyeOpenIcon =
+  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12"></path>' +
+  '<circle cx="12" cy="12" r="3"></circle>' +
+  '</svg>';
+
+const eyeClosedIcon =
+  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M3 3l18 18"></path>' +
+  '<path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path>' +
+  '<path d="M9.9 4.2A11.4 11.4 0 0 1 12 4c6.5 0 10 8 10 8a18.4 18.4 0 0 1-2.1 3.2"></path>' +
+  '<path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.5 8 10 8a10 10 0 0 0 5.4-1.6"></path>' +
+  '</svg>';
+
+document
+  .querySelectorAll(
+    ".password-toggle"
+  )
+  .forEach((toggle) => {
+    toggle.innerHTML =
+      eyeClosedIcon;
+
+    toggle.addEventListener(
+      "click",
+      () => {
+        const input =
+          document.getElementById(
+            toggle.dataset.target
+          );
+
+        const showing =
+          input.type === "text";
+
+        input.type =
+          showing
+            ? "password"
+            : "text";
+
+        toggle.innerHTML =
+          showing
+            ? eyeClosedIcon
+            : eyeOpenIcon;
+
+        toggle.setAttribute(
+          "aria-label",
+          showing
+            ? "Show password"
+            : "Hide password"
+        );
+
+        toggle.title =
+          showing
+            ? "Show password"
+            : "Hide password";
+      }
+    );
+  });
+
 const form =
   document.getElementById(
     "loginForm"
@@ -2807,6 +3031,47 @@ input {
   margin:10px 0 16px;
 }
 
+.password-wrap {
+  position:relative;
+}
+
+.password-wrap input {
+  padding-right:48px;
+}
+
+.password-toggle {
+  position:absolute;
+  right:8px;
+  top:calc(50% - 3px);
+  transform:translateY(-50%);
+  width:36px;
+  height:36px;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#555;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.password-toggle:hover {
+  background:transparent;
+  color:#000;
+}
+
+.password-toggle svg {
+  width:22px;
+  height:22px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
 button {
   width:100%;
   padding:12px;
@@ -2833,6 +3098,7 @@ button {
 
 <form id="form">
 
+<div class="password-wrap">
 <input
   id="password"
   type="password"
@@ -2840,7 +3106,16 @@ button {
   placeholder="New password"
   required
 >
+<button
+  type="button"
+  class="password-toggle"
+  data-target="password"
+  aria-label="Show password"
+  title="Show password"
+></button>
+</div>
 
+<div class="password-wrap">
 <input
   id="confirm"
   type="password"
@@ -2848,6 +3123,14 @@ button {
   placeholder="Confirm new password"
   required
 >
+<button
+  type="button"
+  class="password-toggle"
+  data-target="confirm"
+  aria-label="Show password"
+  title="Show password"
+></button>
+</div>
 
 <button>
 Set New Password
@@ -2860,6 +3143,64 @@ Set New Password
 </div>
 
 <script>
+const eyeOpenIcon =
+  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12"></path>' +
+  '<circle cx="12" cy="12" r="3"></circle>' +
+  '</svg>';
+
+const eyeClosedIcon =
+  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M3 3l18 18"></path>' +
+  '<path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path>' +
+  '<path d="M9.9 4.2A11.4 11.4 0 0 1 12 4c6.5 0 10 8 10 8a18.4 18.4 0 0 1-2.1 3.2"></path>' +
+  '<path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.5 8 10 8a10 10 0 0 0 5.4-1.6"></path>' +
+  '</svg>';
+
+document
+  .querySelectorAll(
+    ".password-toggle"
+  )
+  .forEach((toggle) => {
+    toggle.innerHTML =
+      eyeClosedIcon;
+
+    toggle.addEventListener(
+      "click",
+      () => {
+        const input =
+          document.getElementById(
+            toggle.dataset.target
+          );
+
+        const showing =
+          input.type === "text";
+
+        input.type =
+          showing
+            ? "password"
+            : "text";
+
+        toggle.innerHTML =
+          showing
+            ? eyeClosedIcon
+            : eyeOpenIcon;
+
+        toggle.setAttribute(
+          "aria-label",
+          showing
+            ? "Show password"
+            : "Hide password"
+        );
+
+        toggle.title =
+          showing
+            ? "Show password"
+            : "Hide password";
+      }
+    );
+  });
+
 const token =
   ${JSON.stringify(token)};
 
@@ -3579,8 +3920,7 @@ export default {
           401
         );
       }
-
-      if (!user.email_verified) {
+            if (!user.email_verified) {
         return jsonResponse(
           {
             error:
@@ -4545,6 +4885,7 @@ export default {
           400
         );
       }
+            }
 
       if (!story) {
         return jsonResponse(
