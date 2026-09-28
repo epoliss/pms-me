@@ -5689,7 +5689,8 @@ export default {
         ![
           "approve",
           "approve_anonymously",
-          "reject"
+          "reject",
+          "restore_pending"
         ].includes(action)
       ) {
         return jsonResponse(
@@ -5731,6 +5732,23 @@ export default {
             error
           );
         }
+
+        return jsonResponse({
+          ok: true
+        });
+      }
+
+      if (
+        action === "restore_pending"
+      ) {
+        await env.pms_me_db
+          .prepare(
+            `UPDATE stories
+             SET status = 'pending'
+             WHERE id = ?`
+          )
+          .bind(id)
+          .run();
 
         return jsonResponse({
           ok: true
