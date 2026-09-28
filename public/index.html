@@ -119,6 +119,17 @@ nav button.active{
   color:#000
 }
 
+nav button.submit-story{
+  background:rgba(64,224,208,.78);
+  color:#000
+}
+
+nav button.submit-story:hover{
+  background:rgba(64,224,208,.78);
+  color:#000;
+  font-weight:700
+}
+
 .container{
   max-width:850px;
   margin:0 auto;
@@ -498,7 +509,11 @@ footer{
     Audit This
   </button>
 
-  <button type="button" onclick="window.location.href='/submit.html'">
+  <button
+    type="button"
+    class="submit-story"
+    onclick="window.location.href='/submit.html'"
+  >
     Submit a Story
   </button>
 
