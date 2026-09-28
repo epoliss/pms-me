@@ -1954,6 +1954,12 @@ Reset Password
 </a>
 </p>
 
+<p class="small" style="margin-top:28px;">
+<a href="#" id="closeAccountLink" style="color:#777;">
+Close account
+</a>
+</p>
+
 </div>
 
 </div>
@@ -1982,6 +1988,11 @@ const saveButton =
 const logoutButton =
   document.getElementById(
     "logoutButton"
+  );
+
+const closeAccountLink =
+  document.getElementById(
+    "closeAccountLink"
   );
 
 const message =
@@ -2064,6 +2075,52 @@ logoutButton.addEventListener(
 
     window.location.href =
       "/";
+  }
+);
+
+closeAccountLink.addEventListener(
+  "click",
+  async (event) => {
+    event.preventDefault();
+
+    const confirmed =
+      window.confirm(
+        "Permanently close your PMS-ME account? Your account settings, login sessions and account email records will be deleted. Published or submitted stories will not be deleted."
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response =
+        await fetch(
+          "/api/account",
+          {
+            method: "DELETE",
+            credentials:
+              "same-origin"
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          "Unable to close account."
+        );
+      }
+
+      window.location.href =
+        "/";
+    } catch (error) {
+      message.className =
+        "error";
+      message.textContent =
+        error.message;
+    }
   }
 );
 </script>
@@ -3726,18 +3783,17 @@ export default {
 
           return jsonResponse(
             {
-              ok: true,
-              email,
-              resent: true
+              error:
+                "Your account already exists, but your email address still needs to be confirmed. Please check your email for the verification link."
             },
-            200
+            409
           );
         }
 
         return jsonResponse(
           {
             error:
-              "An account already exists for this email address. Please log in instead."
+              "Your account already exists. Please sign in."
           },
           409
         );
@@ -4054,6 +4110,74 @@ export default {
           .bind(tokenHash)
           .run();
       }
+
+      return jsonResponse(
+        {
+          ok: true
+        },
+        200,
+        {
+          "Set-Cookie":
+            clearAccountCookie(),
+          "Cache-Control":
+            "no-store"
+        }
+      );
+    }
+
+    /*
+     * =========================================================
+     * CLOSE USER ACCOUNT
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/api/account" &&
+      request.method === "DELETE"
+    ) {
+      const user =
+        await getCurrentUser(
+          request,
+          env
+        );
+
+      if (!user) {
+        return unauthorizedResponse();
+      }
+
+      await env.pms_me_db.batch([
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM email_deliveries
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM email_verification_tokens
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM password_reset_tokens
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM user_sessions
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM users
+             WHERE id = ?`
+          )
+          .bind(user.id)
+      ]);
 
       return jsonResponse(
         {
@@ -4649,6 +4773,8 @@ export default {
     const isModeratorApi =
       url.pathname ===
         "/api/notification-settings" ||
+      url.pathname ===
+        "/api/moderator/accounts/purge" ||
       (
         url.pathname.startsWith(
           "/api/stories"
@@ -4674,6 +4800,106 @@ export default {
       ) {
         return unauthorizedResponse();
       }
+    }
+
+    /*
+     * =========================================================
+     * MODERATOR — PURGE USER ACCOUNT
+     * =========================================================
+     */
+
+    if (
+      url.pathname ===
+        "/api/moderator/accounts/purge" &&
+      request.method === "DELETE"
+    ) {
+      let body;
+
+      try {
+        body =
+          await request.json();
+      } catch {
+        return jsonResponse(
+          {
+            error:
+              "Invalid request body."
+          },
+          400
+        );
+      }
+
+      const email =
+        normalizeEmail(
+          body.email
+        );
+
+      if (!validEmail(email)) {
+        return jsonResponse(
+          {
+            error:
+              "Please enter a valid email address."
+          },
+          400
+        );
+      }
+
+      const user =
+        await env.pms_me_db
+          .prepare(
+            `SELECT id, email
+             FROM users
+             WHERE email = ?`
+          )
+          .bind(email)
+          .first();
+
+      if (!user) {
+        return jsonResponse(
+          {
+            error:
+              "Account not found."
+          },
+          404
+        );
+      }
+
+      await env.pms_me_db.batch([
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM email_deliveries
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM email_verification_tokens
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM password_reset_tokens
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM user_sessions
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM users
+             WHERE id = ?`
+          )
+          .bind(user.id)
+      ]);
+
+      return jsonResponse({
+        ok: true,
+        email: user.email
+      });
     }
 
     /*
