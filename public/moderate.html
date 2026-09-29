@@ -893,6 +893,7 @@ function initializeArchiveDeck(container) {
   let velocity=0;
   let dragging=false;
   let moved=false;
+  let suppressClick=false;
   const cardStep=82;
 
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
@@ -971,7 +972,10 @@ function initializeArchiveDeck(container) {
     const frameDx=event.clientX-lastX;
     const frameTime=Math.max(1,now-lastTime);
 
-    if(Math.abs(dx)>4) moved=true;
+    if(Math.abs(dx)>7){
+      moved=true;
+      suppressClick=true;
+    }
 
     velocity=frameDx/frameTime;
     position=clamp(
@@ -1001,6 +1005,13 @@ function initializeArchiveDeck(container) {
     position=clamp(target,0,cards.length-1);
     velocity=0;
     render();
+
+    if(suppressClick){
+      window.setTimeout(()=>{
+        suppressClick=false;
+        moved=false;
+      },0);
+    }
   }
 
   container.addEventListener('pointerup',finishDrag);
@@ -1016,8 +1027,7 @@ function initializeArchiveDeck(container) {
   cards.forEach((card,index)=>{
     const header=card.querySelector('.archive-card-header');
     header.addEventListener('click',event=>{
-      if(moved){
-        moved=false;
+      if(suppressClick){
         event.preventDefault();
         return;
       }
