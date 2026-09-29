@@ -947,6 +947,8 @@ function initializeArchiveDeck(container) {
   let dragging=false;
   let moved=false;
   let suppressClick=false;
+  let pressedCard=null;
+  let pointerType='';
   const cardStep=82;
 
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
@@ -1008,6 +1010,9 @@ function initializeArchiveDeck(container) {
 
     dragging=true;
     moved=false;
+    suppressClick=false;
+    pressedCard=card;
+    pointerType=event.pointerType||'';
     startX=event.clientX;
     lastX=event.clientX;
     lastTime=performance.now();
@@ -1042,10 +1047,35 @@ function initializeArchiveDeck(container) {
     render();
   });
 
-  function finishDrag() {
+  function finishDrag(event) {
     if(!dragging) return;
     dragging=false;
     cards.forEach(item=>item.classList.remove('dragging'));
+
+    const wasMoved=moved;
+    const clickedCard=pressedCard;
+    const clickedIndex=clickedCard?cards.indexOf(clickedCard):-1;
+
+    if(!wasMoved && pointerType==='mouse' && clickedIndex>=0){
+      suppressClick=true;
+      const wasActive=clickedIndex===activeIndex();
+      position=clickedIndex;
+      render();
+
+      if(wasActive){
+        openActive();
+      }
+
+      pressedCard=null;
+      pointerType='';
+      velocity=0;
+
+      window.setTimeout(()=>{
+        suppressClick=false;
+        moved=false;
+      },0);
+      return;
+    }
 
     const speed=Math.abs(velocity);
     let target=Math.round(position);
@@ -1057,6 +1087,8 @@ function initializeArchiveDeck(container) {
 
     position=clamp(target,0,cards.length-1);
     velocity=0;
+    pressedCard=null;
+    pointerType='';
     render();
 
     if(suppressClick){
@@ -1068,7 +1100,11 @@ function initializeArchiveDeck(container) {
   }
 
   container.addEventListener('pointerup',finishDrag);
-  container.addEventListener('pointercancel',finishDrag);
+  container.addEventListener('pointercancel',event=>{
+    pressedCard=null;
+    pointerType='';
+    finishDrag(event);
+  });
 
   document.addEventListener('pointerdown',event=>{
     const openCard=container.querySelector('.archive-card.open');
