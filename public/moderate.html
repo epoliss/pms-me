@@ -326,14 +326,47 @@ footer{
   box-shadow:0 0 14px rgba(255,55,20,.65)
 }
 
-.archive-card{
-  background:#fff;
-  border:1px solid #d5d5d5;
-  border-radius:6px;
-  margin:0 0 -1px;
-  overflow:hidden
+#publishedStories,
+#rejectedStories{
+  padding:0 8px 18px
 }
-.archive-card + .archive-card{margin-top:7px}
+.archive-card{
+  position:relative;
+  background:#fff;
+  border:1px solid #cfcfcf;
+  border-radius:8px;
+  margin:0;
+  overflow:hidden;
+  box-shadow:0 3px 8px rgba(0,0,0,.12);
+  transition:margin .18s ease,transform .18s ease,box-shadow .18s ease
+}
+.archive-card + .archive-card{
+  margin-top:-31px
+}
+.archive-card:nth-child(3n+2){
+  transform:translateX(4px)
+}
+.archive-card:nth-child(3n){
+  transform:translateX(-3px)
+}
+.archive-card:hover{
+  z-index:20;
+  transform:translateY(-3px);
+  box-shadow:0 7px 15px rgba(0,0,0,.18)
+}
+.archive-card.open{
+  z-index:30;
+  margin-top:14px;
+  margin-bottom:45px;
+  transform:none;
+  box-shadow:0 8px 20px rgba(0,0,0,.2)
+}
+.archive-card.open + .archive-card{
+  margin-top:-31px
+}
+.archive-card:first-child.open{
+  margin-top:0
+}
 .archive-card-header{
   width:100%;
   border:0;
@@ -374,6 +407,11 @@ footer{
 }
 .archive-card.open .archive-card-body{display:block}
 @media(max-width:600px){
+  #publishedStories,
+  #rejectedStories{padding-left:4px;padding-right:4px}
+  .archive-card + .archive-card{margin-top:-29px}
+  .archive-card.open{margin-bottom:43px}
+  .archive-card.open + .archive-card{margin-top:-29px}
   .archive-card-header{width:100%;align-items:flex-start}
   .archive-card-meta{white-space:normal}
 }
