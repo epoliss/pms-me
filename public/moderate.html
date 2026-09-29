@@ -77,7 +77,13 @@ h2{
   margin:0 0 14px;
   font-size:20px
 }
-.back{
+.topbar-actions{
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+.back,
+.mod-logout{
   background:#222;
   color:#fff;
   text-decoration:none;
@@ -85,6 +91,12 @@ h2{
   border-radius:5px;
   font-weight:bold;
   font-size:14px
+}
+.mod-logout{
+  border:0;
+  width:auto;
+  margin:0;
+  cursor:pointer
 }
 .settings{
   background:#fff;
@@ -295,6 +307,11 @@ footer{
     align-items:flex-start;
     flex-direction:column;
     gap:12px
+  }
+  .topbar-actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr 1fr
   }
   .actions{
     flex-direction:column
@@ -508,12 +525,21 @@ footer{
     <h1>
       Pending Stories <span id="pendingCount">(0)</span>
     </h1>
-    <a
-      class="back"
-      href="/"
-    >
-      Back to Stories
-    </a>
+    <div class="topbar-actions">
+      <a
+        class="back"
+        href="/"
+      >
+        Back to Stories
+      </a>
+      <button
+        class="mod-logout"
+        id="moderatorLogout"
+        type="button"
+      >
+        Log Out
+      </button>
+    </div>
   </div>
   <section class="settings">
     <h2>
@@ -634,6 +660,33 @@ const publishedCount =
   document.getElementById('publishedCount');
 const rejectedCount =
   document.getElementById('rejectedCount');
+const moderatorLogout =
+  document.getElementById('moderatorLogout');
+
+function moderatorLoginRedirect() {
+  window.location.replace('/moderate.html');
+}
+
+async function moderatorFetch(input,options={}) {
+  const response=await fetch(input,options);
+  if(response.status===401){
+    moderatorLoginRedirect();
+    throw new Error('Moderator session expired.');
+  }
+  return response;
+}
+
+moderatorLogout.addEventListener('click',async()=>{
+  moderatorLogout.disabled=true;
+  try {
+    await fetch('/api/moderator-logout',{
+      method:'POST',
+      credentials:'same-origin'
+    });
+  } finally {
+    moderatorLoginRedirect();
+  }
+});
 const message =
   document.getElementById('message');
 const notificationFrequency =
@@ -660,7 +713,7 @@ const categories = [
 async function loadPendingStories() {
   try {
     const response =
-      await fetch(
+      await moderatorFetch(
         '/api/stories?status=pending',
         {
           credentials:'same-origin'
@@ -1051,7 +1104,7 @@ function initializeArchiveDeck(container) {
 
 async function loadPublishedStories() {
   try {
-    const response=await fetch('/api/stories?status=published',{credentials:'same-origin'});
+    const response=await moderatorFetch('/api/stories?status=published',{credentials:'same-origin'});
     if(!response.ok) throw new Error('Unable to load published stories.');
     const data=await response.json();
     const stories=Array.isArray(data)?data:(data.results||[]);
@@ -1148,7 +1201,7 @@ async function deletePublishedStory(
     'Deleting story...';
   try {
     const response =
-      await fetch(
+      await moderatorFetch(
         '/api/stories/' + id,
         {
           method:'DELETE',
@@ -1204,7 +1257,7 @@ async function restoreRejectedStory(id) {
   message.style.display='block';
   message.textContent='Returning story to Pending...';
   try {
-    const response=await fetch('/api/stories/'+id,{
+    const response=await moderatorFetch('/api/stories/'+id,{
       method:'PATCH',
       headers:{'Content-Type':'application/json'},
       credentials:'same-origin',
@@ -1229,7 +1282,7 @@ async function fryRejectedStory(id) {
   message.style.display='block';
   message.textContent='Frying story...';
   try {
-    const response=await fetch('/api/stories/'+id,{
+    const response=await moderatorFetch('/api/stories/'+id,{
       method:'DELETE',
       credentials:'same-origin'
     });
@@ -1244,7 +1297,7 @@ async function fryRejectedStory(id) {
 
 async function loadRejectedStories() {
   try {
-    const response=await fetch('/api/stories?status=rejected',{credentials:'same-origin'});
+    const response=await moderatorFetch('/api/stories?status=rejected',{credentials:'same-origin'});
     if(!response.ok) throw new Error('Unable to load rejected stories.');
     const data=await response.json();
     const stories=Array.isArray(data)?data:(data.results||[]);
@@ -1367,7 +1420,7 @@ async function updateStory(
     'Saving...';
   try {
     const response =
-      await fetch(
+      await moderatorFetch(
         '/api/stories/' + id,
         {
           method:'PATCH',
@@ -1427,7 +1480,7 @@ async function updateStory(
 async function loadNotificationSettings() {
   try {
     const response =
-      await fetch(
+      await moderatorFetch(
         '/api/notification-settings',
         {
           credentials:'same-origin'
@@ -1464,7 +1517,7 @@ async function saveNotificationSettings() {
     'Saving...';
   try {
     const response =
-      await fetch(
+      await moderatorFetch(
         '/api/notification-settings',
         {
           method:'PUT',
