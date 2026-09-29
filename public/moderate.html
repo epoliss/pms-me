@@ -342,6 +342,22 @@ footer{
   filter:brightness(1.08);
   box-shadow:0 0 14px rgba(255,55,20,.65)
 }
+.fry-rejected .fry-flame{display:inline-block;font-size:1.7em;line-height:.65;vertical-align:-.14em;margin-right:5px}
+.fry-modal{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.48)}
+.fry-modal.show{display:flex}
+.fry-dialog{width:min(430px,calc(100vw - 36px));background:#fff;border-radius:14px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.34);text-align:center}
+.fry-dialog-flame{font-size:46px;line-height:1;margin-bottom:8px}
+.fry-dialog h3{margin:0 0 10px;font-size:23px}
+.fry-dialog p{margin:0 0 20px;line-height:1.5;color:#555}
+.fry-dialog-actions{display:flex;gap:10px;justify-content:center}
+.fry-dialog-actions button{margin:0;min-width:120px}
+.fry-confirm{background:linear-gradient(180deg,#ff3b1f 0%,#d40000 55%,#8b0000 100%);color:#fff;font-weight:900}
+.archive-card.frying{overflow:visible!important;pointer-events:none!important;animation:fryCardBurn 4s ease-in forwards!important;transform-origin:50% 100%!important}
+.archive-card.frying::after{content:"";position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;background:radial-gradient(circle at 20% 80%,rgba(255,210,50,.95) 0 3%,rgba(255,70,0,.85) 4% 9%,transparent 15%),radial-gradient(circle at 55% 70%,rgba(255,230,90,.95) 0 4%,rgba(255,65,0,.9) 5% 12%,transparent 19%),radial-gradient(circle at 82% 86%,rgba(255,190,30,.95) 0 3%,rgba(220,35,0,.9) 5% 11%,transparent 18%);animation:fryFlames 1.05s ease-in-out infinite alternate}
+@keyframes fryCardBurn{0%{filter:none;opacity:1}22%{filter:sepia(.45) brightness(.9);box-shadow:0 0 24px rgba(255,80,0,.8)}48%{filter:sepia(1) saturate(.5) brightness(.5);opacity:.95}72%{filter:grayscale(1) brightness(.28);opacity:.78;transform:translateY(18px) scale(.96)}100%{filter:grayscale(1) brightness(.15);opacity:0;transform:translateY(150px) scale(.58) rotate(5deg)}}
+@keyframes fryFlames{from{opacity:.65;transform:translateY(8px) scale(.96)}to{opacity:1;transform:translateY(-9px) scale(1.04)}}
+.fry-ash{position:fixed;z-index:10001;width:5px;height:5px;border-radius:50%;background:#555;pointer-events:none;animation:fryAshFall 2.2s ease-in forwards}
+@keyframes fryAshFall{0%{opacity:.9;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--ash-x),var(--ash-y)) rotate(360deg)}}
 
 #publishedStories,
 #rejectedStories{
@@ -647,6 +663,17 @@ footer{
 <footer>
   Property Manager Stories · PMS-ME
 </footer>
+<div class="fry-modal" id="fryModal" aria-hidden="true">
+  <div class="fry-dialog" role="dialog" aria-modal="true" aria-labelledby="fryDialogTitle">
+    <div class="fry-dialog-flame">🔥</div>
+    <h3 id="fryDialogTitle">FRY IT?</h3>
+    <p>This permanently deletes this rejected story right now. It cannot be restored and the 30-day recovery period will be bypassed.</p>
+    <div class="fry-dialog-actions">
+      <button type="button" id="fryCancel">Cancel</button>
+      <button type="button" class="fry-confirm" id="fryConfirm">🔥 FRY IT</button>
+    </div>
+  </div>
+</div>
 <script>
 const storiesContainer =
   document.getElementById('stories');
@@ -1309,24 +1336,63 @@ async function restoreRejectedStory(id) {
   }
 }
 
-async function fryRejectedStory(id) {
-  const confirmed=window.confirm(
-    'FRY IT? This will permanently delete this rejected story RIGHT NOW. It cannot be restored and the 30-day recovery period will be bypassed.'
-  );
+let fryTarget=null;
+function closeFryModal(result=false){
+  const modal=document.getElementById('fryModal');
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+  const resolver=fryTarget;
+  fryTarget=null;
+  if(resolver) resolver(result);
+}
+function confirmFry(){
+  return new Promise(resolve=>{
+    fryTarget=resolve;
+    const modal=document.getElementById('fryModal');
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    document.getElementById('fryCancel').focus();
+  });
+}
+document.getElementById('fryCancel').addEventListener('click',()=>closeFryModal(false));
+document.getElementById('fryConfirm').addEventListener('click',()=>closeFryModal(true));
+document.getElementById('fryModal').addEventListener('pointerdown',event=>{
+  if(event.target===event.currentTarget) closeFryModal(false);
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape' && document.getElementById('fryModal').classList.contains('show')) closeFryModal(false);
+});
+function makeFryAsh(card){
+  const rect=card.getBoundingClientRect();
+  for(let i=0;i<42;i++){
+    const ash=document.createElement('span');
+    ash.className='fry-ash';
+    ash.style.left=(rect.left+Math.random()*rect.width)+'px';
+    ash.style.top=(rect.top+rect.height*.55+Math.random()*rect.height*.45)+'px';
+    ash.style.setProperty('--ash-x',((Math.random()-.5)*150)+'px');
+    ash.style.setProperty('--ash-y',(100+Math.random()*220)+'px');
+    ash.style.animationDelay=(1.5+Math.random()*1.1)+'s';
+    ash.style.animationDuration=(1.2+Math.random()*1.2)+'s';
+    document.body.appendChild(ash);
+    window.setTimeout(()=>ash.remove(),4300);
+  }
+}
+async function fryRejectedStory(id,card) {
+  const confirmed=await confirmFry();
   if(!confirmed) return;
-
   message.style.display='block';
   message.textContent='Frying story...';
   try {
-    const response=await moderatorFetch('/api/stories/'+id,{
-      method:'DELETE',
-      credentials:'same-origin'
-    });
+    const response=await moderatorFetch('/api/stories/'+id,{method:'DELETE',credentials:'same-origin'});
     const result=await response.json();
     if(!response.ok) throw new Error(result.error || 'Permanent delete failed.');
+    card.classList.add('frying');
+    makeFryAsh(card);
     message.textContent='Story permanently deleted.';
+    await new Promise(resolve=>window.setTimeout(resolve,4000));
     await loadRejectedStories();
   } catch(error) {
+    card?.classList.remove('frying');
     message.textContent=error.message || 'Something went wrong.';
   }
 }
@@ -1424,10 +1490,10 @@ async function loadRejectedStories() {
       const fry=document.createElement('button');
       fry.type='button';
       fry.className='fry-rejected';
-      fry.textContent='🔥 FRY IT';
+      fry.innerHTML='<span class="fry-flame" aria-hidden="true">🔥</span> FRY IT';
       fry.addEventListener('click',event=>{
         event.stopPropagation();
-        fryRejectedStory(story.id);
+        fryRejectedStory(story.id,article);
       });
 
       actions.append(share,restore,fry);
