@@ -966,6 +966,13 @@ function initializeArchiveDeck(container) {
   container.addEventListener('pointerup',finishDrag);
   container.addEventListener('pointercancel',finishDrag);
 
+  document.addEventListener('pointerdown',event=>{
+    const openCard=container.querySelector('.archive-card.open');
+    if(!openCard) return;
+    if(openCard.contains(event.target)) return;
+    closeOpen();
+  });
+
   cards.forEach((card,index)=>{
     const header=card.querySelector('.archive-card-header');
     header.addEventListener('click',event=>{
