@@ -353,119 +353,95 @@ footer{
 .fry-dialog-actions button{margin:0;min-width:120px}
 .fry-confirm{background:linear-gradient(180deg,#ff3b1f 0%,#d40000 55%,#8b0000 100%);color:#fff;font-weight:900}
 .archive-card.frying{
-  position:fixed!important;
-  z-index:9998!important;
-  margin:0!important;
-  overflow:visible!important;
-  pointer-events:none!important;
-  animation:none!important;
-  transition:none!important;
-  transform:none!important;
-  opacity:1!important;
-  filter:none!important
+  position:fixed!important;z-index:9998!important;margin:0!important;overflow:visible!important;
+  pointer-events:none!important;animation:none!important;transition:none!important;transform:none!important;
+  opacity:1!important;filter:none!important
 }
 .archive-card.frying .archive-card-header,
 .archive-card.frying .archive-card-body{
-  animation:paperConsumed 3.05s linear forwards!important;
-  transition:none!important;
-  transform:none!important
+  animation:paperConsumed 6.25s linear forwards!important;transition:none!important;transform:none!important
 }
-.archive-card.frying::before{
-  content:"";
-  position:absolute;
-  z-index:25;
-  left:-12%;
-  width:124%;
-  height:150px;
-  bottom:-55px;
-  pointer-events:none;
+.paper-fire-front{
+  position:absolute;z-index:26;left:-3%;width:106%;height:118px;bottom:-52px;pointer-events:none;
+  animation:paperFireTravel 6.25s linear forwards
+}
+.paper-fire-front .flame{
+  position:absolute;bottom:0;width:42px;height:96px;transform-origin:50% 100%;
+  border-radius:48% 52% 38% 62% / 72% 70% 30% 28%;
+  background:linear-gradient(to top,#b51600 0 13%,#ff4300 24%,#ff8a00 48%,#ffd21a 67%,#fff3a1 82%,rgba(255,255,225,.92) 91%,transparent 100%);
+  filter:drop-shadow(0 0 8px rgba(255,70,0,.85));
+  animation:liveFlame .19s ease-in-out infinite alternate
+}
+.paper-fire-front .flame::after{
+  content:"";position:absolute;left:31%;bottom:7%;width:38%;height:60%;
+  border-radius:50% 50% 42% 58% / 70% 68% 32% 30%;
+  background:linear-gradient(to top,#ff7b00,#ffe348 55%,#fffbd1 88%,transparent);
+  opacity:.9
+}
+.paper-fire-front .f1{left:1%;height:72px;animation-delay:-.04s}
+.paper-fire-front .f2{left:10%;height:112px;width:48px;animation-delay:-.13s}
+.paper-fire-front .f3{left:22%;height:82px;width:38px;animation-delay:-.08s}
+.paper-fire-front .f4{left:31%;height:126px;width:50px;animation-delay:-.16s}
+.paper-fire-front .f5{left:44%;height:92px;width:44px;animation-delay:-.02s}
+.paper-fire-front .f6{left:55%;height:120px;width:49px;animation-delay:-.11s}
+.paper-fire-front .f7{left:68%;height:78px;width:39px;animation-delay:-.06s}
+.paper-fire-front .f8{left:77%;height:116px;width:47px;animation-delay:-.15s}
+.paper-fire-front .f9{left:90%;height:84px;width:41px;animation-delay:-.09s}
+.paper-char-front{
+  position:absolute;z-index:25;left:-1%;width:102%;height:31px;bottom:0;pointer-events:none;
   background:
-    radial-gradient(ellipse at 5% 88%,transparent 0 20%,#d91d00 22% 34%,#ff6500 36% 48%,#ffc400 50% 61%,#fff7b0 63% 68%,transparent 71%),
-    radial-gradient(ellipse at 18% 76%,transparent 0 18%,#e92300 20% 34%,#ff7200 36% 50%,#ffd000 52% 63%,#fff8bd 65% 70%,transparent 73%),
-    radial-gradient(ellipse at 34% 90%,transparent 0 18%,#d91d00 20% 33%,#ff5b00 35% 49%,#ffbf00 51% 63%,#fff4a0 65% 70%,transparent 73%),
-    radial-gradient(ellipse at 50% 72%,transparent 0 17%,#ed2600 19% 34%,#ff7600 36% 51%,#ffd21a 53% 64%,#fffac4 66% 71%,transparent 74%),
-    radial-gradient(ellipse at 67% 88%,transparent 0 18%,#d91d00 20% 33%,#ff6000 35% 49%,#ffc300 51% 63%,#fff4a0 65% 70%,transparent 73%),
-    radial-gradient(ellipse at 83% 74%,transparent 0 18%,#eb2500 20% 34%,#ff7300 36% 50%,#ffd016 52% 64%,#fff8b8 66% 71%,transparent 74%),
-    radial-gradient(ellipse at 96% 88%,transparent 0 20%,#d91d00 22% 34%,#ff6500 36% 48%,#ffc400 50% 61%,#fff7b0 63% 68%,transparent 71%);
-  filter:drop-shadow(0 -10px 13px rgba(255,55,0,.9)) drop-shadow(0 0 22px rgba(255,160,0,.65));
-  animation:flameFront 3.05s linear forwards
+    radial-gradient(ellipse at 7% 45%,#050505 0 20%,#4a1b08 23% 38%,transparent 42%),
+    radial-gradient(ellipse at 20% 60%,#090706 0 21%,#612309 24% 40%,transparent 44%),
+    radial-gradient(ellipse at 36% 42%,#050505 0 22%,#4a1a08 25% 40%,transparent 44%),
+    radial-gradient(ellipse at 52% 64%,#080605 0 21%,#69260a 24% 40%,transparent 44%),
+    radial-gradient(ellipse at 69% 43%,#050505 0 22%,#501c08 25% 40%,transparent 44%),
+    radial-gradient(ellipse at 84% 61%,#090706 0 21%,#642409 24% 40%,transparent 44%),
+    radial-gradient(ellipse at 97% 44%,#050505 0 20%,#4a1b08 23% 38%,transparent 42%);
+  filter:drop-shadow(0 -5px 5px rgba(255,70,0,.55));
+  animation:paperCharTravel 6.25s linear forwards
 }
-.archive-card.frying::after{
-  content:"";
-  position:absolute;
-  z-index:24;
-  left:-2%;
-  width:104%;
-  height:25px;
-  bottom:0;
-  pointer-events:none;
-  background:linear-gradient(to top,#0b0908 0 30%,#2a1710 34% 48%,#7a2a0b 52% 65%,#ff5b00 70% 78%,rgba(255,160,0,.2) 90%,transparent);
-  box-shadow:0 -8px 15px rgba(255,65,0,.72);
-  animation:charFront 3.05s linear forwards
+@keyframes liveFlame{
+  0%{transform:translateX(-3px) skewX(-7deg) scaleX(.82) scaleY(.82);opacity:.82}
+  50%{transform:translateX(2px) skewX(5deg) scaleX(1.08) scaleY(1.08);opacity:1}
+  100%{transform:translateX(-1px) skewX(-3deg) scaleX(.92) scaleY(1.18);opacity:.92}
 }
 @keyframes paperConsumed{
-  0%{clip-path:inset(0 0 0 0);filter:none}
-  8%{clip-path:inset(0 0 2% 0);filter:sepia(.08)}
-  70%{clip-path:inset(0 0 73% 0);filter:sepia(.85) brightness(.55)}
-  91%{clip-path:inset(0 0 94% 0);filter:grayscale(.8) brightness(.32)}
+  0%{clip-path:polygon(0 0,100% 0,100% 100%,0 100%);filter:none}
+  10%{clip-path:polygon(0 0,100% 0,100% 96%,88% 98%,75% 95%,61% 98%,48% 94%,35% 97%,20% 95%,8% 98%,0 96%);filter:sepia(.08)}
+  35%{clip-path:polygon(0 0,100% 0,100% 72%,88% 75%,76% 70%,62% 74%,49% 69%,35% 73%,21% 70%,9% 74%,0 71%);filter:sepia(.3) brightness(.88)}
+  68%{clip-path:polygon(0 0,100% 0,100% 38%,88% 41%,75% 36%,61% 40%,48% 35%,34% 39%,20% 36%,8% 40%,0 37%);filter:sepia(.62) brightness(.68)}
+  91%{clip-path:polygon(0 0,100% 0,100% 10%,88% 13%,74% 8%,61% 12%,47% 7%,34% 11%,20% 8%,8% 12%,0 9%);filter:grayscale(.65) brightness(.38)}
   100%{clip-path:inset(0 0 100% 0);filter:grayscale(1) brightness(.18)}
 }
-@keyframes flameFront{
-  0%{bottom:-55px;opacity:1}
-  8%{bottom:-10px;opacity:1}
-  72%{bottom:72%;opacity:1}
-  94%{bottom:94%;opacity:1}
-  100%{bottom:100%;opacity:0}
+@keyframes paperFireTravel{
+  0%{bottom:-52px}10%{bottom:-10px}35%{bottom:24%}68%{bottom:59%}91%{bottom:87%}100%{bottom:100%;opacity:0}
 }
-@keyframes charFront{
-  0%{bottom:0;opacity:.7}
-  8%{bottom:2%;opacity:1}
-  72%{bottom:73%;opacity:1}
-  94%{bottom:94%;opacity:1}
-  100%{bottom:100%;opacity:0}
+@keyframes paperCharTravel{
+  0%{bottom:0;opacity:.5}10%{bottom:4%;opacity:1}35%{bottom:28%;opacity:1}68%{bottom:63%;opacity:1}91%{bottom:91%;opacity:1}100%{bottom:100%;opacity:0}
 }
 .fry-ash{
-  position:fixed;
-  z-index:10001;
-  width:var(--ash-w);
-  height:var(--ash-h);
-  border-radius:30% 65% 38% 62%;
-  background:linear-gradient(145deg,#111,#514b45 48%,#24211f 78%,#77706a);
-  box-shadow:0 1px 3px rgba(0,0,0,.55);
-  pointer-events:none;
-  opacity:0;
+  position:fixed;z-index:10001;width:var(--ash-w);height:var(--ash-h);border-radius:22% 66% 31% 58%;
+  background:linear-gradient(145deg,#0e0d0c,#554e47 44%,#24211f 72%,#746c64);
+  box-shadow:0 1px 3px rgba(0,0,0,.55);pointer-events:none;opacity:0;
   animation:fryAshFall var(--ash-duration) ease-in forwards
 }
 .fry-ash-heap{
-  position:fixed;
-  z-index:10000;
-  pointer-events:none;
-  height:46px;
-  border-radius:50% 50% 42% 42%;
-  opacity:0;
+  position:fixed;z-index:10000;pointer-events:none;height:58px;border-radius:50% 50% 38% 38%;opacity:0;
   background:
-    radial-gradient(ellipse at 10% 65%,#24211e 0 10%,transparent 11%),
-    radial-gradient(ellipse at 22% 45%,#5c554e 0 12%,transparent 13%),
-    radial-gradient(ellipse at 36% 68%,#191817 0 13%,transparent 14%),
-    radial-gradient(ellipse at 49% 38%,#6c645c 0 12%,transparent 13%),
-    radial-gradient(ellipse at 62% 67%,#2c2926 0 14%,transparent 15%),
-    radial-gradient(ellipse at 76% 42%,#59524c 0 12%,transparent 13%),
-    radial-gradient(ellipse at 90% 66%,#1c1b19 0 12%,transparent 13%),
-    linear-gradient(to bottom,transparent 8%,#4d4742 40%,#1d1b19 100%);
-  filter:drop-shadow(0 5px 4px rgba(0,0,0,.3));
-  animation:ashHeapLife 1.15s linear forwards
+    radial-gradient(ellipse at 8% 64%,#211f1d 0 10%,transparent 11%),radial-gradient(ellipse at 19% 42%,#625b54 0 12%,transparent 13%),
+    radial-gradient(ellipse at 31% 69%,#171615 0 13%,transparent 14%),radial-gradient(ellipse at 44% 35%,#71685f 0 12%,transparent 13%),
+    radial-gradient(ellipse at 57% 67%,#292623 0 14%,transparent 15%),radial-gradient(ellipse at 70% 39%,#5b544d 0 12%,transparent 13%),
+    radial-gradient(ellipse at 82% 68%,#1b1a18 0 13%,transparent 14%),radial-gradient(ellipse at 94% 46%,#6a625b 0 11%,transparent 12%),
+    linear-gradient(to bottom,transparent 5%,#514a44 38%,#1b1917 100%);
+  filter:drop-shadow(0 5px 4px rgba(0,0,0,.3));animation:ashHeapLife 1.65s linear forwards
 }
 @keyframes fryAshFall{
-  0%{opacity:0;transform:translate3d(0,0,0) rotate(0)}
-  6%{opacity:1}
-  88%{opacity:1}
+  0%{opacity:0;transform:translate3d(0,0,0) rotate(0)}5%{opacity:1}92%{opacity:1}
   100%{opacity:1;transform:translate3d(var(--ash-x),var(--ash-y),0) rotate(var(--ash-rot))}
 }
 @keyframes ashHeapLife{
-  0%{opacity:0;transform:scaleY(.35)}
-  15%{opacity:1;transform:scaleY(1)}
-  72%{opacity:1;transform:scaleY(1)}
-  100%{opacity:0;transform:scaleY(.85)}
+  0%{opacity:0;transform:scaleY(.25)}12%{opacity:1;transform:scaleY(1)}70%{opacity:1;transform:scaleY(1)}
+  100%{opacity:0;transform:scaleY(.86)}
 }
 
 #publishedStories,
@@ -1479,38 +1455,37 @@ document.addEventListener('keydown',event=>{
 });
 function makeFryAsh(card,lockedRect){
   const rect=lockedRect;
-  const floorY=Math.min(window.innerHeight-26,rect.bottom+185);
+  const floorY=Math.min(window.innerHeight-28,rect.bottom+185);
   const heap=document.createElement('div');
   heap.className='fry-ash-heap';
-  heap.style.left=(rect.left+rect.width*.08)+'px';
-  heap.style.top=(floorY-20)+'px';
-  heap.style.width=(rect.width*.84)+'px';
-  heap.style.animationDelay='3.05s';
+  heap.style.left=(rect.left+rect.width*.06)+'px';
+  heap.style.top=(floorY-24)+'px';
+  heap.style.width=(rect.width*.88)+'px';
+  heap.style.animationDelay='6.15s';
   document.body.appendChild(heap);
 
-  const total=240;
+  const total=280;
   for(let i=0;i<total;i++){
     const ash=document.createElement('span');
     ash.className='fry-ash';
-    const width=8+Math.random()*18;
-    const height=6+Math.random()*14;
+    const width=9+Math.random()*20;
+    const height=7+Math.random()*15;
     const startX=rect.left+Math.random()*rect.width;
-    const startY=rect.top+Math.random()*18;
-    const landingY=floorY-startY-(Math.random()*30);
-
+    const startY=rect.top+Math.random()*20;
+    const landingY=floorY-startY-(Math.random()*35);
     ash.style.left=startX+'px';
     ash.style.top=startY+'px';
     ash.style.setProperty('--ash-w',width+'px');
     ash.style.setProperty('--ash-h',height+'px');
-    ash.style.setProperty('--ash-x',((Math.random()-.5)*30)+'px');
+    ash.style.setProperty('--ash-x',((Math.random()-.5)*34)+'px');
     ash.style.setProperty('--ash-y',landingY+'px');
-    ash.style.setProperty('--ash-rot',((Math.random()-.5)*170)+'deg');
-    ash.style.setProperty('--ash-duration',(.62+Math.random()*.45)+'s');
-    ash.style.animationDelay=(2.55+Math.random()*.55)+'s';
+    ash.style.setProperty('--ash-rot',((Math.random()-.5)*190)+'deg');
+    ash.style.setProperty('--ash-duration',(.9+Math.random()*.75)+'s');
+    ash.style.animationDelay=(5.35+Math.random()*.85)+'s';
     document.body.appendChild(ash);
-    window.setTimeout(()=>ash.remove(),3650);
+    window.setTimeout(()=>ash.remove(),7900);
   }
-  window.setTimeout(()=>heap.remove(),4300);
+  window.setTimeout(()=>heap.remove(),8000);
 }
 async function fryRejectedStory(id,card) {
   const confirmed=await confirmFry();
@@ -1526,10 +1501,22 @@ async function fryRejectedStory(id,card) {
     card.style.top=lockedRect.top+'px';
     card.style.width=lockedRect.width+'px';
     card.style.height=lockedRect.height+'px';
+
+    const fireFront=document.createElement('div');
+    fireFront.className='paper-fire-front';
+    for(let i=1;i<=9;i++){
+      const flame=document.createElement('span');
+      flame.className='flame f'+i;
+      fireFront.appendChild(flame);
+    }
+    const charFront=document.createElement('div');
+    charFront.className='paper-char-front';
+    card.append(fireFront,charFront);
+
     card.classList.add('frying');
     makeFryAsh(card,lockedRect);
     message.textContent='Story permanently deleted.';
-    await new Promise(resolve=>window.setTimeout(resolve,4200));
+    await new Promise(resolve=>window.setTimeout(resolve,8000));
     await loadRejectedStories();
   } catch(error) {
     card?.classList.remove('frying');
