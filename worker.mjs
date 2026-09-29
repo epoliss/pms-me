@@ -2394,13 +2394,48 @@ input[type=text] {
 button:not(.password-toggle) {
   width:100%;
   margin-top:20px;
-  padding:12px;
+  padding:13px 16px;
   border:0;
-  border-radius:5px;
+  border-radius:8px;
   background:#222;
   color:#fff;
   font-size:16px;
+  font-weight:700;
   cursor:pointer;
+  cursor:pointer;
+}
+
+.account-switch {
+  margin-top:22px;
+  padding-top:20px;
+  border-top:1px solid #e1e1e1;
+  text-align:center;
+  color:#666;
+  font-size:14px;
+}
+
+.account-switch .secondary-action {
+  display:block;
+  width:100%;
+  margin-top:10px;
+  padding:11px 14px;
+  border:1px solid #bbb;
+  border-radius:8px;
+  background:#fff;
+  color:#222;
+  text-decoration:none;
+  font-weight:700;
+}
+
+.account-switch .secondary-action:hover {
+  background:#f1f1f1;
+  border-color:#999;
+}
+
+.quiet-link {
+  text-align:center;
+  margin:16px 0 0;
+  font-size:14px;
 }
 
 #error {
@@ -2510,13 +2545,12 @@ Create Account
 
 </form>
 
-<p class="small"
-style="margin-top:20px;">
-Already have an account?
-<a href="/login">
-Log In
-</a>
-</p>
+<div class="account-switch">
+  <div>Already have an account?</div>
+  <a class="secondary-action" href="/login">
+    Log In
+  </a>
+</div>
 
 </div>
 
@@ -2803,12 +2837,47 @@ input {
 button:not(.password-toggle) {
   width:100%;
   margin-top:20px;
-  padding:12px;
+  padding:13px 16px;
   border:0;
-  border-radius:5px;
+  border-radius:8px;
   background:#222;
   color:#fff;
   font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.account-switch {
+  margin-top:22px;
+  padding-top:20px;
+  border-top:1px solid #e1e1e1;
+  text-align:center;
+  color:#666;
+  font-size:14px;
+}
+
+.account-switch .secondary-action {
+  display:block;
+  width:100%;
+  margin-top:10px;
+  padding:11px 14px;
+  border:1px solid #bbb;
+  border-radius:8px;
+  background:#fff;
+  color:#222;
+  text-decoration:none;
+  font-weight:700;
+}
+
+.account-switch .secondary-action:hover {
+  background:#f1f1f1;
+  border-color:#999;
+}
+
+.quiet-link {
+  text-align:center;
+  margin:16px 0 0;
+  font-size:14px;
 }
 
 #error {
@@ -2876,18 +2945,18 @@ Log In
 
 </form>
 
-<p>
+<p class="quiet-link">
 <a href="/forgot-password">
 Forgot your password?
 </a>
 </p>
 
-<p>
-Don't have an account?
-<a href="/register">
-Create one
-</a>
-</p>
+<div class="account-switch">
+  <div>Don't have an account?</div>
+  <a class="secondary-action" href="/register">
+    Create Account
+  </a>
+</div>
 
 </div>
 
