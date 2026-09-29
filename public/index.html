@@ -133,6 +133,10 @@ nav button.submit-story:hover{
   font-weight:700
 }
 
+.mobile-account-menu{
+  display:none
+}
+
 .container{
   max-width:850px;
   margin:0 auto;
@@ -437,6 +441,30 @@ footer{
     padding-right:1px
   }
 
+  .mobile-account-menu{
+    display:flex;
+    min-width:0;
+    width:100%;
+    height:30px;
+    padding:3px 1px;
+    margin:0;
+    border-radius:4px;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    text-decoration:none;
+    white-space:normal;
+    font-size:13px;
+    line-height:1;
+    font-weight:700;
+    color:#555
+  }
+
+  .topbar .account-link,
+  .bottom-account-links .account-link{
+    display:none
+  }
+
   :root{
     --header-height:109px;
     --nav-height:66px
@@ -542,6 +570,7 @@ html[data-theme="dark"] .story,
 html[data-theme="dark"] .loading,
 html[data-theme="dark"] .empty{background:#242424;color:#e8e8e8;border-color:#444}
 html[data-theme="dark"] nav button{color:#d8d8d8}
+html[data-theme="dark"] .mobile-account-menu{color:#d8d8d8}
 html[data-theme="dark"] nav button.active{
   background:rgba(64,224,208,.78);
   color:#000;
@@ -625,6 +654,10 @@ html[data-theme="dark"] .theme-toggle-label{color:#aaa}
   >
     Submit a Story
   </button>
+
+  <a class="mobile-account-menu" href="/login">
+    Log In/Register
+  </a>
 
 </nav>
 
