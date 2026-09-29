@@ -1460,27 +1460,64 @@ function makeFryAsh(card,lockedRect){
   window.setTimeout(()=>heap.remove(),6050);
 }
 async function fryRejectedStory(id,card) {
+  /*
+    Freeze a visual copy BEFORE the confirmation modal closes. On desktop the
+    archive deck can immediately change the real card's open/stack geometry
+    when the modal releases the pointer. The clone is completely independent
+    of the deck, so the six-second ash conversion always has visible paper.
+  */
+  const sourceRect=card.getBoundingClientRect();
+  const burnCard=card.cloneNode(true);
+  burnCard.removeAttribute('id');
+  burnCard.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+  burnCard.querySelectorAll('button,a,input,textarea,select').forEach(node=>{
+    node.disabled=true;
+    node.tabIndex=-1;
+  });
+  burnCard.style.position='fixed';
+  burnCard.style.left=sourceRect.left+'px';
+  burnCard.style.top=sourceRect.top+'px';
+  burnCard.style.width=sourceRect.width+'px';
+  burnCard.style.height=sourceRect.height+'px';
+  burnCard.style.margin='0';
+  burnCard.style.transform='none';
+  burnCard.style.transition='none';
+  burnCard.style.zIndex='9998';
+  burnCard.style.pointerEvents='none';
+  burnCard.style.visibility='hidden';
+  document.body.appendChild(burnCard);
+
   const confirmed=await confirmFry();
-  if(!confirmed) return;
+  if(!confirmed){
+    burnCard.remove();
+    return;
+  }
+
   message.style.display='block';
   message.textContent='Frying story...';
+
   try {
     const response=await moderatorFetch('/api/stories/'+id,{method:'DELETE',credentials:'same-origin'});
     const result=await response.json();
     if(!response.ok) throw new Error(result.error || 'Permanent delete failed.');
-    const lockedRect=card.getBoundingClientRect();
-    card.style.left=lockedRect.left+'px';
-    card.style.top=lockedRect.top+'px';
-    card.style.width=lockedRect.width+'px';
-    card.style.height=lockedRect.height+'px';
 
-    card.classList.add('frying');
-    makeFryAsh(card,lockedRect);
+    /*
+      Show the frozen paper copy only after deletion succeeds. Hide the real
+      deck card so there is never a duplicate flash, then ash the frozen copy.
+    */
+    card.style.visibility='hidden';
+    burnCard.style.visibility='visible';
+    burnCard.classList.remove('open','dragging');
+    burnCard.classList.add('frying');
+    makeFryAsh(burnCard,sourceRect);
+
     message.textContent='Story permanently deleted.';
     await new Promise(resolve=>window.setTimeout(resolve,6000));
+    burnCard.remove();
     await loadRejectedStories();
   } catch(error) {
-    card?.classList.remove('frying');
+    burnCard.remove();
+    card.style.visibility='';
     message.textContent=error.message || 'Something went wrong.';
   }
 }
