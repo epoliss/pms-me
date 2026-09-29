@@ -329,7 +329,7 @@ footer{
 #publishedStories,
 #rejectedStories{
   position:relative;
-  height:185px;
+  height:360px;
   margin:0 -10px 22px;
   overflow:hidden;
   touch-action:pan-y;
@@ -340,8 +340,8 @@ footer{
   position:absolute;
   top:12px;
   left:50%;
-  width:min(72%,620px);
-  height:148px;
+  width:min(56%,390px);
+  height:320px;
   background:#fff;
   border:1px solid #c9c9c9;
   border-radius:12px;
@@ -379,17 +379,17 @@ footer{
 }
 .archive-card-header{
   width:100%;
-  height:148px;
+  height:320px;
   border:0;
   border-radius:0;
   background:#fff;
   color:#222;
-  padding:18px 18px 22px;
+  padding:22px 20px 24px;
   display:flex;
   flex-direction:column;
   align-items:flex-start;
   justify-content:flex-start;
-  gap:8px;
+  gap:10px;
   text-align:left;
   cursor:inherit
 }
@@ -414,6 +414,25 @@ footer{
   line-height:1.3;
   white-space:normal
 }
+.archive-card-preview{
+  margin-top:6px;
+  color:#444;
+  font-size:14px;
+  line-height:1.45;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:8;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+.archive-card-status{
+  margin-top:auto;
+  color:#888;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.35px;
+  text-transform:uppercase
+}
 .archive-card-arrow{
   position:absolute;
   right:16px;
@@ -432,18 +451,18 @@ footer{
 @media(max-width:600px){
   #publishedStories,
   #rejectedStories{
-    height:172px;
+    height:340px;
     margin-left:-12px;
     margin-right:-12px
   }
   .archive-card{
-    width:76%;
-    height:138px;
+    width:72%;
+    height:305px;
     top:10px
   }
   .archive-card-header{
-    height:138px;
-    padding:15px 14px 20px
+    height:305px;
+    padding:19px 17px 22px
   }
   .archive-card-title{font-size:16px}
   .archive-card.open{
@@ -483,7 +502,7 @@ footer{
 <main class="container">
   <div class="topbar">
     <h1>
-      Pending Stories
+      Pending Stories <span id="pendingCount">(0)</span>
     </h1>
     <a
       class="back"
@@ -578,7 +597,7 @@ footer{
   </section>
   <section class="published-section">
     <h2>
-      Published Stories
+      Published Stories <span id="publishedCount">(0)</span>
     </h2>
     <p class="published-intro">
       These stories have already been published. Deleting a story permanently removes it from PMS-ME.
@@ -590,7 +609,7 @@ footer{
     </section>
   </section>
   <section class="rejected-section">
-    <h2>Rejected Stories</h2>
+    <h2>Rejected Stories <span id="rejectedCount">(0)</span></h2>
     <p class="rejected-intro">Rejected stories are preserved for 30 days with the moderator's rejection comment, then permanently deleted unless restored to Pending.</p>
     <section id="rejectedStories"><div class="empty">Loading...</div></section>
   </section>
@@ -605,6 +624,12 @@ const publishedStoriesContainer =
   document.getElementById('publishedStories');
 const rejectedStoriesContainer =
   document.getElementById('rejectedStories');
+const pendingCount =
+  document.getElementById('pendingCount');
+const publishedCount =
+  document.getElementById('publishedCount');
+const rejectedCount =
+  document.getElementById('rejectedCount');
 const message =
   document.getElementById('message');
 const notificationFrequency =
@@ -655,6 +680,8 @@ async function loadPendingStories() {
       Array.isArray(data)
         ? data
         : (data.results || []);
+    pendingCount.textContent =
+      '(' + stories.length + ')';
     storiesContainer.innerHTML =
       '';
     if (!stories.length) {
@@ -867,7 +894,7 @@ function initializeArchiveDeck(container) {
       if(card.classList.contains('open')) return;
       const relative=index-active;
       const distance=Math.abs(relative);
-      const baseX=relative*42;
+      const baseX=relative*54;
       const fan=clamp(relative,-4,4)*3.2;
       const scale=Math.max(.88,1-distance*.035);
       const y=Math.min(distance,4)*5;
@@ -918,14 +945,14 @@ function initializeArchiveDeck(container) {
     if(!dragging) return;
     dragX=event.clientX-startX;
     if(Math.abs(dragX)>5) moved=true;
-    render(dragX*.72);
+    render(dragX*.95);
   });
 
   function finishDrag() {
     if(!dragging) return;
     dragging=false;
     cards.forEach(item=>item.classList.remove('dragging'));
-    if(Math.abs(dragX)>42){
+    if(Math.abs(dragX)>22){
       active=clamp(active+(dragX<0?1:-1),0,cards.length-1);
     }
     dragX=0;
@@ -965,6 +992,7 @@ async function loadPublishedStories() {
     if(!response.ok) throw new Error('Unable to load published stories.');
     const data=await response.json();
     const stories=Array.isArray(data)?data:(data.results||[]);
+    publishedCount.textContent='('+stories.length+')';
     publishedStoriesContainer.innerHTML='';
     if(!stories.length){
       publishedStoriesContainer.innerHTML='<div class="empty">There are no published stories.</div>';
@@ -991,7 +1019,15 @@ async function loadPublishedStories() {
       arrow.className='archive-card-arrow';
       arrow.textContent='⌄';
 
-      header.append(title,meta,arrow);
+      const preview=document.createElement('span');
+      preview.className='archive-card-preview';
+      preview.textContent=story.story||'';
+
+      const status=document.createElement('span');
+      status.className='archive-card-status';
+      status.textContent='Published';
+
+      header.append(title,meta,preview,status,arrow);
 
       const body=document.createElement('div');
       body.className='archive-card-body';
@@ -1149,6 +1185,7 @@ async function loadRejectedStories() {
     if(!response.ok) throw new Error('Unable to load rejected stories.');
     const data=await response.json();
     const stories=Array.isArray(data)?data:(data.results||[]);
+    rejectedCount.textContent='('+stories.length+')';
     rejectedStoriesContainer.innerHTML='';
     if(!stories.length){
       rejectedStoriesContainer.innerHTML='<div class="empty">There are no rejected stories.</div>';
@@ -1175,7 +1212,15 @@ async function loadRejectedStories() {
       arrow.className='archive-card-arrow';
       arrow.textContent='⌄';
 
-      header.append(title,meta,arrow);
+      const preview=document.createElement('span');
+      preview.className='archive-card-preview';
+      preview.textContent=story.story||'';
+
+      const status=document.createElement('span');
+      status.className='archive-card-status';
+      status.textContent='Rejected';
+
+      header.append(title,meta,preview,status,arrow);
 
       const body=document.createElement('div');
       body.className='archive-card-body';
