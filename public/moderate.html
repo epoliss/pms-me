@@ -353,68 +353,75 @@ footer{
 .fry-dialog-actions button{margin:0;min-width:120px}
 .fry-confirm{background:linear-gradient(180deg,#ff3b1f 0%,#d40000 55%,#8b0000 100%);color:#fff;font-weight:900}
 .archive-card.frying{
+  position:fixed!important;
+  z-index:9998!important;
+  margin:0!important;
   overflow:visible!important;
   pointer-events:none!important;
   animation:none!important;
+  transition:none!important;
   transform:none!important;
   opacity:1!important;
   filter:none!important
 }
 .archive-card.frying .archive-card-header,
 .archive-card.frying .archive-card-body{
-  animation:paperConsumed 3.25s linear forwards;
+  animation:paperConsumed 3.05s linear forwards!important;
+  transition:none!important;
   transform:none!important
 }
 .archive-card.frying::before{
   content:"";
   position:absolute;
-  z-index:20;
-  left:-7%;
-  width:114%;
-  height:92px;
-  bottom:-34px;
+  z-index:25;
+  left:-12%;
+  width:124%;
+  height:150px;
+  bottom:-55px;
   pointer-events:none;
   background:
-    radial-gradient(ellipse at 8% 82%,transparent 0 26%,#ff3b00 28% 38%,#ffb000 40% 50%,#fff3a0 52% 58%,transparent 61%),
-    radial-gradient(ellipse at 25% 88%,transparent 0 22%,#e52b00 24% 37%,#ff8c00 39% 51%,#ffe56a 53% 59%,transparent 62%),
-    radial-gradient(ellipse at 45% 80%,transparent 0 25%,#ff3100 27% 39%,#ff9d00 41% 52%,#fff0a0 54% 60%,transparent 63%),
-    radial-gradient(ellipse at 66% 88%,transparent 0 23%,#e52b00 25% 37%,#ff8a00 39% 51%,#ffe97a 53% 59%,transparent 62%),
-    radial-gradient(ellipse at 87% 80%,transparent 0 25%,#ff3500 27% 39%,#ffa000 41% 52%,#fff2a0 54% 60%,transparent 63%);
-  filter:drop-shadow(0 -5px 8px rgba(255,70,0,.7));
-  animation:flameFront 3.25s linear forwards
+    radial-gradient(ellipse at 5% 88%,transparent 0 20%,#d91d00 22% 34%,#ff6500 36% 48%,#ffc400 50% 61%,#fff7b0 63% 68%,transparent 71%),
+    radial-gradient(ellipse at 18% 76%,transparent 0 18%,#e92300 20% 34%,#ff7200 36% 50%,#ffd000 52% 63%,#fff8bd 65% 70%,transparent 73%),
+    radial-gradient(ellipse at 34% 90%,transparent 0 18%,#d91d00 20% 33%,#ff5b00 35% 49%,#ffbf00 51% 63%,#fff4a0 65% 70%,transparent 73%),
+    radial-gradient(ellipse at 50% 72%,transparent 0 17%,#ed2600 19% 34%,#ff7600 36% 51%,#ffd21a 53% 64%,#fffac4 66% 71%,transparent 74%),
+    radial-gradient(ellipse at 67% 88%,transparent 0 18%,#d91d00 20% 33%,#ff6000 35% 49%,#ffc300 51% 63%,#fff4a0 65% 70%,transparent 73%),
+    radial-gradient(ellipse at 83% 74%,transparent 0 18%,#eb2500 20% 34%,#ff7300 36% 50%,#ffd016 52% 64%,#fff8b8 66% 71%,transparent 74%),
+    radial-gradient(ellipse at 96% 88%,transparent 0 20%,#d91d00 22% 34%,#ff6500 36% 48%,#ffc400 50% 61%,#fff7b0 63% 68%,transparent 71%);
+  filter:drop-shadow(0 -10px 13px rgba(255,55,0,.9)) drop-shadow(0 0 22px rgba(255,160,0,.65));
+  animation:flameFront 3.05s linear forwards
 }
 .archive-card.frying::after{
   content:"";
   position:absolute;
-  z-index:19;
-  left:0;
-  right:0;
+  z-index:24;
+  left:-2%;
+  width:104%;
+  height:25px;
   bottom:0;
-  height:14px;
   pointer-events:none;
-  background:linear-gradient(to top,#17120f 0 28%,#4a2a16 38%,#b74a12 60%,rgba(255,120,0,.15) 100%);
-  box-shadow:0 -5px 10px rgba(255,65,0,.45);
-  animation:charFront 3.25s linear forwards
+  background:linear-gradient(to top,#0b0908 0 30%,#2a1710 34% 48%,#7a2a0b 52% 65%,#ff5b00 70% 78%,rgba(255,160,0,.2) 90%,transparent);
+  box-shadow:0 -8px 15px rgba(255,65,0,.72);
+  animation:charFront 3.05s linear forwards
 }
 @keyframes paperConsumed{
   0%{clip-path:inset(0 0 0 0);filter:none}
-  12%{clip-path:inset(0 0 3% 0);filter:sepia(.08)}
-  78%{clip-path:inset(0 0 82% 0);filter:sepia(.75) brightness(.62)}
-  94%{clip-path:inset(0 0 96% 0);filter:grayscale(.8) brightness(.35)}
-  100%{clip-path:inset(0 0 100% 0);filter:grayscale(1) brightness(.22)}
+  8%{clip-path:inset(0 0 2% 0);filter:sepia(.08)}
+  70%{clip-path:inset(0 0 73% 0);filter:sepia(.85) brightness(.55)}
+  91%{clip-path:inset(0 0 94% 0);filter:grayscale(.8) brightness(.32)}
+  100%{clip-path:inset(0 0 100% 0);filter:grayscale(1) brightness(.18)}
 }
 @keyframes flameFront{
-  0%{bottom:-34px;opacity:1;transform:scaleY(.9)}
-  12%{bottom:0;opacity:1;transform:scaleY(1.12)}
-  82%{bottom:82%;opacity:1;transform:scaleY(1)}
-  96%{bottom:96%;opacity:.95;transform:scaleY(.8)}
-  100%{bottom:100%;opacity:0;transform:scaleY(.45)}
+  0%{bottom:-55px;opacity:1}
+  8%{bottom:-10px;opacity:1}
+  72%{bottom:72%;opacity:1}
+  94%{bottom:94%;opacity:1}
+  100%{bottom:100%;opacity:0}
 }
 @keyframes charFront{
-  0%{bottom:0;opacity:.4}
-  12%{bottom:3%;opacity:1}
-  82%{bottom:82%;opacity:1}
-  97%{bottom:97%;opacity:.95}
+  0%{bottom:0;opacity:.7}
+  8%{bottom:2%;opacity:1}
+  72%{bottom:73%;opacity:1}
+  94%{bottom:94%;opacity:1}
   100%{bottom:100%;opacity:0}
 }
 .fry-ash{
@@ -422,19 +429,43 @@ footer{
   z-index:10001;
   width:var(--ash-w);
   height:var(--ash-h);
-  border-radius:42% 58% 55% 45%;
-  background:linear-gradient(135deg,#181818,#5b554f 58%,#292725);
-  box-shadow:0 1px 2px rgba(0,0,0,.35);
+  border-radius:30% 65% 38% 62%;
+  background:linear-gradient(145deg,#111,#514b45 48%,#24211f 78%,#77706a);
+  box-shadow:0 1px 3px rgba(0,0,0,.55);
   pointer-events:none;
   opacity:0;
-  animation:fryAshFall var(--ash-duration) cubic-bezier(.35,.05,.75,.95) forwards
+  animation:fryAshFall var(--ash-duration) ease-in forwards
 }
-@keyframes ashCapAppear{0%,72%{opacity:0}82%{opacity:.8}94%{opacity:1}100%{opacity:0}}
+.fry-ash-heap{
+  position:fixed;
+  z-index:10000;
+  pointer-events:none;
+  height:46px;
+  border-radius:50% 50% 42% 42%;
+  opacity:0;
+  background:
+    radial-gradient(ellipse at 10% 65%,#24211e 0 10%,transparent 11%),
+    radial-gradient(ellipse at 22% 45%,#5c554e 0 12%,transparent 13%),
+    radial-gradient(ellipse at 36% 68%,#191817 0 13%,transparent 14%),
+    radial-gradient(ellipse at 49% 38%,#6c645c 0 12%,transparent 13%),
+    radial-gradient(ellipse at 62% 67%,#2c2926 0 14%,transparent 15%),
+    radial-gradient(ellipse at 76% 42%,#59524c 0 12%,transparent 13%),
+    radial-gradient(ellipse at 90% 66%,#1c1b19 0 12%,transparent 13%),
+    linear-gradient(to bottom,transparent 8%,#4d4742 40%,#1d1b19 100%);
+  filter:drop-shadow(0 5px 4px rgba(0,0,0,.3));
+  animation:ashHeapLife 1.15s linear forwards
+}
 @keyframes fryAshFall{
-  0%{opacity:0;transform:translate3d(0,0,0) rotate(0deg)}
-  8%{opacity:.95}
-  72%{opacity:.88}
-  100%{opacity:0;transform:translate3d(var(--ash-x),var(--ash-y),0) rotate(var(--ash-rot))}
+  0%{opacity:0;transform:translate3d(0,0,0) rotate(0)}
+  6%{opacity:1}
+  88%{opacity:1}
+  100%{opacity:1;transform:translate3d(var(--ash-x),var(--ash-y),0) rotate(var(--ash-rot))}
+}
+@keyframes ashHeapLife{
+  0%{opacity:0;transform:scaleY(.35)}
+  15%{opacity:1;transform:scaleY(1)}
+  72%{opacity:1;transform:scaleY(1)}
+  100%{opacity:0;transform:scaleY(.85)}
 }
 
 #publishedStories,
@@ -1432,38 +1463,54 @@ function confirmFry(){
     document.getElementById('fryCancel').focus();
   });
 }
-document.getElementById('fryCancel').addEventListener('click',()=>closeFryModal(false));
-document.getElementById('fryConfirm').addEventListener('click',()=>closeFryModal(true));
+document.getElementById('fryCancel').addEventListener('click',event=>{
+  event.preventDefault(); event.stopPropagation(); closeFryModal(false);
+});
+document.getElementById('fryConfirm').addEventListener('click',event=>{
+  event.preventDefault(); event.stopPropagation(); closeFryModal(true);
+});
 document.getElementById('fryModal').addEventListener('pointerdown',event=>{
+  event.stopPropagation();
   if(event.target===event.currentTarget) closeFryModal(false);
 });
+document.getElementById('fryModal').addEventListener('click',event=>event.stopPropagation());
 document.addEventListener('keydown',event=>{
   if(event.key==='Escape' && document.getElementById('fryModal').classList.contains('show')) closeFryModal(false);
 });
-function makeFryAsh(card){
-  const rect=card.getBoundingClientRect();
-  const total=115;
+function makeFryAsh(card,lockedRect){
+  const rect=lockedRect;
+  const floorY=Math.min(window.innerHeight-26,rect.bottom+185);
+  const heap=document.createElement('div');
+  heap.className='fry-ash-heap';
+  heap.style.left=(rect.left+rect.width*.08)+'px';
+  heap.style.top=(floorY-20)+'px';
+  heap.style.width=(rect.width*.84)+'px';
+  heap.style.animationDelay='3.05s';
+  document.body.appendChild(heap);
+
+  const total=240;
   for(let i=0;i<total;i++){
     const ash=document.createElement('span');
     ash.className='fry-ash';
+    const width=8+Math.random()*18;
+    const height=6+Math.random()*14;
+    const startX=rect.left+Math.random()*rect.width;
+    const startY=rect.top+Math.random()*18;
+    const landingY=floorY-startY-(Math.random()*30);
 
-    const width=5+Math.random()*12;
-    const height=4+Math.random()*9;
-    const topBand=rect.top+Math.random()*Math.min(34,rect.height*.12);
-
-    ash.style.left=(rect.left+Math.random()*rect.width)+'px';
-    ash.style.top=topBand+'px';
+    ash.style.left=startX+'px';
+    ash.style.top=startY+'px';
     ash.style.setProperty('--ash-w',width+'px');
     ash.style.setProperty('--ash-h',height+'px');
-    ash.style.setProperty('--ash-x',((Math.random()-.5)*22)+'px');
-    ash.style.setProperty('--ash-y',(170+Math.random()*280)+'px');
-    ash.style.setProperty('--ash-rot',((Math.random()-.5)*210)+'deg');
-    ash.style.setProperty('--ash-duration',(1.15+Math.random()*.9)+'s');
-    ash.style.animationDelay=(2.75+Math.random()*.65)+'s';
-
+    ash.style.setProperty('--ash-x',((Math.random()-.5)*30)+'px');
+    ash.style.setProperty('--ash-y',landingY+'px');
+    ash.style.setProperty('--ash-rot',((Math.random()-.5)*170)+'deg');
+    ash.style.setProperty('--ash-duration',(.62+Math.random()*.45)+'s');
+    ash.style.animationDelay=(2.55+Math.random()*.55)+'s';
     document.body.appendChild(ash);
-    window.setTimeout(()=>ash.remove(),4100);
+    window.setTimeout(()=>ash.remove(),3650);
   }
+  window.setTimeout(()=>heap.remove(),4300);
 }
 async function fryRejectedStory(id,card) {
   const confirmed=await confirmFry();
@@ -1474,13 +1521,15 @@ async function fryRejectedStory(id,card) {
     const response=await moderatorFetch('/api/stories/'+id,{method:'DELETE',credentials:'same-origin'});
     const result=await response.json();
     if(!response.ok) throw new Error(result.error || 'Permanent delete failed.');
-    const ashCap=document.createElement('div');
-    ashCap.style.cssText='position:absolute;z-index:18;left:0;right:0;top:0;height:22px;background:linear-gradient(to bottom,#171717,#48433f 55%,transparent);opacity:0;pointer-events:none;animation:ashCapAppear 4s linear forwards';
-    card.appendChild(ashCap);
+    const lockedRect=card.getBoundingClientRect();
+    card.style.left=lockedRect.left+'px';
+    card.style.top=lockedRect.top+'px';
+    card.style.width=lockedRect.width+'px';
+    card.style.height=lockedRect.height+'px';
     card.classList.add('frying');
-    makeFryAsh(card);
+    makeFryAsh(card,lockedRect);
     message.textContent='Story permanently deleted.';
-    await new Promise(resolve=>window.setTimeout(resolve,4000));
+    await new Promise(resolve=>window.setTimeout(resolve,4200));
     await loadRejectedStories();
   } catch(error) {
     card?.classList.remove('frying');
