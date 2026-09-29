@@ -885,28 +885,36 @@ function initializeArchiveDeck(container) {
   const cards=Array.from(container.querySelectorAll('.archive-card'));
   if(!cards.length) return;
 
-  let active=0;
+  let position=0;
   let startX=0;
-  let dragX=0;
+  let startPosition=0;
+  let lastX=0;
+  let lastTime=0;
+  let velocity=0;
   let dragging=false;
   let moved=false;
+  const cardStep=82;
 
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 
-  function render(offset=0) {
+  function render() {
     cards.forEach((card,index)=>{
       if(card.classList.contains('open')) return;
-      const relative=index-active;
+
+      const relative=index-position;
       const distance=Math.abs(relative);
-      const baseX=relative*54;
-      const fan=clamp(relative,-4,4)*3.2;
-      const scale=Math.max(.88,1-distance*.035);
-      const y=Math.min(distance,4)*5;
-      card.style.zIndex=String(50-distance);
-      card.style.opacity=distance>5?'0':String(Math.max(.42,1-distance*.1));
-      card.style.pointerEvents=distance>5?'none':'auto';
+      const side=relative===0?0:(relative<0?-1:1);
+      const compressed=Math.min(distance,4);
+      const x=relative*cardStep;
+      const fan=clamp(relative,-4,4)*4.1;
+      const scale=Math.max(.86,1-distance*.045);
+      const y=compressed*8;
+
+      card.style.zIndex=String(Math.max(1,100-Math.round(distance*10)));
+      card.style.opacity=distance>4.8?'0':String(Math.max(.34,1-distance*.13));
+      card.style.pointerEvents=distance>4.8?'none':'auto';
       card.style.transform=
-        'translateX(calc(-50% + '+(baseX+offset)+'px)) translateY('+y+'px) rotate('+fan+'deg) scale('+scale+')';
+        'translateX(calc(-50% + '+x+'px)) translateY('+y+'px) rotate('+fan+'deg) scale('+scale+')';
     });
   }
 
@@ -918,7 +926,13 @@ function initializeArchiveDeck(container) {
     render();
   }
 
+  function activeIndex() {
+    return clamp(Math.round(position),0,cards.length-1);
+  }
+
   function openActive() {
+    const active=activeIndex();
+    position=active;
     const card=cards[active];
     if(!card) return;
     cards.forEach((item,index)=>{
@@ -937,29 +951,55 @@ function initializeArchiveDeck(container) {
     if(event.target.closest('.archive-card.open')) return;
     const card=event.target.closest('.archive-card');
     if(!card) return;
+
     dragging=true;
     moved=false;
     startX=event.clientX;
-    dragX=0;
+    lastX=event.clientX;
+    lastTime=performance.now();
+    velocity=0;
+    startPosition=position;
     card.setPointerCapture?.(event.pointerId);
     cards.forEach(item=>item.classList.add('dragging'));
   });
 
   container.addEventListener('pointermove',event=>{
     if(!dragging) return;
-    dragX=event.clientX-startX;
-    if(Math.abs(dragX)>5) moved=true;
-    render(dragX*.95);
+
+    const now=performance.now();
+    const dx=event.clientX-startX;
+    const frameDx=event.clientX-lastX;
+    const frameTime=Math.max(1,now-lastTime);
+
+    if(Math.abs(dx)>4) moved=true;
+
+    velocity=frameDx/frameTime;
+    position=clamp(
+      startPosition-(dx/cardStep),
+      0,
+      cards.length-1
+    );
+
+    lastX=event.clientX;
+    lastTime=now;
+    render();
   });
 
   function finishDrag() {
     if(!dragging) return;
     dragging=false;
     cards.forEach(item=>item.classList.remove('dragging'));
-    if(Math.abs(dragX)>22){
-      active=clamp(active+(dragX<0?1:-1),0,cards.length-1);
+
+    const speed=Math.abs(velocity);
+    let target=Math.round(position);
+
+    if(speed>.45){
+      target=position+(velocity<0?.42:-.42);
+      target=Math.round(target);
     }
-    dragX=0;
+
+    position=clamp(target,0,cards.length-1);
+    velocity=0;
     render();
   }
 
@@ -985,8 +1025,10 @@ function initializeArchiveDeck(container) {
         closeOpen();
         return;
       }
+
+      const active=activeIndex();
       if(index!==active){
-        active=index;
+        position=index;
         render();
         return;
       }
