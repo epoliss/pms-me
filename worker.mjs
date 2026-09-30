@@ -694,7 +694,7 @@ async function sendEmail(
 
   const emailBody = {
     from:
-      "HOA-PMS <noreply@hoapms.com>",
+      "HOA-PMS <accounts@hoapms.com>",
     to: [to],
     subject,
     text
