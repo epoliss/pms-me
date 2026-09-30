@@ -5000,6 +5000,10 @@ export default {
       url.pathname ===
         "/api/notification-settings" ||
       url.pathname ===
+        "/api/moderator/accounts" ||
+      url.pathname ===
+        "/api/moderator/accounts/approve" ||
+      url.pathname ===
         "/api/moderator/accounts/purge" ||
       (
         url.pathname.startsWith(
@@ -5026,6 +5030,91 @@ export default {
       ) {
         return unauthorizedResponse();
       }
+    }
+
+    /*
+     * =========================================================
+     * MODERATOR — REGISTERED ACCOUNTS
+     * =========================================================
+     */
+
+    if (
+      url.pathname === "/api/moderator/accounts" &&
+      request.method === "GET"
+    ) {
+      const accounts =
+        await env.pms_me_db
+          .prepare(
+            `SELECT
+               id,
+               email,
+               email_verified,
+               story_frequency,
+               sponsor_emails,
+               rss_enabled,
+               created_at,
+               last_login_at
+             FROM users
+             ORDER BY created_at DESC, id DESC`
+          )
+          .all();
+
+      return jsonResponse({
+        results: accounts.results || []
+      });
+    }
+
+    if (
+      url.pathname === "/api/moderator/accounts/approve" &&
+      request.method === "PATCH"
+    ) {
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse({error:"Invalid request body."},400);
+      }
+
+      const email = normalizeEmail(body.email);
+      if (!validEmail(email)) {
+        return jsonResponse({error:"Please enter a valid email address."},400);
+      }
+
+      const user =
+        await env.pms_me_db
+          .prepare(
+            `SELECT id, email, email_verified
+             FROM users
+             WHERE email = ?`
+          )
+          .bind(email)
+          .first();
+
+      if (!user) {
+        return jsonResponse({error:"Account not found."},404);
+      }
+
+      await env.pms_me_db.batch([
+        env.pms_me_db
+          .prepare(
+            `UPDATE users
+             SET email_verified = 1
+             WHERE id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM email_verification_tokens
+             WHERE user_id = ?`
+          )
+          .bind(user.id)
+      ]);
+
+      return jsonResponse({
+        ok:true,
+        email:user.email,
+        already_verified:!!user.email_verified
+      });
     }
 
     /*
