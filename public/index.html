@@ -1250,17 +1250,7 @@ function renderStories(
       const storyText =
         story.story || '';
 
-      if(
-        /[.!?]$/.test(
-          storyText.trim()
-        )
-      ){
-        text.textContent =
-          storyText + ' PMS';
-      }else{
-        text.textContent =
-          storyText + '. PMS';
-      }
+      setExpandableStoryText(text,storyText,true);
 
       const actions =
         document.createElement(
@@ -1744,6 +1734,43 @@ loadStories();
 
 
 <script>
+function firstSyllableFragment(word){
+  const clean=(word||'').match(/^[^\s]+/)?.[0]||'';
+  if(clean.length<=3) return clean;
+  const m=clean.match(/^([^aeiouyAEIOUY]*[aeiouyAEIOUY]+(?:[^aeiouyAEIOUY]{0,1}))/);
+  return (m&&m[0]) ? m[0] : clean.slice(0,3);
+}
+
+function setExpandableStoryText(element,storyText,appendPms=false){
+  const raw=(storyText||'').trim();
+  const words=raw ? raw.split(/\s+/) : [];
+  const full=appendPms
+    ? raw + (/[.!?]$/.test(raw) ? ' PMS' : '. PMS')
+    : raw;
+
+  if(words.length<=75){
+    element.textContent=full;
+    return;
+  }
+
+  const prefix=words.slice(0,75).join(' ');
+  const fragment=firstSyllableFragment(words[75]);
+  element.textContent=prefix+' '+fragment+'… ';
+
+  const more=document.createElement('button');
+  more.type='button';
+  more.className='story-more';
+  more.textContent='more';
+  more.style.cssText='border:0;background:none;padding:0;color:inherit;text-decoration:underline;font:inherit;font-weight:700;cursor:pointer';
+  more.addEventListener('click',event=>{
+    event.preventDefault();
+    event.stopPropagation();
+    element.textContent=full;
+  });
+  element.appendChild(more);
+}
+
+
 (function(){var b=document.getElementById('pmsThemeToggle');if(!b)return;function s(){var d=document.documentElement.getAttribute('data-theme')==='dark';b.textContent=d?'☀':'☾';b.setAttribute('aria-label',d?'Switch to light mode':'Switch to dark mode');b.title=d?'Light mode':'Dark mode'}b.addEventListener('click',function(){var n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('pmsme_theme',n)}catch(e){}s()});s()})();
 </script>
 </body>
