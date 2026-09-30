@@ -3474,6 +3474,32 @@ export default {
       }
     }
 
+    try {
+      await env.pms_me_db
+        .prepare(
+          `ALTER TABLE stories
+           ADD COLUMN user_id INTEGER`
+        )
+        .run();
+    } catch (error) {
+      if (!String(error && error.message || error).toLowerCase().includes("duplicate column")) {
+        console.error("story user_id schema check failed:",error);
+      }
+    }
+
+    await env.pms_me_db
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS user_story_interactions (
+           id INTEGER PRIMARY KEY AUTOINCREMENT,
+           user_id INTEGER NOT NULL,
+           story_id INTEGER NOT NULL,
+           interaction_type TEXT NOT NULL,
+           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+           UNIQUE(user_id, story_id, interaction_type)
+         )`
+      )
+      .run();
+
     /*
      * =========================================================
      * ACCOUNT PAGES
@@ -4104,6 +4130,12 @@ export default {
           .bind(user.id),
         env.pms_me_db
           .prepare(
+            `DELETE FROM user_story_interactions
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
             `DELETE FROM user_sessions
              WHERE user_id = ?`
           )
@@ -4675,6 +4707,8 @@ export default {
       url.pathname ===
         "/api/moderator/accounts/approve" ||
       url.pathname ===
+        "/api/moderator/accounts/update" ||
+      url.pathname ===
         "/api/moderator/accounts/purge" ||
       (
         url.pathname.startsWith(
@@ -4717,21 +4751,83 @@ export default {
         await env.pms_me_db
           .prepare(
             `SELECT
-               id,
-               email,
-               email_verified,
-               story_frequency,
-               sponsor_emails,
-               rss_enabled,
-               created_at,
-               last_login_at
-             FROM users
-             ORDER BY created_at DESC, id DESC`
+               u.id,
+               u.email,
+               COALESCE(u.notification_email, u.email) AS notification_email,
+               u.email_verified,
+               u.story_frequency,
+               u.created_at,
+               u.last_login_at,
+               (
+                 SELECT COUNT(*)
+                 FROM stories s
+                 WHERE s.user_id = u.id
+                    OR (
+                      s.user_id IS NULL
+                      AND LOWER(COALESCE(s.email,'')) = LOWER(u.email)
+                    )
+               ) AS stories_posted,
+               (
+                 SELECT COUNT(*)
+                 FROM user_story_interactions i
+                 WHERE i.user_id = u.id
+               ) AS post_interactions
+             FROM users u
+             ORDER BY u.created_at DESC, u.id DESC`
           )
           .all();
 
       return jsonResponse({
         results: accounts.results || []
+      });
+    }
+
+    if (
+      url.pathname === "/api/moderator/accounts/update" &&
+      request.method === "PATCH"
+    ) {
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse({error:"Invalid request body."},400);
+      }
+
+      const userId = Number(body.user_id);
+      const frequency = ["weekly","immediate","off"].includes(body.frequency)
+        ? body.frequency
+        : null;
+      const notificationEmail = normalizeEmail(body.notification_email);
+
+      if (!Number.isInteger(userId) || userId < 1) {
+        return jsonResponse({error:"Invalid account."},400);
+      }
+      if (!frequency) {
+        return jsonResponse({error:"Invalid notification option."},400);
+      }
+      if (!validEmail(notificationEmail)) {
+        return jsonResponse({error:"Please enter a valid notification email address."},400);
+      }
+
+      const result = await env.pms_me_db
+        .prepare(
+          `UPDATE users
+           SET story_frequency = ?,
+               notification_email = ?
+           WHERE id = ?`
+        )
+        .bind(frequency,notificationEmail,userId)
+        .run();
+
+      if (!result.meta || !result.meta.changes) {
+        return jsonResponse({error:"Account not found."},404);
+      }
+
+      return jsonResponse({
+        ok:true,
+        user_id:userId,
+        frequency,
+        notification_email:notificationEmail
       });
     }
 
@@ -4865,6 +4961,12 @@ export default {
         env.pms_me_db
           .prepare(
             `DELETE FROM password_reset_tokens
+             WHERE user_id = ?`
+          )
+          .bind(user.id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM user_story_interactions
              WHERE user_id = ?`
           )
           .bind(user.id),
@@ -5481,6 +5583,9 @@ export default {
         );
       }
 
+      const submittingUser =
+        await getCurrentUser(request,env);
+
       const result =
         await env.pms_me_db
           .prepare(
@@ -5493,10 +5598,11 @@ export default {
                email,
                anonymous_requested,
                status,
-               moderator_notes
+               moderator_notes,
+               user_id
              )
              VALUES (
-               ?, ?, ?, ?, ?, ?, ?, 'pending', ?
+               ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?
              )`
           )
           .bind(
@@ -5509,7 +5615,8 @@ export default {
             anonymousRequested,
             spamReasons.length
               ? "[SPAM ANALYST] " + spamReasons.join(" ")
-              : null
+              : null,
+            submittingUser ? submittingUser.id : null
           )
           .run();
 
@@ -5664,6 +5771,24 @@ export default {
         )
         .bind(id)
         .run();
+
+      const reactingUser =
+        await getCurrentUser(request,env);
+
+      if (reactingUser) {
+        await env.pms_me_db
+          .prepare(
+            `INSERT OR IGNORE INTO user_story_interactions
+             (user_id, story_id, interaction_type)
+             VALUES (?, ?, ?)`
+          )
+          .bind(
+            reactingUser.id,
+            Number(id),
+            reaction
+          )
+          .run();
+      }
 
       const updated =
         await env.pms_me_db
