@@ -150,6 +150,24 @@ input[type="text"]{
   font-size:13px;
   color:#555
 }
+.mod-tabs{display:flex;gap:8px;margin:0 0 20px}
+.mod-tab{background:#e7e7e7;color:#222;border:1px solid #ccc}
+.mod-tab.active{background:#222;color:#fff;border-color:#222}
+.mod-panel[hidden]{display:none!important}
+.account-summary{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}
+.account-count{background:#eee;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700}
+.account-list{display:grid;gap:10px;margin-bottom:20px}
+.account-row{background:#fff;border:1px solid #ddd;border-radius:6px;padding:14px}
+.account-row-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.account-email{font-weight:800;overflow-wrap:anywhere}
+.account-status{font-size:12px;font-weight:800;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.account-status.verified{background:#e5f4e8;color:#176b2c}
+.account-status.pending{background:#fff0d7;color:#8a5700}
+.account-meta{margin-top:8px;color:#666;font-size:12px;line-height:1.55}
+.account-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.account-actions button{margin:0}
+.approve-account{background:#222;color:#fff}
+
 .story{
   background:#fff;
   border:1px solid #ddd;
@@ -614,6 +632,12 @@ footer{
       </button>
     </div>
   </div>
+  <div class="mod-tabs" role="tablist" aria-label="Moderator sections">
+    <button class="mod-tab active" id="storiesTab" type="button" role="tab" aria-selected="true">Stories</button>
+    <button class="mod-tab" id="accountsTab" type="button" role="tab" aria-selected="false">Registered Accounts <span id="accountTabCount">(0)</span></button>
+  </div>
+
+  <div class="mod-panel" id="storiesPanel">
   <section class="settings">
     <h2>
       Notification Settings
@@ -659,36 +683,6 @@ footer{
     ></div>
   </section>
 
-  <section class="settings">
-    <h2>
-      Account Management
-    </h2>
-    <p class="settings-description">
-      Permanently purge a PMS-ME user account by email address. Stories submitted by the user are not deleted.
-    </p>
-    <div class="setting-row">
-      <label for="purgeAccountEmail">
-        User email address
-      </label>
-      <input
-        type="email"
-        id="purgeAccountEmail"
-        placeholder="user@example.com"
-      >
-    </div>
-    <button
-      class="delete"
-      id="purgeAccountButton"
-      type="button"
-    >
-      Purge Account
-    </button>
-    <div
-      class="settings-status"
-      id="purgeAccountStatus"
-    ></div>
-  </section>
-
   <div
     class="message"
     id="message"
@@ -716,6 +710,31 @@ footer{
     <p class="rejected-intro">Rejected stories are preserved for 30 days with the moderator's rejection comment, then permanently deleted unless restored to Pending.</p>
     <section id="rejectedStories"><div class="empty">Loading...</div></section>
   </section>
+  </div>
+
+  <div class="mod-panel" id="accountsPanel" hidden>
+    <section class="settings">
+      <h2>Registered Accounts</h2>
+      <p class="settings-description">View verified accounts and accounts still awaiting email verification. Pending accounts can be approved manually by a moderator.</p>
+      <div class="account-summary">
+        <span class="account-count" id="totalAccounts">Total: 0</span>
+        <span class="account-count" id="verifiedAccounts">Verified: 0</span>
+        <span class="account-count" id="pendingAccounts">Pending: 0</span>
+      </div>
+      <div id="accountsList" class="account-list"><div class="empty">Loading...</div></div>
+    </section>
+
+    <section class="settings">
+      <h2>Account Purge</h2>
+      <p class="settings-description">Permanently purge a user account by email address. Stories submitted by the user are not deleted.</p>
+      <div class="setting-row">
+        <label for="purgeAccountEmail">User email address</label>
+        <input type="email" id="purgeAccountEmail" placeholder="user@example.com">
+      </div>
+      <button class="delete" id="purgeAccountButton" type="button">Purge Account</button>
+      <div class="settings-status" id="purgeAccountStatus"></div>
+    </section>
+  </div>
 </main>
 <footer>
   Property Manager Stories · PMS-ME
@@ -783,6 +802,15 @@ const rejectedCount =
   document.getElementById('rejectedCount');
 const moderatorLogout =
   document.getElementById('moderatorLogout');
+const storiesTab=document.getElementById('storiesTab');
+const accountsTab=document.getElementById('accountsTab');
+const storiesPanel=document.getElementById('storiesPanel');
+const accountsPanel=document.getElementById('accountsPanel');
+const accountTabCount=document.getElementById('accountTabCount');
+const accountsList=document.getElementById('accountsList');
+const totalAccounts=document.getElementById('totalAccounts');
+const verifiedAccounts=document.getElementById('verifiedAccounts');
+const pendingAccounts=document.getElementById('pendingAccounts');
 
 function moderatorLoginRedirect() {
   window.location.replace('/moderate.html');
@@ -1749,6 +1777,106 @@ async function updateStory(
       'Something went wrong.';
   }
 }
+function showModeratorPanel(panel){
+  const showAccounts=panel==='accounts';
+  storiesPanel.hidden=showAccounts;
+  accountsPanel.hidden=!showAccounts;
+  storiesTab.classList.toggle('active',!showAccounts);
+  accountsTab.classList.toggle('active',showAccounts);
+  storiesTab.setAttribute('aria-selected',String(!showAccounts));
+  accountsTab.setAttribute('aria-selected',String(showAccounts));
+  if(showAccounts) loadAccounts();
+}
+
+storiesTab.addEventListener('click',()=>showModeratorPanel('stories'));
+accountsTab.addEventListener('click',()=>showModeratorPanel('accounts'));
+
+async function loadAccounts(){
+  accountsList.innerHTML='<div class="empty">Loading accounts...</div>';
+  try{
+    const response=await moderatorFetch('/api/moderator/accounts',{credentials:'same-origin'});
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error||'Unable to load accounts.');
+    const accounts=Array.isArray(data)?data:(data.results||[]);
+    const verified=accounts.filter(account=>!!account.email_verified).length;
+    const pending=accounts.length-verified;
+    accountTabCount.textContent='('+accounts.length+')';
+    totalAccounts.textContent='Total: '+accounts.length;
+    verifiedAccounts.textContent='Verified: '+verified;
+    pendingAccounts.textContent='Pending: '+pending;
+    accountsList.innerHTML='';
+    if(!accounts.length){
+      accountsList.innerHTML='<div class="empty">There are no registered accounts.</div>';
+      return;
+    }
+    accounts.forEach(account=>{
+      const row=document.createElement('div');
+      row.className='account-row';
+
+      const top=document.createElement('div');
+      top.className='account-row-top';
+      const email=document.createElement('div');
+      email.className='account-email';
+      email.textContent=account.email;
+      const status=document.createElement('span');
+      status.className='account-status '+(account.email_verified?'verified':'pending');
+      status.textContent=account.email_verified?'Verified':'Pending Verification';
+      top.append(email,status);
+
+      const meta=document.createElement('div');
+      meta.className='account-meta';
+      meta.textContent='Registered: '+(account.created_at||'Unknown')+
+        ' · Last login: '+(account.last_login_at||'Never')+
+        ' · Story emails: '+(account.story_frequency||'off');
+
+      const actions=document.createElement('div');
+      actions.className='account-actions';
+
+      if(!account.email_verified){
+        const approve=document.createElement('button');
+        approve.type='button';
+        approve.className='approve-account';
+        approve.textContent='Approve Account';
+        approve.addEventListener('click',async()=>{
+          if(!window.confirm('Manually approve '+account.email+'? This will mark the email address as verified.')) return;
+          approve.disabled=true;
+          try{
+            const response=await moderatorFetch('/api/moderator/accounts/approve',{
+              method:'PATCH',
+              headers:{'Content-Type':'application/json'},
+              credentials:'same-origin',
+              body:JSON.stringify({email:account.email})
+            });
+            const result=await response.json();
+            if(!response.ok) throw new Error(result.error||'Unable to approve account.');
+            await loadAccounts();
+          }catch(error){
+            window.alert(error.message||'Unable to approve account.');
+            approve.disabled=false;
+          }
+        });
+        actions.appendChild(approve);
+      }
+
+      const purge=document.createElement('button');
+      purge.type='button';
+      purge.className='delete';
+      purge.textContent='Purge Account';
+      purge.addEventListener('click',()=>{
+        purgeAccountEmail.value=account.email;
+        purgeAccountEmail.scrollIntoView({behavior:'smooth',block:'center'});
+        purgeAccountEmail.focus();
+      });
+      actions.appendChild(purge);
+
+      row.append(top,meta,actions);
+      accountsList.appendChild(row);
+    });
+  }catch(error){
+    accountsList.innerHTML='<div class="empty">'+(error.message||'Unable to load accounts.')+'</div>';
+  }
+}
+
 async function loadNotificationSettings() {
   try {
     const response =
@@ -1860,7 +1988,7 @@ purgeAccountButton.addEventListener(
 
     try {
       const response =
-        await fetch(
+        await moderatorFetch(
           '/api/moderator/accounts/purge',
           {
             method:'DELETE',
@@ -1892,6 +2020,7 @@ purgeAccountButton.addEventListener(
 
       purgeAccountEmail.value =
         '';
+      await loadAccounts();
     } catch (error) {
       purgeAccountStatus.textContent =
         error.message ||
@@ -1900,6 +2029,7 @@ purgeAccountButton.addEventListener(
   }
 );
 loadNotificationSettings();
+loadAccounts();
 loadPendingStories();
 loadPublishedStories();
 loadRejectedStories();
