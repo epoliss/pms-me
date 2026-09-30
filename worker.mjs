@@ -659,6 +659,7 @@ async function getCurrentUser(
         `SELECT
            u.id,
            u.email,
+           u.notification_email,
            u.email_verified,
            u.story_frequency,
            u.sponsor_emails,
@@ -827,7 +828,7 @@ function storyEmailText(story) {
     `${teaser}\n\n` +
     `Read the full story on HOA-PMS:\n` +
     `${storyLink(story.id)}\n\n` +
-    `Manage your HOA-PMS email preferences:\n` +
+    `Change account settings:\n` +
     `${accountLink("/account")}\n\n` +
     `Unsubscribe from HOA-PMS account emails:\n` +
     `${accountLink(
@@ -901,16 +902,8 @@ Read the Full Story
 </a>
 </p>
 
-<p style="font-size:14px;line-height:1.5;margin:0 0 12px 0;">
-<a href="${settingsUrl}">
-Manage your HOA-PMS email preferences
-</a>
-</p>
-
-<p style="font-size:13px;line-height:1.5;margin:0;color:#666;">
-<a href="${unsubscribeUrl}">
-Unsubscribe from HOA-PMS account emails
-</a>
+<p style="font-size:12px;line-height:1.5;margin:0;color:#777;">
+<a href="${settingsUrl}" style="color:#777;">Change account settings</a>
 </p>
 
 </div>
@@ -1271,7 +1264,7 @@ Read the full story:
 
 ${storyLink(story.id)}
 
-Manage your HOA-PMS email preferences:
+Change account settings:
 
 ${accountLink("/account")}
 
@@ -1291,7 +1284,7 @@ ${accountLink(
 
   await sendEmail(
     env,
-    user.email,
+    user.delivery_email || user.email,
     subject,
     text,
     html
@@ -1319,6 +1312,7 @@ async function sendPublishedStoryNotifications(
         `SELECT
            id,
            email,
+           COALESCE(notification_email, email) AS delivery_email,
            story_frequency,
            unsubscribe_token
          FROM users
@@ -1382,6 +1376,7 @@ async function sendWeeklyDigests(
         `SELECT
            id,
            email,
+           COALESCE(notification_email, email) AS delivery_email,
            story_frequency,
            unsubscribe_token
          FROM users
@@ -1470,7 +1465,7 @@ ${blocks.join(
   "\n\n------------------------------\n\n"
 )}
 
-Manage your HOA-PMS email preferences:
+Change account settings:
 
 ${accountLink("/account")}
 
@@ -1482,11 +1477,33 @@ ${accountLink(
   )}`
 )}`;
 
+      const digestHtml =
+`<!doctype html>
+<html>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#222;">
+<div style="padding:30px 15px;">
+<div style="max-width:680px;margin:0 auto;background:#fff;border:1px solid #ddd;padding:32px 36px;">
+<h2 style="margin-top:0;">HOA-PMS — Weekly Story Digest</h2>
+${stories.results.map(story => `
+<div style="margin:0 0 28px 0;padding-bottom:24px;border-bottom:1px solid #ddd;">
+<h3 style="margin:0 0 10px 0;">${escapeHtml(makeStoryHeading(story))}</h3>
+<p style="font-size:15px;line-height:1.55;">${escapeHtml(makeTeaser(story.story))}</p>
+<a href="${escapeHtml(storyLink(story.id))}">Read the full story</a>
+</div>`).join("")}
+<p style="font-size:12px;line-height:1.5;margin:24px 0 0;color:#777;">
+<a href="${escapeHtml(accountLink("/account"))}" style="color:#777;">Change account settings</a>
+</p>
+</div>
+</div>
+</body>
+</html>`;
+
       await sendEmail(
         env,
-        user.email,
+        user.delivery_email || user.email,
         "HOA-PMS — Weekly Story Digest",
-        text
+        text,
+        digestHtml
       );
 
       await env.pms_me_db
@@ -1842,453 +1859,134 @@ form.addEventListener(
 function accountPage(
   user
 ) {
-  const verified =
-    !!user.email_verified;
+  const verified = !!user.email_verified;
+  const notificationEmail =
+    user.notification_email ||
+    user.email;
 
   return htmlResponse(
 `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport"
-      content="width=device-width,initial-scale=1">
-<title>PMS-ME — My Account</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOA-PMS — Account Settings</title>
 <style>
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: #f4f4f4;
-  color: #222;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-header {
-  background: #fff;
-  border-bottom: 1px solid #ddd;
-  padding: 24px 15px;
-  text-align: center;
-}
-
-.logo {
-  font-size: 38px;
-  font-weight: 900;
-  letter-spacing: -2px;
-}
-
-.container {
-  width: min(680px, calc(100% - 30px));
-  margin: 30px auto;
-}
-
-.card {
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 28px;
-  margin-bottom: 20px;
-}
-
-h1 {
-  margin-top: 0;
-}
-
-h2 {
-  font-size: 20px;
-  margin-top: 0;
-}
-
-label {
-  display: block;
-  margin: 14px 0 7px;
-  font-weight: bold;
-}
-
-input,
-select {
-  width: 100%;
-  padding: 11px;
-  border: 1px solid #bbb;
-  border-radius: 5px;
-  font-size: 16px;
-}
-
-button {
-  margin-top: 20px;
-  padding: 11px 18px;
-  border: 0;
-  border-radius: 5px;
-  background: #222;
-  color: #fff;
-  cursor: pointer;
-}
-
-button.secondary {
-  background: #777;
-}
-
-.notice {
-  padding: 12px;
-  background: #f5f5f5;
-  border-left: 4px solid #777;
-  margin-bottom: 20px;
-}
-
-.success {
-  color: #176b2c;
-}
-
-.error {
-  color: #b71c1c;
-}
-
-a {
-  color: #222;
-}
-
-.small {
-  color: #666;
-  font-size: 14px;
-  line-height: 1.5;
-}
+*{box-sizing:border-box}
+body{margin:0;background:#f4f4f4;color:#222;font-family:Arial,Helvetica,sans-serif}
+header{background:#fff;border-bottom:1px solid #ddd;padding:24px 15px;text-align:center}
+.logo{font-size:38px;font-weight:900;letter-spacing:-2px}
+.container{width:min(680px,calc(100% - 30px));margin:30px auto}
+.card{background:#fff;border:1px solid #ddd;padding:28px;margin-bottom:20px}
+h1{margin-top:0} h2{font-size:20px;margin:28px 0 8px}
+label{display:block;margin:14px 0 7px;font-weight:bold}
+input,select{width:100%;padding:11px;border:1px solid #bbb;border-radius:5px;font-size:16px;background:#fff}
+button{margin-top:20px;padding:11px 18px;border:0;border-radius:5px;background:#222;color:#fff;cursor:pointer}
+button.secondary{background:#777}
+.notice{padding:12px;background:#f5f5f5;border-left:4px solid #777;margin-bottom:20px}
+.success{color:#176b2c}.error{color:#b71c1c}
+a{color:#222}.small{color:#666;font-size:14px;line-height:1.5}.username{padding:11px;background:#f3f3f3;border:1px solid #ddd;border-radius:5px;overflow-wrap:anywhere}
+.danger{border-top:1px solid #ddd;margin-top:28px;padding-top:22px}
+.danger a{color:#8b0000}
 </style>
 </head>
-
 <body>
-
-<header>
-<a href="/"
-style="color:inherit;text-decoration:none;">
-<div class="logo">PMS-ME</div>
-</a>
-</header>
-
+<header><a href="/" style="color:inherit;text-decoration:none;"><div class="logo">HOA-PMS</div></a></header>
 <div class="container">
-
 <div class="card">
-
-<h1>My PMS-ME Account</h1>
-
-<p>
-<strong>${escapeHtml(
-  user.email
-)}</strong>
-</p>
-
-${
-  !verified
-    ? `
-<div class="notice">
-Your email address has not yet been verified.
-Please check your email for the verification link.
-</div>
-`
-    : ""
-}
-
+<h1>Account Settings</h1>
+${!verified ? '<div class="notice">Your account email has not yet been verified.</div>' : ''}
 <div id="message"></div>
 
-<h2>Email Updates</h2>
+<h2>Login Email</h2>
+<p class="small">This is your account username and cannot be changed.</p>
+<div class="username">${escapeHtml(user.email)}</div>
 
-<p class="small">
-Choose how often you want to hear about newly published PMS-ME stories.
-</p>
+<h2>Notification Email</h2>
+<p class="small">HOA-PMS story notifications will be sent here. Changing this does not change your login email.</p>
+<label for="notificationEmail">Email address for notifications</label>
+<input id="notificationEmail" type="email" value="${escapeHtml(notificationEmail)}" autocomplete="email">
 
-<label for="frequency">
-Story updates
-</label>
-
+<h2>Notification Preferences</h2>
+<label for="frequency">Story notifications</label>
 <select id="frequency">
-<option value="weekly"
-${
-  user.story_frequency ===
-  "weekly"
-    ? "selected"
-    : ""
-}>
-Weekly Digest
-</option>
-
-<option value="immediate"
-${
-  user.story_frequency ===
-  "immediate"
-    ? "selected"
-    : ""
-}>
-Immediate Updates
-</option>
-
-<option value="off"
-${
-  user.story_frequency ===
-  "off"
-    ? "selected"
-    : ""
-}>
-Unsubscribe
-</option>
+<option value="weekly" ${user.story_frequency === "weekly" ? "selected" : ""}>Weekly Digest</option>
+<option value="immediate" ${user.story_frequency === "immediate" ? "selected" : ""}>Individual Post — email me when each story is published</option>
+<option value="off" ${user.story_frequency === "off" ? "selected" : ""}>No Emails</option>
 </select>
 
-<h2 style="margin-top:30px;">
-Other PMS-ME Communications
-</h2>
+<button id="saveButton" type="button">Save Account Settings</button>
 
-<label>
-<input
-  id="sponsorEmails"
-  type="checkbox"
-  style="width:auto;margin-right:8px;"
-  ${
-    user.sponsor_emails
-      ? "checked"
-      : ""
-  }
->
-Receive occasional sponsor emails
-</label>
+<h2>Password</h2>
+<p class="small">Change your account password using the secure password-reset process.</p>
+<a href="/forgot-password">Change Password</a>
 
-<p class="small">
-Sponsor communications are not being sent yet. This setting is being provided now so your account is ready for future sponsor communications.
-</p>
-
-<label>
-<input
-  id="rssEnabled"
-  type="checkbox"
-  style="width:auto;margin-right:8px;"
-  ${
-    user.rss_enabled
-      ? "checked"
-      : ""
-  }
->
-Enable my PMS-ME RSS feed
-</label>
-
-<p class="small">
-Your personal RSS feed will be available here:
-<br>
-<strong id="rssUrl">
-${escapeHtml(
-  accountLink(
-    `/rss.xml?token=${encodeURIComponent(
-      user.rss_token
-    )}`
-  )
-)}
-</strong>
-</p>
-
-<button id="saveButton">
-Save Preferences
-</button>
-
-<button
-  id="logoutButton"
-  class="secondary"
-  type="button">
-Log Out
-</button>
-
+<div class="danger">
+<a href="#" id="closeAccountLink">Delete Account</a>
+<p class="small">Deleting your account removes your login, settings and account email records. Stories you submitted are not deleted.</p>
 </div>
 
-<div class="card">
-
-<h2>Account Email</h2>
-
-<p class="small">
-Account security messages such as email verification and password recovery may still be sent when necessary.
-</p>
-
-<p>
-<a href="/forgot-password">
-Reset Password
-</a>
-</p>
-
-<p class="small" style="margin-top:28px;">
-<a href="#" id="closeAccountLink" style="color:#777;">
-Close account
-</a>
-</p>
-
+<button id="logoutButton" class="secondary" type="button">Log Out</button>
 </div>
-
 </div>
-
 <script>
-const frequency =
-  document.getElementById(
-    "frequency"
-  );
+const frequency=document.getElementById("frequency");
+const notificationEmail=document.getElementById("notificationEmail");
+const saveButton=document.getElementById("saveButton");
+const logoutButton=document.getElementById("logoutButton");
+const closeAccountLink=document.getElementById("closeAccountLink");
+const message=document.getElementById("message");
 
-const sponsorEmails =
-  document.getElementById(
-    "sponsorEmails"
-  );
-
-const rssEnabled =
-  document.getElementById(
-    "rssEnabled"
-  );
-
-const saveButton =
-  document.getElementById(
-    "saveButton"
-  );
-
-const logoutButton =
-  document.getElementById(
-    "logoutButton"
-  );
-
-const closeAccountLink =
-  document.getElementById(
-    "closeAccountLink"
-  );
-
-const message =
-  document.getElementById(
-    "message"
-  );
-
-saveButton.addEventListener(
-  "click",
-  async () => {
-
-    message.className = "";
-    message.textContent =
-      "Saving...";
-
-    try {
-
-      const response =
-        await fetch(
-          "/api/account/preferences",
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-            credentials:
-              "same-origin",
-            body:
-              JSON.stringify({
-                frequency:
-                  frequency.value,
-                sponsor_emails:
-                  sponsorEmails.checked,
-                rss_enabled:
-                  rssEnabled.checked
-              })
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          "Unable to save preferences."
-        );
-      }
-
-      message.className =
-        "success";
-
-      message.textContent =
-        "Your preferences have been saved.";
-
-    } catch (error) {
-
-      message.className =
-        "error";
-
-      message.textContent =
-        error.message;
-    }
+saveButton.addEventListener("click",async()=>{
+  message.className="";
+  message.textContent="Saving...";
+  try{
+    const response=await fetch("/api/account/preferences",{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      credentials:"same-origin",
+      body:JSON.stringify({
+        frequency:frequency.value,
+        notification_email:notificationEmail.value
+      })
+    });
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error||"Unable to save account settings.");
+    notificationEmail.value=data.notification_email;
+    message.className="success";
+    message.textContent="Your account settings have been saved.";
+  }catch(error){
+    message.className="error";
+    message.textContent=error.message;
   }
-);
+});
 
-logoutButton.addEventListener(
-  "click",
-  async () => {
+logoutButton.addEventListener("click",async()=>{
+  await fetch("/api/account/logout",{method:"POST",credentials:"same-origin"});
+  window.location.href="/";
+});
 
-    await fetch(
-      "/api/account/logout",
-      {
-        method: "POST",
-        credentials:
-          "same-origin"
-      }
-    );
-
-    window.location.href =
-      "/";
+closeAccountLink.addEventListener("click",async(event)=>{
+  event.preventDefault();
+  if(!window.confirm("Permanently delete your HOA-PMS account? This cannot be undone. Published or submitted stories will not be deleted.")) return;
+  try{
+    const response=await fetch("/api/account",{method:"DELETE",credentials:"same-origin"});
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error||"Unable to delete account.");
+    window.location.href="/";
+  }catch(error){
+    message.className="error";
+    message.textContent=error.message;
   }
-);
-
-closeAccountLink.addEventListener(
-  "click",
-  async (event) => {
-    event.preventDefault();
-
-    const confirmed =
-      window.confirm(
-        "Permanently close your PMS-ME account? Your account settings, login sessions and account email records will be deleted. Published or submitted stories will not be deleted."
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      const response =
-        await fetch(
-          "/api/account",
-          {
-            method: "DELETE",
-            credentials:
-              "same-origin"
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          "Unable to close account."
-        );
-      }
-
-      window.location.href =
-        "/";
-    } catch (error) {
-      message.className =
-        "error";
-      message.textContent =
-        error.message;
-    }
-  }
-);
+});
 </script>
-
 </body>
 </html>`,
     200,
-    {
-      "Cache-Control":
-        "no-store"
-    }
+    {"Cache-Control":"no-store"}
   );
 }
+
 function registerPage() {
   return htmlResponse(
 `<!doctype html>
@@ -3763,6 +3461,19 @@ export default {
     const url =
       new URL(request.url);
 
+    try {
+      await env.pms_me_db
+        .prepare(
+          `ALTER TABLE users
+           ADD COLUMN notification_email TEXT`
+        )
+        .run();
+    } catch (error) {
+      if (!String(error && error.message || error).toLowerCase().includes("duplicate column")) {
+        console.error("notification_email schema check failed:",error);
+      }
+    }
+
     /*
      * =========================================================
      * ACCOUNT PAGES
@@ -4430,76 +4141,36 @@ export default {
         "/api/account/preferences" &&
       request.method === "PUT"
     ) {
-
-      const user =
-        await getCurrentUser(
-          request,
-          env
-        );
-
-      if (!user) {
-        return unauthorizedResponse();
-      }
+      const user = await getCurrentUser(request,env);
+      if (!user) return unauthorizedResponse();
 
       let body;
+      try { body=await request.json(); }
+      catch { return jsonResponse({error:"Invalid request body."},400); }
 
-      try {
-        body =
-          await request.json();
-      } catch {
-        return jsonResponse(
-          {
-            error:
-              "Invalid request body."
-          },
-          400
-        );
+      const frequency=["weekly","immediate","off"].includes(body.frequency)
+        ? body.frequency
+        : "weekly";
+
+      const notificationEmail=normalizeEmail(body.notification_email);
+      if(!validEmail(notificationEmail)){
+        return jsonResponse({error:"Please enter a valid notification email address."},400);
       }
-
-      const frequency =
-        [
-          "weekly",
-          "immediate",
-          "off"
-        ].includes(
-          body.frequency
-        )
-          ? body.frequency
-          : "weekly";
-
-      const sponsorEmails =
-        body.sponsor_emails
-          ? 1
-          : 0;
-
-      const rssEnabled =
-        body.rss_enabled
-          ? 1
-          : 0;
 
       await env.pms_me_db
         .prepare(
           `UPDATE users
            SET story_frequency = ?,
-               sponsor_emails = ?,
-               rss_enabled = ?
+               notification_email = ?
            WHERE id = ?`
         )
-        .bind(
-          frequency,
-          sponsorEmails,
-          rssEnabled,
-          user.id
-        )
+        .bind(frequency,notificationEmail,user.id)
         .run();
 
       return jsonResponse({
-        ok: true,
+        ok:true,
         frequency,
-        sponsor_emails:
-          sponsorEmails,
-        rss_enabled:
-          rssEnabled
+        notification_email:notificationEmail
       });
     }
 
