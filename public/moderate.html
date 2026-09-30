@@ -732,6 +732,43 @@ footer{
   </div>
 </div>
 <script>
+function firstSyllableFragment(word){
+  const clean=(word||'').match(/^[^\s]+/)?.[0]||'';
+  if(clean.length<=3) return clean;
+  const m=clean.match(/^([^aeiouyAEIOUY]*[aeiouyAEIOUY]+(?:[^aeiouyAEIOUY]{0,1}))/);
+  return (m&&m[0]) ? m[0] : clean.slice(0,3);
+}
+
+function setExpandableStoryText(element,storyText,appendPms=false){
+  const raw=(storyText||'').trim();
+  const words=raw ? raw.split(/\s+/) : [];
+  const full=appendPms
+    ? raw + (/[.!?]$/.test(raw) ? ' PMS' : '. PMS')
+    : raw;
+
+  if(words.length<=75){
+    element.textContent=full;
+    return;
+  }
+
+  const prefix=words.slice(0,75).join(' ');
+  const fragment=firstSyllableFragment(words[75]);
+  element.textContent=prefix+' '+fragment+'… ';
+
+  const more=document.createElement('button');
+  more.type='button';
+  more.className='story-more';
+  more.textContent='more';
+  more.style.cssText='border:0;background:none;padding:0;color:inherit;text-decoration:underline;font:inherit;font-weight:700;cursor:pointer';
+  more.addEventListener('click',event=>{
+    event.preventDefault();
+    event.stopPropagation();
+    element.textContent=full;
+  });
+  element.appendChild(more);
+}
+
+
 const storiesContainer =
   document.getElementById('stories');
 const publishedStoriesContainer =
@@ -872,8 +909,7 @@ async function loadPendingStories() {
         titleRow.appendChild(titleHelp);
         const text =
           document.createElement('p');
-        text.textContent =
-          story.story;
+        setExpandableStoryText(text,story.story||'',false);
         const details =
           document.createElement('div');
         details.className =
@@ -1256,7 +1292,12 @@ async function loadPublishedStories() {
 
       const preview=document.createElement('span');
       preview.className='archive-card-preview';
-      preview.textContent=story.story||'';
+      {
+        const previewWords=(story.story||'').trim().split(/\s+/);
+        preview.textContent=previewWords.length>75
+          ? previewWords.slice(0,75).join(' ')+' '+firstSyllableFragment(previewWords[75])+'…'
+          : (story.story||'');
+      }
 
       const status=document.createElement('span');
       status.className='archive-card-status';
@@ -1272,7 +1313,7 @@ async function loadPublishedStories() {
       fullMeta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided')+' · Published '+(story.published_at||story.created_at);
 
       const text=document.createElement('p');
-      text.textContent=story.story;
+      setExpandableStoryText(text,story.story||'',false);
 
       const details=document.createElement('div');
       details.className='details';
@@ -1556,7 +1597,12 @@ async function loadRejectedStories() {
 
       const preview=document.createElement('span');
       preview.className='archive-card-preview';
-      preview.textContent=story.story||'';
+      {
+        const previewWords=(story.story||'').trim().split(/\s+/);
+        preview.textContent=previewWords.length>75
+          ? previewWords.slice(0,75).join(' ')+' '+firstSyllableFragment(previewWords[75])+'…'
+          : (story.story||'');
+      }
 
       const status=document.createElement('span');
       status.className='archive-card-status';
@@ -1572,7 +1618,7 @@ async function loadRejectedStories() {
       fullMeta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided')+' · Rejected '+(story.published_at||story.created_at);
 
       const text=document.createElement('p');
-      text.textContent=story.story;
+      setExpandableStoryText(text,story.story||'',false);
 
       const details=document.createElement('div');
       details.className='details';
