@@ -683,7 +683,7 @@ async function sendEmail(
 
   const emailBody = {
     from:
-      "PMS-ME <onboarding@resend.dev>",
+      "HOA-PMS <noreply@hoapms.com>",
     to: [to],
     subject,
     text
@@ -734,7 +734,7 @@ function storyLink(id) {
 function makeStoryHeading(story) {
   const title =
     story.title ||
-    "PMS-ME Story";
+    "HOA-PMS Story";
 
   const category =
     story.category ||
@@ -814,11 +814,11 @@ function storyEmailText(story) {
   return (
     `${heading}\n\n` +
     `${teaser}\n\n` +
-    `Read the full story on PMS-ME:\n` +
+    `Read the full story on HOA-PMS:\n` +
     `${storyLink(story.id)}\n\n` +
-    `Manage your PMS-ME email preferences:\n` +
+    `Manage your HOA-PMS email preferences:\n` +
     `${accountLink("/account")}\n\n` +
-    `Unsubscribe from PMS-ME account emails:\n` +
+    `Unsubscribe from HOA-PMS account emails:\n` +
     `${accountLink(
       `/unsubscribe?token=${encodeURIComponent(
         story._unsubscribeToken || ""
@@ -892,13 +892,13 @@ Read the Full Story
 
 <p style="font-size:14px;line-height:1.5;margin:0 0 12px 0;">
 <a href="${settingsUrl}">
-Manage your PMS-ME email preferences
+Manage your HOA-PMS email preferences
 </a>
 </p>
 
 <p style="font-size:13px;line-height:1.5;margin:0;color:#666;">
 <a href="${unsubscribeUrl}">
-Unsubscribe from PMS-ME account emails
+Unsubscribe from HOA-PMS account emails
 </a>
 </p>
 
@@ -941,10 +941,10 @@ async function sendNewStoryNotification(
   }
 
   const subject =
-    "PMS-ME — New Story Submitted";
+    "HOA-PMS — New Story Submitted";
 
   const text =
-`A new story has been submitted to PMS-ME.
+`A new story has been submitted to HOA-PMS.
 
 Title: ${story.title || "(not provided)"}
 
@@ -989,7 +989,7 @@ async function sendRejectionEmail(
   }
 
   const subject =
-    "PMS-ME — Story Submission Update";
+    "HOA-PMS — Story Submission Update";
 
   const greetingName =
     story.display_name ||
@@ -1027,7 +1027,7 @@ async function sendRejectionEmail(
   const text =
 `Hello ${greetingName},
 
-Thank you for submitting your story to PMS-ME.
+Thank you for submitting your story to HOA-PMS.
 After review, your submission was not approved for publication.
 
 Title: ${
@@ -1055,7 +1055,7 @@ ${story.story}
 
 Thank you,
 
-PMS-ME`;
+HOA-PMS`;
 
   const html =
 `<!doctype html>
@@ -1077,7 +1077,7 @@ Hello ${safeGreetingName},
 </p>
 
 <p style="font-size:16px;line-height:1.6;margin:0 0 22px 0;">
-Thank you for submitting your story to PMS-ME.
+Thank you for submitting your story to HOA-PMS.
 After review, your submission was not approved for publication.
 </p>
 
@@ -1130,7 +1130,7 @@ ${safeStory}
 
 <p style="font-size:16px;line-height:1.6;margin:0;">
 Thank you,<br>
-<strong>PMS-ME</strong>
+<strong>HOA-PMS</strong>
 </p>
 
 </div>
@@ -1162,13 +1162,13 @@ async function sendVerificationEmail(
     );
 
   const text =
-`Welcome to PMS-ME.
+`Welcome to HOA-PMS.
 
 Please verify your email address by opening this link:
 
 ${url}
 
-After verification, your PMS-ME account will be ready.
+After verification, your HOA-PMS account will be ready.
 
 If you did not create this account, you can ignore this email.`;
 
@@ -1179,7 +1179,7 @@ If you did not create this account, you can ignore this email.`;
 
 <div style="max-width:650px;margin:auto;background:#fff;border:1px solid #ddd;padding:32px;">
 
-<h2>Welcome to PMS-ME</h2>
+<h2>Welcome to HOA-PMS</h2>
 
 <p>Please verify your email address to activate your account.</p>
 
@@ -1202,7 +1202,7 @@ If you did not create this account, you can ignore this email.
   await sendEmail(
     env,
     email,
-    "PMS-ME — Verify Your Email",
+    "HOA-PMS — Verify Your Email",
     text,
     html
   );
@@ -1221,7 +1221,7 @@ async function sendPasswordResetEmail(
     );
 
   const text =
-`A password reset was requested for your PMS-ME account.
+`A password reset was requested for your HOA-PMS account.
 
 Reset your password here:
 
@@ -1234,7 +1234,7 @@ If you did not request this, you can ignore this email.`;
   await sendEmail(
     env,
     email,
-    "PMS-ME — Password Reset",
+    "HOA-PMS — Password Reset",
     text
   );
 }
@@ -1245,12 +1245,12 @@ async function sendImmediatePublishedStoryEmail(
   story
 ) {
   const subject =
-    `PMS-ME — ${makeStoryHeading(
+    `HOA-PMS — ${makeStoryHeading(
       story
     )}`;
 
   const text =
-`A new PMS-ME story has been published.
+`A new HOA-PMS story has been published.
 
 ${makeStoryHeading(story)}
 
@@ -1260,11 +1260,11 @@ Read the full story:
 
 ${storyLink(story.id)}
 
-Manage your PMS-ME email preferences:
+Manage your HOA-PMS email preferences:
 
 ${accountLink("/account")}
 
-Unsubscribe from PMS-ME account emails:
+Unsubscribe from HOA-PMS account emails:
 
 ${accountLink(
   `/unsubscribe?token=${encodeURIComponent(
@@ -1453,17 +1453,17 @@ async function sendWeeklyDigests(
       }
 
       const text =
-`Here are the latest stories published on PMS-ME.
+`Here are the latest stories published on HOA-PMS.
 
 ${blocks.join(
   "\n\n------------------------------\n\n"
 )}
 
-Manage your PMS-ME email preferences:
+Manage your HOA-PMS email preferences:
 
 ${accountLink("/account")}
 
-Unsubscribe from PMS-ME account emails:
+Unsubscribe from HOA-PMS account emails:
 
 ${accountLink(
   `/unsubscribe?token=${encodeURIComponent(
@@ -1474,7 +1474,7 @@ ${accountLink(
       await sendEmail(
         env,
         user.email,
-        "PMS-ME — Weekly Story Digest",
+        "HOA-PMS — Weekly Story Digest",
         text
       );
 
@@ -1547,7 +1547,7 @@ async function sendDailyDigest(
   const lines = [];
 
   lines.push(
-    "The following PMS-ME stories are awaiting moderation."
+    "The following HOA-PMS stories are awaiting moderation."
   );
 
   lines.push("");
@@ -1616,7 +1616,7 @@ async function sendDailyDigest(
   await sendEmail(
     env,
     settings.email,
-    "PMS-ME — Daily Story Digest",
+    "HOA-PMS — Daily Story Digest",
     lines.join("\n")
   );
 
