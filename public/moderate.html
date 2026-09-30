@@ -167,6 +167,13 @@ input[type="text"]{
 .account-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .account-actions button{margin:0}
 .approve-account{background:#222;color:#fff}
+.account-stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.account-stat{background:#f3f3f3;border:1px solid #ddd;border-radius:5px;padding:6px 8px;font-size:12px;font-weight:700}
+.account-controls{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,1fr);gap:10px;margin-top:12px}
+.account-controls label{font-size:12px;font-weight:700;margin:0}
+.account-controls input,.account-controls select{width:100%;margin-top:5px;padding:8px;border:1px solid #bbb;border-radius:5px;background:#fff;color:#222}
+.account-save-status{font-size:12px;margin-top:8px;min-height:16px}
+@media(max-width:600px){.account-controls{grid-template-columns:1fr}}
 
 .story{
   background:#fff;
@@ -1826,11 +1833,80 @@ async function loadAccounts(){
       const meta=document.createElement('div');
       meta.className='account-meta';
       meta.textContent='Registered: '+(account.created_at||'Unknown')+
-        ' · Last login: '+(account.last_login_at||'Never')+
-        ' · Story emails: '+(account.story_frequency||'off');
+        ' · Last login: '+(account.last_login_at||'Never');
+
+      const stats=document.createElement('div');
+      stats.className='account-stats';
+      const storiesStat=document.createElement('span');
+      storiesStat.className='account-stat';
+      storiesStat.textContent='Stories posted: '+Number(account.stories_posted||0);
+      const interactionsStat=document.createElement('span');
+      interactionsStat.className='account-stat';
+      interactionsStat.textContent='Post button interactions: '+Number(account.post_interactions||0);
+      stats.append(storiesStat,interactionsStat);
+
+      const controls=document.createElement('div');
+      controls.className='account-controls';
+
+      const emailLabel=document.createElement('label');
+      emailLabel.textContent='Notification email';
+      const notificationInput=document.createElement('input');
+      notificationInput.type='email';
+      notificationInput.value=account.notification_email||account.email;
+      notificationInput.setAttribute('aria-label','Notification email for '+account.email);
+      emailLabel.appendChild(notificationInput);
+
+      const frequencyLabel=document.createElement('label');
+      frequencyLabel.textContent='Notification option';
+      const frequencySelect=document.createElement('select');
+      [
+        ['weekly','Weekly Digest'],
+        ['immediate','Individual Post'],
+        ['off','No Emails']
+      ].forEach(([value,label])=>{
+        const option=document.createElement('option');
+        option.value=value;
+        option.textContent=label;
+        if(account.story_frequency===value) option.selected=true;
+        frequencySelect.appendChild(option);
+      });
+      frequencyLabel.appendChild(frequencySelect);
+      controls.append(emailLabel,frequencyLabel);
+
+      const saveStatus=document.createElement('div');
+      saveStatus.className='account-save-status';
 
       const actions=document.createElement('div');
       actions.className='account-actions';
+
+      const save=document.createElement('button');
+      save.type='button';
+      save.textContent='Save Account Settings';
+      save.addEventListener('click',async()=>{
+        save.disabled=true;
+        saveStatus.textContent='Saving...';
+        try{
+          const response=await moderatorFetch('/api/moderator/accounts/update',{
+            method:'PATCH',
+            headers:{'Content-Type':'application/json'},
+            credentials:'same-origin',
+            body:JSON.stringify({
+              user_id:account.id,
+              notification_email:notificationInput.value,
+              frequency:frequencySelect.value
+            })
+          });
+          const result=await response.json();
+          if(!response.ok) throw new Error(result.error||'Unable to save account settings.');
+          notificationInput.value=result.notification_email;
+          saveStatus.textContent='Saved.';
+        }catch(error){
+          saveStatus.textContent=error.message||'Unable to save.';
+        }finally{
+          save.disabled=false;
+        }
+      });
+      actions.appendChild(save);
 
       if(!account.email_verified){
         const approve=document.createElement('button');
@@ -1869,7 +1945,7 @@ async function loadAccounts(){
       });
       actions.appendChild(purge);
 
-      row.append(top,meta,actions);
+      row.append(top,meta,stats,controls,saveStatus,actions);
       accountsList.appendChild(row);
     });
   }catch(error){
