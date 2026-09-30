@@ -96,6 +96,17 @@ html[data-theme="dark"] .settings-description,
 html[data-theme="dark"] .title-help {
   color:#aaa !important;
 }
+html[data-theme="dark"] a {
+  color:#8fc7ff !important;
+}
+html[data-theme="dark"] .check,
+html[data-theme="dark"] .check a {
+  color:#f2f2f2 !important;
+}
+html[data-theme="dark"] .check a {
+  text-decoration:underline;
+  text-decoration-color:#8fc7ff;
+}
 html[data-theme="dark"] input,
 html[data-theme="dark"] textarea,
 html[data-theme="dark"] select {
