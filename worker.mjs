@@ -5693,8 +5693,7 @@ export default {
         "Owner Moaner",
         "Vendor Woes",
         "Legally Blunt",
-        "Board to Tears",
-        "Audit This"
+        "Board to Tears"
       ];
 
       if (
@@ -6105,8 +6104,7 @@ export default {
         "Owner Moaner",
         "Vendor Woes",
         "Legally Blunt",
-        "Board to Tears",
-        "Audit This"
+        "Board to Tears"
       ];
 
       const finalCategory =
