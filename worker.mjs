@@ -3564,6 +3564,36 @@ export default {
       }
     }
 
+    await env.pms_me_db.prepare(
+      `CREATE TABLE IF NOT EXISTS contact_inquiries (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         name TEXT NOT NULL,
+         email TEXT NOT NULL,
+         subject TEXT NOT NULL,
+         message TEXT NOT NULL,
+         status TEXT NOT NULL DEFAULT 'new',
+         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+       )`
+    ).run();
+
+    await env.pms_me_db.prepare(
+      `CREATE TABLE IF NOT EXISTS contact_replies (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         inquiry_id INTEGER NOT NULL,
+         message TEXT NOT NULL,
+         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+       )`
+    ).run();
+
+    await env.pms_me_db.prepare(
+      `CREATE TABLE IF NOT EXISTS contact_submission_events (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         ip_hash TEXT NOT NULL,
+         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+       )`
+    ).run();
+
     try {
       await env.pms_me_db
         .prepare(
@@ -4819,6 +4849,9 @@ export default {
         "/api/notification-settings" ||
       url.pathname ===
         "/api/moderator/accounts" ||
+      url.pathname.startsWith(
+        "/api/moderator/contacts"
+      ) ||
       url.pathname ===
         "/api/moderator/accounts/approve" ||
       url.pathname ===
@@ -4850,6 +4883,65 @@ export default {
       ) {
         return unauthorizedResponse();
       }
+    }
+
+    /*
+     * =========================================================
+     * MODERATOR — CONTACT INQUIRIES
+     * =========================================================
+     */
+    if(url.pathname==="/api/moderator/contacts" && request.method==="GET"){
+      const rows=await env.pms_me_db.prepare(
+        `SELECT c.*,
+          (SELECT COUNT(*) FROM contact_replies r WHERE r.inquiry_id=c.id) AS reply_count
+         FROM contact_inquiries c
+         ORDER BY CASE c.status WHEN 'new' THEN 0 WHEN 'responded' THEN 1 ELSE 2 END, c.created_at DESC`
+      ).all();
+      return jsonResponse({results:rows.results||[]});
+    }
+
+    if(url.pathname==="/api/moderator/contacts/replies" && request.method==="GET"){
+      const inquiryId=Number(url.searchParams.get("inquiry_id"));
+      if(!Number.isInteger(inquiryId)||inquiryId<1) return jsonResponse({error:"Invalid inquiry."},400);
+      const rows=await env.pms_me_db.prepare(
+        `SELECT id,inquiry_id,message,created_at FROM contact_replies WHERE inquiry_id=? ORDER BY created_at ASC`
+      ).bind(inquiryId).all();
+      return jsonResponse({results:rows.results||[]});
+    }
+
+    if(url.pathname==="/api/moderator/contacts/reply" && request.method==="POST"){
+      let body;try{body=await request.json();}catch{return jsonResponse({error:"Invalid request body."},400);}
+      const inquiryId=Number(body.inquiry_id);
+      const reply=String(body.message||"").trim();
+      if(!Number.isInteger(inquiryId)||inquiryId<1||!reply||reply.length>4000) return jsonResponse({error:"Please enter a valid reply."},400);
+      const inquiry=await env.pms_me_db.prepare(`SELECT * FROM contact_inquiries WHERE id=?`).bind(inquiryId).first();
+      if(!inquiry) return jsonResponse({error:"Inquiry not found."},404);
+      const subject=/^re:/i.test(inquiry.subject)?inquiry.subject:"Re: "+inquiry.subject;
+      const text=`Hello ${inquiry.name},\n\n${reply}\n\n— HOA-PMS\nProperty Manager Stories`;
+      const html=`<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;color:#222"><div style="max-width:650px;margin:auto"><p>Hello ${escapeHtml(inquiry.name)},</p><div style="white-space:pre-wrap;line-height:1.6">${escapeHtml(reply)}</div><p>— <strong>HOA-PMS</strong><br>Property Manager Stories</p></div></body></html>`;
+      await sendEmail(env,inquiry.email,subject,text,html);
+      await env.pms_me_db.prepare(`INSERT INTO contact_replies (inquiry_id,message) VALUES (?,?)`).bind(inquiryId,reply).run();
+      await env.pms_me_db.prepare(`UPDATE contact_inquiries SET status='responded',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(inquiryId).run();
+      return jsonResponse({ok:true});
+    }
+
+    if(url.pathname==="/api/moderator/contacts/status" && request.method==="PATCH"){
+      let body;try{body=await request.json();}catch{return jsonResponse({error:"Invalid request body."},400);}
+      const inquiryId=Number(body.inquiry_id);
+      const status=["new","responded","archived"].includes(body.status)?body.status:null;
+      if(!Number.isInteger(inquiryId)||!status) return jsonResponse({error:"Invalid request."},400);
+      await env.pms_me_db.prepare(`UPDATE contact_inquiries SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(status,inquiryId).run();
+      return jsonResponse({ok:true});
+    }
+
+    if(url.pathname==="/api/moderator/contacts" && request.method==="DELETE"){
+      const inquiryId=Number(url.searchParams.get("id"));
+      if(!Number.isInteger(inquiryId)||inquiryId<1) return jsonResponse({error:"Invalid inquiry."},400);
+      await env.pms_me_db.batch([
+        env.pms_me_db.prepare(`DELETE FROM contact_replies WHERE inquiry_id=?`).bind(inquiryId),
+        env.pms_me_db.prepare(`DELETE FROM contact_inquiries WHERE id=?`).bind(inquiryId)
+      ]);
+      return jsonResponse({ok:true});
     }
 
     /*
@@ -5263,6 +5355,58 @@ export default {
             ? env.TURNSTILE_SITE_KEY
             : null
       });
+    }
+
+    /*
+     * =========================================================
+     * CONTACT US
+     * =========================================================
+     */
+    if (url.pathname === "/api/contact" && request.method === "POST") {
+      let body;
+      try { body=await request.json(); }
+      catch { return jsonResponse({error:"Invalid request body."},400); }
+
+      const name=String(body.name||"").trim();
+      const email=normalizeEmail(body.email);
+      const subject=String(body.subject||"").trim();
+      const message=String(body.message||"").trim();
+      const honeypot=String(body.website||"").trim();
+
+      if(honeypot) return jsonResponse({ok:true},201);
+      if(!name || name.length>100) return jsonResponse({error:"Please enter your name."},400);
+      if(!validEmail(email)) return jsonResponse({error:"Please enter a valid email address."},400);
+      if(!subject || subject.length>150) return jsonResponse({error:"Please enter a subject."},400);
+      if(!message || message.length>4000) return jsonResponse({error:"Please enter a message of 4,000 characters or fewer."},400);
+
+      const clientIp=request.headers.get("CF-Connecting-IP")||"unknown";
+      const ipHash=await sha256(clientIp);
+      await env.pms_me_db.prepare(`DELETE FROM contact_submission_events WHERE created_at <= datetime('now','-24 hours')`).run();
+      const recent=await env.pms_me_db.prepare(
+        `SELECT COUNT(*) AS count FROM contact_submission_events WHERE ip_hash=? AND created_at>datetime('now','-15 minutes')`
+      ).bind(ipHash).first();
+      if(Number(recent?.count||0)>=5) return jsonResponse({error:"Too many contact submissions. Please wait and try again later."},429);
+
+      if(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY){
+        const token=typeof body.turnstile_token==="string"?body.turnstile_token:"";
+        let valid=false;
+        if(token){
+          try{
+            const check=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{
+              method:"POST",headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({secret:env.TURNSTILE_SECRET_KEY,response:token,remoteip:clientIp})
+            });
+            const result=await check.json();valid=Boolean(result.success);
+          }catch(error){console.error("Contact Turnstile verification failed:",error);}
+        }
+        if(!valid) return jsonResponse({error:"Security verification failed. Please try again."},403);
+      }
+
+      await env.pms_me_db.prepare(`INSERT INTO contact_submission_events (ip_hash) VALUES (?)`).bind(ipHash).run();
+      await env.pms_me_db.prepare(
+        `INSERT INTO contact_inquiries (name,email,subject,message) VALUES (?,?,?,?)`
+      ).bind(name,email,subject,message).run();
+      return jsonResponse({ok:true},201);
     }
 
     /*
