@@ -2242,7 +2242,7 @@ Confirm Password
   required
 >
 I agree to the
-<a href="/terms-of-service.pdf"
+<a href="/terms.html"
 target="_blank">
 HOA-PMS Terms of Service
 </a>.
