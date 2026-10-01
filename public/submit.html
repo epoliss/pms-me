@@ -320,16 +320,16 @@ footer{
         A title is requested, but if you leave it blank, a moderator may create one before publication.
       </div>
 
-      <label for="city">City</label>
+      <label for="city">City or County</label>
       <input
         id="city"
         maxlength="100"
         required
-        placeholder="City where this happened"
+        placeholder="Where this happened"
       >
 
       <div class="help">
-        Please provide the city where the property or incident is located.
+        Please provide the city or county where the property or incident is located.
       </div>
 
       <label for="story">Your Story</label>
@@ -595,7 +595,7 @@ form.addEventListener(
         'block';
 
       message.textContent =
-        'Please enter the city, your story, and select a category.';
+        'Please enter the city or county, your story, and select a category.';
 
       return;
     }
