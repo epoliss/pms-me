@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PMS-ME — Moderation</title>
+<title>HOA-PMS — Moderation</title>
 <style>
 *{box-sizing:border-box}
 body{
@@ -704,7 +704,7 @@ footer{
       Published Stories <span id="publishedCount">(0)</span>
     </h2>
     <p class="published-intro">
-      These stories have already been published. Deleting a story permanently removes it from PMS-ME.
+      These stories have already been published. Deleting a story permanently removes it from HOA-PMS.
     </p>
     <section id="publishedStories">
       <div class="empty">
@@ -744,7 +744,7 @@ footer{
   </div>
 </main>
 <footer>
-  Property Manager Stories · PMS-ME
+  Property Manager Stories · HOA-PMS
 </footer>
 <div class="fry-modal" id="fryModal" aria-hidden="true">
   <div class="fry-dialog" role="dialog" aria-modal="true" aria-labelledby="fryDialogTitle">
@@ -1431,7 +1431,7 @@ async function shareRejectedStory(story) {
 
   if (navigator.share) {
     try {
-      await navigator.share({title:story.title || 'PMS-ME Rejected Story',text});
+      await navigator.share({title:story.title || 'HOA-PMS Rejected Story',text});
       return;
     } catch (error) {
       if (error.name === 'AbortError') return;
@@ -2048,7 +2048,7 @@ purgeAccountButton.addEventListener(
 
     const confirmed =
       window.confirm(
-        'Permanently purge the PMS-ME account for ' +
+        'Permanently purge the HOA-PMS account for ' +
         email +
         '? This cannot be undone. Stories will not be deleted.'
       );
