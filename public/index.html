@@ -163,6 +163,13 @@ nav button.active{
   text-decoration:underline;
   white-space:nowrap
 }
+.user-menu{position:absolute;right:18px;display:none;align-items:center}
+.user-avatar-button{width:34px;height:34px;border:1px solid #999;border-radius:50%;padding:0;margin:0;background:#e8e8e8;color:#222;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+.user-avatar-button img{width:100%;height:100%;object-fit:cover;display:block}
+.user-dropdown{display:none;position:absolute;right:0;top:41px;min-width:155px;background:#fff;border:1px solid #ccc;border-radius:5px;box-shadow:0 5px 18px rgba(0,0,0,.16);padding:6px;z-index:30}
+.user-dropdown.open{display:block}
+.user-dropdown a{display:block;padding:9px 10px;color:#222;text-decoration:none;font-size:13px;white-space:nowrap;border-radius:3px}
+.user-dropdown a:hover{background:#eee}
 
 .container{
   max-width:850px;
@@ -684,9 +691,15 @@ html[data-theme="dark"] .theme-toggle-label{color:#aaa}
   <button type="button" class="add-pms-button" id="openSubmitStory">
     ADD YOUR PMS
   </button>
-  <a class="action-login-link" href="/login">
+  <a class="action-login-link" id="accountLoginLink" href="/login">
     Log In/Register
   </a>
+  <div class="user-menu" id="userMenu">
+    <button class="user-avatar-button" id="userAvatarButton" type="button" aria-label="Open account menu" aria-expanded="false"></button>
+    <div class="user-dropdown" id="userDropdown">
+      <a href="/account">Account Settings</a>
+    </div>
+  </div>
 </div>
 
 <main class="container">
@@ -1793,6 +1806,32 @@ function setExpandableStoryText(element,storyText,appendPms=false){
 
 
 (function(){var b=document.getElementById('pmsThemeToggle');if(!b)return;function s(){var d=document.documentElement.getAttribute('data-theme')==='dark';b.textContent=d?'☀':'☾';b.setAttribute('aria-label',d?'Switch to light mode':'Switch to dark mode');b.title=d?'Light mode':'Dark mode'}b.addEventListener('click',function(){var n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('pmsme_theme',n)}catch(e){}s()});s()})();
+</script>
+<script>
+(async function setupUserMenu(){
+  const login=document.getElementById("accountLoginLink");
+  const menu=document.getElementById("userMenu");
+  const button=document.getElementById("userAvatarButton");
+  const dropdown=document.getElementById("userDropdown");
+  if(!login||!menu||!button||!dropdown)return;
+  try{
+    const response=await fetch("/api/account/me",{credentials:"same-origin",cache:"no-store"});
+    const data=await response.json();
+    if(!data.logged_in)return;
+    login.style.display="none";
+    menu.style.display="flex";
+    if(data.avatar_data_url){
+      const img=document.createElement("img");img.src=data.avatar_data_url;img.alt="Profile icon";button.appendChild(img);
+    }else button.textContent=data.initial||"?";
+    button.addEventListener("click",event=>{
+      event.stopPropagation();
+      const open=dropdown.classList.toggle("open");
+      button.setAttribute("aria-expanded",open?"true":"false");
+    });
+    document.addEventListener("click",()=>{dropdown.classList.remove("open");button.setAttribute("aria-expanded","false");});
+    dropdown.addEventListener("click",event=>event.stopPropagation());
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
