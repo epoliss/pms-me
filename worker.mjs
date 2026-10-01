@@ -1980,6 +1980,9 @@ ${!verified ? '<div class="notice">Your account email has not yet been verified.
 
 <button id="logoutButton" class="secondary" type="button">Log Out</button>
 </div>
+<div style="text-align:center;color:#777;font-size:13px;margin:18px 0 30px;">
+  <a href="/contact.html" style="color:inherit;">Contact Us</a>
+</div>
 </div>
 <script>
 const avatarFile=document.getElementById("avatarFile");
