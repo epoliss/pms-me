@@ -737,9 +737,9 @@ html[data-theme="dark"] .theme-toggle-label{color:#aaa}
       <input id="submitTitle" maxlength="150" placeholder="Give your story a title">
       <div class="submit-help">A title is requested, but if you leave it blank, a moderator may create one before publication.</div>
 
-      <label for="submitCity">City</label>
-      <input id="submitCity" maxlength="100" required placeholder="City where this happened">
-      <div class="submit-help">Please provide the city where the property or incident is located.</div>
+      <label for="submitCity">City or County</label>
+      <input id="submitCity" maxlength="100" required placeholder="Where this happened">
+      <div class="submit-help">Please provide the city or county where the property or incident is located.</div>
 
       <label for="submitStory">Your Story</label>
       <textarea id="submitStory" required maxlength="2000" placeholder="Tell us what happened..."></textarea>
@@ -1643,7 +1643,7 @@ storyForm.addEventListener('submit', async event => {
   submitMessage.style.display = 'block';
 
   if(!city || !story || !category){
-    submitMessage.textContent = 'Please enter the city, your story, and select a category.';
+    submitMessage.textContent = 'Please enter the city or county, your story, and select a category.';
     return;
   }
 
