@@ -173,7 +173,19 @@ input[type="text"]{
 .account-controls label{font-size:12px;font-weight:700;margin:0}
 .account-controls input,.account-controls select{width:100%;margin-top:5px;padding:8px;border:1px solid #bbb;border-radius:5px;background:#fff;color:#222}
 .account-save-status{font-size:12px;margin-top:8px;min-height:16px}
-@media(max-width:600px){.account-controls{grid-template-columns:1fr}}
+@media(max-width:600px){.account-controls{grid-template-columns:1fr}.mod-tabs{overflow-x:auto;white-space:nowrap}}
+.contact-list{display:grid;gap:12px}
+.contact-card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:16px}
+.contact-card.new{border-left:5px solid #222}
+.contact-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.contact-subject{font-weight:800;font-size:17px}
+.contact-status{font-size:11px;font-weight:800;text-transform:uppercase;background:#eee;border-radius:999px;padding:5px 8px}
+.contact-meta{font-size:12px;color:#777;margin-top:5px;overflow-wrap:anywhere}
+.contact-message{white-space:pre-wrap;line-height:1.55;margin:15px 0;padding:12px;background:#f6f6f6;border-left:3px solid #bbb}
+.contact-history{margin:12px 0}.contact-reply-item{background:#eef6f5;border:1px solid #cbdedb;padding:10px;margin-top:7px;white-space:pre-wrap;line-height:1.45}
+.contact-reply-date{font-size:11px;color:#777;margin-bottom:4px}
+.contact-reply-box{width:100%;min-height:100px;border:1px solid #bbb;border-radius:4px;padding:10px;font:14px Arial,Helvetica,sans-serif;resize:vertical}
+.contact-actions{display:flex;gap:8px;flex-wrap:wrap}.contact-actions button{margin:8px 0 0}.contact-send{background:#222;color:#fff}.contact-archive{background:#777;color:#fff}
 
 .story{
   background:#fff;
@@ -642,6 +654,7 @@ footer{
   <div class="mod-tabs" role="tablist" aria-label="Moderator sections">
     <button class="mod-tab active" id="storiesTab" type="button" role="tab" aria-selected="true">Stories</button>
     <button class="mod-tab" id="accountsTab" type="button" role="tab" aria-selected="false">Registered Accounts <span id="accountTabCount">(0)</span></button>
+    <button class="mod-tab" id="contactsTab" type="button" role="tab" aria-selected="false">Contacts <span id="contactTabCount">(0)</span></button>
   </div>
 
   <div class="mod-panel" id="storiesPanel">
@@ -742,6 +755,14 @@ footer{
       <div class="settings-status" id="purgeAccountStatus"></div>
     </section>
   </div>
+
+  <div class="mod-panel" id="contactsPanel" hidden>
+    <section class="settings">
+      <h2>Contact Inquiries</h2>
+      <p class="settings-description">Messages submitted through Contact Us. Reply here to send from HOA-PMS &lt;accounts@hoapms.com&gt; without exposing your personal email address.</p>
+      <div id="contactsList" class="contact-list"><div class="empty">Loading...</div></div>
+    </section>
+  </div>
 </main>
 <footer>
   Property Manager Stories · HOA-PMS
@@ -813,6 +834,10 @@ const storiesTab=document.getElementById('storiesTab');
 const accountsTab=document.getElementById('accountsTab');
 const storiesPanel=document.getElementById('storiesPanel');
 const accountsPanel=document.getElementById('accountsPanel');
+const contactsTab=document.getElementById('contactsTab');
+const contactsPanel=document.getElementById('contactsPanel');
+const contactTabCount=document.getElementById('contactTabCount');
+const contactsList=document.getElementById('contactsList');
 const accountTabCount=document.getElementById('accountTabCount');
 const accountsList=document.getElementById('accountsList');
 const totalAccounts=document.getElementById('totalAccounts');
@@ -1785,18 +1810,85 @@ async function updateStory(
   }
 }
 function showModeratorPanel(panel){
+  const showStories=panel==='stories';
   const showAccounts=panel==='accounts';
-  storiesPanel.hidden=showAccounts;
+  const showContacts=panel==='contacts';
+  storiesPanel.hidden=!showStories;
   accountsPanel.hidden=!showAccounts;
-  storiesTab.classList.toggle('active',!showAccounts);
+  contactsPanel.hidden=!showContacts;
+  storiesTab.classList.toggle('active',showStories);
   accountsTab.classList.toggle('active',showAccounts);
-  storiesTab.setAttribute('aria-selected',String(!showAccounts));
+  contactsTab.classList.toggle('active',showContacts);
+  storiesTab.setAttribute('aria-selected',String(showStories));
   accountsTab.setAttribute('aria-selected',String(showAccounts));
+  contactsTab.setAttribute('aria-selected',String(showContacts));
   if(showAccounts) loadAccounts();
+  if(showContacts) loadContacts();
 }
 
 storiesTab.addEventListener('click',()=>showModeratorPanel('stories'));
 accountsTab.addEventListener('click',()=>showModeratorPanel('accounts'));
+contactsTab.addEventListener('click',()=>showModeratorPanel('contacts'));
+
+async function loadContacts(){
+  contactsList.innerHTML='<div class="empty">Loading inquiries...</div>';
+  try{
+    const response=await moderatorFetch('/api/moderator/contacts',{credentials:'same-origin'});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Unable to load contact inquiries.');
+    const items=data.results||[];
+    const newCount=items.filter(item=>item.status==='new').length;
+    contactTabCount.textContent='('+newCount+')';
+    contactsList.innerHTML='';
+    if(!items.length){contactsList.innerHTML='<div class="empty">There are no contact inquiries.</div>';return;}
+    for(const item of items){
+      const card=document.createElement('div');card.className='contact-card '+item.status;
+      const head=document.createElement('div');head.className='contact-head';
+      const left=document.createElement('div');
+      const subject=document.createElement('div');subject.className='contact-subject';subject.textContent=item.subject;
+      const meta=document.createElement('div');meta.className='contact-meta';meta.textContent=item.name+' · '+item.email+' · '+item.created_at;
+      left.append(subject,meta);
+      const status=document.createElement('span');status.className='contact-status';status.textContent=item.status;
+      head.append(left,status);
+      const msg=document.createElement('div');msg.className='contact-message';msg.textContent=item.message;
+      const history=document.createElement('div');history.className='contact-history';
+      if(Number(item.reply_count||0)>0){
+        const rr=await moderatorFetch('/api/moderator/contacts/replies?inquiry_id='+encodeURIComponent(item.id),{credentials:'same-origin'});
+        const rd=await rr.json();
+        (rd.results||[]).forEach(r=>{
+          const box=document.createElement('div');box.className='contact-reply-item';
+          const dt=document.createElement('div');dt.className='contact-reply-date';dt.textContent='HOA-PMS reply · '+r.created_at;
+          const tx=document.createElement('div');tx.textContent=r.message;box.append(dt,tx);history.appendChild(box);
+        });
+      }
+      const reply=document.createElement('textarea');reply.className='contact-reply-box';reply.placeholder='Type your reply...';reply.maxLength=4000;
+      const actions=document.createElement('div');actions.className='contact-actions';
+      const send=document.createElement('button');send.type='button';send.className='contact-send';send.textContent='SEND REPLY';
+      send.addEventListener('click',async()=>{
+        const message=reply.value.trim();if(!message)return;
+        send.disabled=true;send.textContent='SENDING...';
+        try{
+          const r=await moderatorFetch('/api/moderator/contacts/reply',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({inquiry_id:item.id,message})});
+          const d=await r.json();if(!r.ok)throw new Error(d.error||'Unable to send reply.');
+          await loadContacts();
+        }catch(e){alert(e.message);}finally{send.disabled=false;send.textContent='SEND REPLY';}
+      });
+      const archive=document.createElement('button');archive.type='button';archive.className='contact-archive';archive.textContent=item.status==='archived'?'RESTORE':'ARCHIVE';
+      archive.addEventListener('click',async()=>{
+        const next=item.status==='archived'?'new':'archived';
+        const r=await moderatorFetch('/api/moderator/contacts/status',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({inquiry_id:item.id,status:next})});
+        if(r.ok)await loadContacts();
+      });
+      const del=document.createElement('button');del.type='button';del.className='delete';del.textContent='DELETE';
+      del.addEventListener('click',async()=>{
+        if(!confirm('Permanently delete this contact inquiry and its reply history?'))return;
+        const r=await moderatorFetch('/api/moderator/contacts?id='+encodeURIComponent(item.id),{method:'DELETE',credentials:'same-origin'});
+        if(r.ok)await loadContacts();
+      });
+      actions.append(send,archive,del);card.append(head,msg,history,reply,actions);contactsList.appendChild(card);
+    }
+  }catch(error){contactsList.innerHTML='<div class="empty">'+error.message+'</div>';}
+}
 
 async function loadAccounts(){
   accountsList.innerHTML='<div class="empty">Loading accounts...</div>';
