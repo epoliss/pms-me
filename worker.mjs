@@ -1,4 +1,4 @@
-// PMS-ME deployment trigger 4
+// HOA-PMS deployment trigger 4
 
 const SITE_URL =
   "https://pms-me-site.epoliss.workers.dev";
@@ -1666,7 +1666,7 @@ function moderatorLoginPage() {
 <meta charset="utf-8">
 <meta name="viewport"
       content="width=device-width,initial-scale=1">
-<title>PMS-ME — Moderator Login</title>
+<title>HOA-PMS — Moderator Login</title>
 
 <style>
 * {
@@ -1751,7 +1751,7 @@ button:hover {
 <h1>Moderator Login</h1>
 
 <p>
-Enter the moderator password to access the PMS-ME moderation dashboard.
+Enter the moderator password to access the HOA-PMS moderation dashboard.
 </p>
 
 <div id="error"></div>
@@ -1995,7 +1995,7 @@ function registerPage() {
 <meta charset="utf-8">
 <meta name="viewport"
       content="width=device-width,initial-scale=1">
-<title>PMS-ME — Create Account</title>
+<title>HOA-PMS — Create Account</title>
 
 <style>
 * {
@@ -2170,7 +2170,7 @@ a {
 <header>
 <a href="/"
 style="color:inherit;text-decoration:none;">
-<div class="logo">PMS-ME</div>
+<div class="logo">HOA-PMS</div>
 </a>
 </header>
 
@@ -2178,7 +2178,7 @@ style="color:inherit;text-decoration:none;">
 
 <div class="card">
 
-<h1>Create Your PMS-ME Account</h1>
+<h1>Create Your HOA-PMS Account</h1>
 
 <p>
 Create an account to receive updates when new stories are published.
@@ -2244,7 +2244,7 @@ Confirm Password
 I agree to the
 <a href="/terms-of-service.pdf"
 target="_blank">
-PMS-ME Terms of Service
+HOA-PMS Terms of Service
 </a>.
 </label>
 
@@ -2408,7 +2408,7 @@ form.addEventListener(
         ".card"
       ).innerHTML =
         "<h1>Check Your Email</h1>" +
-        "<p>Your PMS-ME account has been created.</p>" +
+        "<p>Your HOA-PMS account has been created.</p>" +
         "<p>We sent a verification link to <strong>" +
         data.email +
         "</strong>.</p>" +
@@ -2445,7 +2445,7 @@ function loginPage() {
 <meta charset="utf-8">
 <meta name="viewport"
       content="width=device-width,initial-scale=1">
-<title>PMS-ME — Log In</title>
+<title>HOA-PMS — Log In</title>
 
 <style>
 * {
@@ -2606,7 +2606,7 @@ a {
 <header>
 <a href="/"
 style="color:inherit;text-decoration:none;">
-<div class="logo">PMS-ME</div>
+<div class="logo">HOA-PMS</div>
 </a>
 </header>
 
@@ -2821,7 +2821,7 @@ function forgotPasswordPage() {
 <meta charset="utf-8">
 <meta name="viewport"
       content="width=device-width,initial-scale=1">
-<title>PMS-ME — Reset Password</title>
+<title>HOA-PMS — Reset Password</title>
 
 <style>
 * {
@@ -2976,7 +2976,7 @@ function resetPasswordPage(
 <meta charset="utf-8">
 <meta name="viewport"
       content="width=device-width,initial-scale=1">
-<title>PMS-ME — Choose New Password</title>
+<title>HOA-PMS — Choose New Password</title>
 
 <style>
 * {
@@ -3273,7 +3273,7 @@ function verifyEmailPage(
 <meta charset="utf-8">
 <meta name="viewport"
       content="width=device-width,initial-scale=1">
-<title>PMS-ME — Email Verification</title>
+<title>HOA-PMS — Email Verification</title>
 <style>
 body {
   margin:0;
@@ -3306,7 +3306,7 @@ ${
 <p>
 ${
   success
-    ? "Your PMS-ME account is now active."
+    ? "Your HOA-PMS account is now active."
     : "This verification link is invalid or has expired."
 }
 </p>
@@ -3345,7 +3345,7 @@ function unsubscribePage() {
 <meta charset="utf-8">
 <meta name="viewport"
       content="width=device-width,initial-scale=1">
-<title>PMS-ME — Unsubscribe</title>
+<title>HOA-PMS — Unsubscribe</title>
 <style>
 body {
   margin:0;
@@ -3367,10 +3367,10 @@ body {
 
 <div class="card">
 
-<h1>PMS-ME Email Preferences</h1>
+<h1>HOA-PMS Email Preferences</h1>
 
 <p>
-Your PMS-ME account email updates have been turned off.
+Your HOA-PMS account email updates have been turned off.
 </p>
 
 <p>
@@ -3443,9 +3443,9 @@ function rssXml(
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
 <channel>
-<title>PMS-ME — Property Manager Stories</title>
+<title>HOA-PMS — Property Manager Stories</title>
 <link>${SITE_URL}</link>
-<description>Latest published stories from PMS-ME.</description>
+<description>Latest published stories from HOA-PMS.</description>
 ${items}
 </channel>
 </rss>`;
