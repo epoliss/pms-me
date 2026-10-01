@@ -546,6 +546,14 @@ body.submit-modal-open{overflow:hidden}
 .submit-modal-card textarea,.submit-modal-card input,.submit-modal-card select{width:100%;border:1px solid #ccc;border-radius:4px;padding:11px;font-family:Arial,Helvetica,sans-serif;font-size:15px}
 .submit-modal-card textarea{min-height:180px;resize:vertical}
 .submit-help{color:#777;font-size:12px;margin-top:5px}
+.story-emoji-tools{margin-top:7px;position:relative}
+.story-emoji-toggle{width:auto!important;border:1px solid #ccc!important;background:#f7f7f7!important;color:#222!important;border-radius:5px!important;padding:5px 9px!important;font-size:18px!important;line-height:1!important;cursor:pointer}
+.story-emoji-picker{display:none;margin-top:7px;padding:8px;border:1px solid #d5d5d5;border-radius:6px;background:#f7f7f7;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:4px}
+.story-emoji-picker.open{display:grid}
+.story-emoji-option{width:34px!important;height:34px!important;padding:0!important;margin:0!important;border:1px solid transparent!important;background:transparent!important;border-radius:5px!important;font-size:21px!important;line-height:34px!important;cursor:pointer}
+.story-emoji-option:hover{background:#e8e8e8!important;border-color:#ccc!important}
+html[data-theme="dark"] .story-emoji-toggle,html[data-theme="dark"] .story-emoji-picker{background:#303030!important;color:#eee!important;border-color:#555!important}
+html[data-theme="dark"] .story-emoji-option:hover{background:#444!important;border-color:#666!important}
 .submit-checkbox,.submit-terms-agreement{display:flex;align-items:flex-start;gap:9px;margin-top:18px}
 .submit-checkbox input,.submit-terms-agreement input{width:auto;margin-top:2px}
 .submit-checkbox label,.submit-terms-agreement label{margin:0;font-weight:normal;line-height:1.4}
@@ -743,6 +751,10 @@ html[data-theme="dark"] .theme-toggle-label{color:#aaa}
 
       <label for="submitStory">Your Story</label>
       <textarea id="submitStory" required maxlength="2000" placeholder="Tell us what happened..."></textarea>
+      <div class="story-emoji-tools">
+        <button type="button" class="story-emoji-toggle" id="submitEmojiToggle" aria-expanded="false" aria-controls="submitEmojiPicker" title="Add emoji">😀</button>
+        <div class="story-emoji-picker" id="submitEmojiPicker" aria-label="Story emojis"><button type="button" class="story-emoji-option" aria-label="Insert 😂">😂</button><button type="button" class="story-emoji-option" aria-label="Insert 🤣">🤣</button><button type="button" class="story-emoji-option" aria-label="Insert 😭">😭</button><button type="button" class="story-emoji-option" aria-label="Insert 😡">😡</button><button type="button" class="story-emoji-option" aria-label="Insert 🤬">🤬</button><button type="button" class="story-emoji-option" aria-label="Insert 😳">😳</button><button type="button" class="story-emoji-option" aria-label="Insert 🙄">🙄</button><button type="button" class="story-emoji-option" aria-label="Insert 🤦">🤦</button><button type="button" class="story-emoji-option" aria-label="Insert 🤷">🤷</button><button type="button" class="story-emoji-option" aria-label="Insert 😱">😱</button><button type="button" class="story-emoji-option" aria-label="Insert 😬">😬</button><button type="button" class="story-emoji-option" aria-label="Insert 😏">😏</button><button type="button" class="story-emoji-option" aria-label="Insert 🤔">🤔</button><button type="button" class="story-emoji-option" aria-label="Insert 👀">👀</button><button type="button" class="story-emoji-option" aria-label="Insert 💀">💀</button><button type="button" class="story-emoji-option" aria-label="Insert 🏠">🏠</button><button type="button" class="story-emoji-option" aria-label="Insert 🏡">🏡</button><button type="button" class="story-emoji-option" aria-label="Insert 🏢">🏢</button><button type="button" class="story-emoji-option" aria-label="Insert 🏘️">🏘️</button><button type="button" class="story-emoji-option" aria-label="Insert 🏗️">🏗️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚪">🚪</button><button type="button" class="story-emoji-option" aria-label="Insert 🔑">🔑</button><button type="button" class="story-emoji-option" aria-label="Insert 🔧">🔧</button><button type="button" class="story-emoji-option" aria-label="Insert 🛠️">🛠️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚧">🚧</button><button type="button" class="story-emoji-option" aria-label="Insert 🧱">🧱</button><button type="button" class="story-emoji-option" aria-label="Insert 🪜">🪜</button><button type="button" class="story-emoji-option" aria-label="Insert 🧹">🧹</button><button type="button" class="story-emoji-option" aria-label="Insert 🗑️">🗑️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚽">🚽</button><button type="button" class="story-emoji-option" aria-label="Insert 💧">💧</button><button type="button" class="story-emoji-option" aria-label="Insert 🔥">🔥</button><button type="button" class="story-emoji-option" aria-label="Insert ❄️">❄️</button><button type="button" class="story-emoji-option" aria-label="Insert 👨‍💼">👨‍💼</button><button type="button" class="story-emoji-option" aria-label="Insert 👩‍💼">👩‍💼</button><button type="button" class="story-emoji-option" aria-label="Insert 👷">👷</button><button type="button" class="story-emoji-option" aria-label="Insert 👮">👮</button><button type="button" class="story-emoji-option" aria-label="Insert 🧑‍⚖️">🧑‍⚖️</button><button type="button" class="story-emoji-option" aria-label="Insert 📋">📋</button><button type="button" class="story-emoji-option" aria-label="Insert 📞">📞</button><button type="button" class="story-emoji-option" aria-label="Insert ✉️">✉️</button><button type="button" class="story-emoji-option" aria-label="Insert 💰">💰</button><button type="button" class="story-emoji-option" aria-label="Insert ⚖️">⚖️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚨">🚨</button></div>
+      </div>
       <div class="submit-help">Maximum 2,000 characters.</div>
 
       <label for="submitCategory">Category</label>
@@ -1499,6 +1511,28 @@ const cancelSubmitStory = document.getElementById('cancelSubmitStory');
 const storyForm = document.getElementById('storyForm');
 const submitMessage = document.getElementById('submitMessage');
 const submitName = document.getElementById('submitName');
+const submitStoryField = document.getElementById('submitStory');
+const submitEmojiToggle = document.getElementById('submitEmojiToggle');
+const submitEmojiPicker = document.getElementById('submitEmojiPicker');
+
+submitEmojiToggle.addEventListener('click',()=>{
+  const open=submitEmojiPicker.classList.toggle('open');
+  submitEmojiToggle.setAttribute('aria-expanded',String(open));
+});
+
+submitEmojiPicker.addEventListener('click',event=>{
+  const button=event.target.closest('.story-emoji-option');
+  if(!button) return;
+  const emoji=button.textContent;
+  const start=submitStoryField.selectionStart ?? submitStoryField.value.length;
+  const end=submitStoryField.selectionEnd ?? start;
+  const next=submitStoryField.value.slice(0,start)+emoji+submitStoryField.value.slice(end);
+  if(next.length>submitStoryField.maxLength) return;
+  submitStoryField.value=next;
+  const caret=start+emoji.length;
+  submitStoryField.focus();
+  submitStoryField.setSelectionRange(caret,caret);
+});
 const submitAnonymous = document.getElementById('submitAnonymous');
 const submitGuidelinesButton = document.getElementById('submitGuidelinesButton');
 const submitGuidelinesModal = document.getElementById('submitGuidelinesModal');
