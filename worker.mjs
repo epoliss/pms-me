@@ -660,6 +660,7 @@ async function getCurrentUser(
            u.id,
            u.email,
            u.notification_email,
+           u.avatar_data_url,
            u.email_verified,
            u.story_frequency,
            u.sponsor_emails,
@@ -1896,6 +1897,11 @@ button.secondary{background:#777}
 a{color:#222}.small{color:#666;font-size:14px;line-height:1.5}.username{padding:11px;background:#f3f3f3;border:1px solid #ddd;border-radius:5px;overflow-wrap:anywhere}
 .danger{border-top:1px solid #ddd;margin-top:28px;padding-top:22px}
 .danger a{color:#8b0000}
+.avatar-settings{display:flex;align-items:center;gap:16px;margin:12px 0 8px}
+.avatar-preview{width:64px;height:64px;border-radius:50%;border:1px solid #bbb;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#e8e8e8;font-size:28px;font-weight:800;color:#333;flex:0 0 64px}
+.avatar-preview img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar-file{font-size:14px}
+.avatar-remove{margin-top:8px!important;background:#777!important;padding:8px 12px!important}
 @media(max-width:900px){
   .logo{font-size:38px;letter-spacing:1.5px}
   .brand-tagline{font-size:22px}
@@ -1937,6 +1943,17 @@ ${!verified ? '<div class="notice">Your account email has not yet been verified.
 <p class="small">This is your account username and cannot be changed.</p>
 <div class="username">${escapeHtml(user.email)}</div>
 
+<h2>Profile Icon</h2>
+<p class="small">Your profile icon appears on the main page when you are logged in. Upload a photo or image, or leave it blank to use the first letter of your login email.</p>
+<div class="avatar-settings">
+  <div class="avatar-preview" id="avatarPreview">${user.avatar_data_url ? '<img src="' + escapeHtml(user.avatar_data_url) + '" alt="Profile icon">' : escapeHtml(String(user.email || "?").charAt(0).toUpperCase())}</div>
+  <div>
+    <input class="avatar-file" id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+    <button class="avatar-remove" id="removeAvatar" type="button">Use Letter Instead</button>
+  </div>
+</div>
+<div id="avatarMessage" class="small"></div>
+
 <h2>Notification Email</h2>
 <p class="small">HOA-PMS story notifications will be sent here. Changing this does not change your login email.</p>
 <label for="notificationEmail">Email address for notifications</label>
@@ -1965,6 +1982,31 @@ ${!verified ? '<div class="notice">Your account email has not yet been verified.
 </div>
 </div>
 <script>
+const avatarFile=document.getElementById("avatarFile");
+const avatarPreview=document.getElementById("avatarPreview");
+const avatarMessage=document.getElementById("avatarMessage");
+const removeAvatar=document.getElementById("removeAvatar");
+const loginInitial="${escapeHtml(String(user.email || "?").charAt(0).toUpperCase())}";
+async function saveAvatar(avatar){
+  avatarMessage.textContent="Saving...";
+  try{
+    const response=await fetch("/api/account/avatar",{method:"PUT",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({avatar_data_url:avatar})});
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error||"Unable to save profile icon.");
+    if(data.avatar_data_url){
+      avatarPreview.innerHTML="";
+      const img=document.createElement("img");img.src=data.avatar_data_url;img.alt="Profile icon";avatarPreview.appendChild(img);
+    }else{avatarPreview.innerHTML="";avatarPreview.textContent=loginInitial;}
+    avatarMessage.textContent="Profile icon saved.";
+  }catch(error){avatarMessage.textContent=error.message;}
+}
+avatarFile.addEventListener("change",()=>{
+  const file=avatarFile.files&&avatarFile.files[0];if(!file)return;
+  if(file.size>1024*1024){avatarMessage.textContent="Please choose an image under 1 MB.";avatarFile.value="";return;}
+  const reader=new FileReader();reader.onload=()=>saveAvatar(reader.result);reader.readAsDataURL(file);
+});
+removeAvatar.addEventListener("click",()=>{avatarFile.value="";saveAvatar(null);});
+
 const frequency=document.getElementById("frequency");
 const notificationEmail=document.getElementById("notificationEmail");
 const saveButton=document.getElementById("saveButton");
@@ -2824,7 +2866,7 @@ form.addEventListener(
       }
 
       window.location.href =
-        "/account";
+        "/";
 
     } catch (err) {
 
@@ -3506,6 +3548,19 @@ export default {
     } catch (error) {
       if (!String(error && error.message || error).toLowerCase().includes("duplicate column")) {
         console.error("notification_email schema check failed:",error);
+      }
+    }
+
+    try {
+      await env.pms_me_db
+        .prepare(
+          `ALTER TABLE users
+           ADD COLUMN avatar_data_url TEXT`
+        )
+        .run();
+    } catch (error) {
+      if (!String(error && error.message || error).toLowerCase().includes("duplicate column")) {
+        console.error("avatar_data_url schema check failed:",error);
       }
     }
 
@@ -4196,6 +4251,30 @@ export default {
             "no-store"
         }
       );
+    }
+
+    /*
+     * =========================================================
+     * CURRENT ACCOUNT / PROFILE ICON
+     * =========================================================
+     */
+    if (url.pathname === "/api/account/me" && request.method === "GET") {
+      const user=await getCurrentUser(request,env);
+      if(!user) return jsonResponse({logged_in:false},200,{"Cache-Control":"no-store"});
+      return jsonResponse({logged_in:true,email:user.email,initial:String(user.email||"?").charAt(0).toUpperCase(),avatar_data_url:user.avatar_data_url||null},200,{"Cache-Control":"no-store"});
+    }
+
+    if (url.pathname === "/api/account/avatar" && request.method === "PUT") {
+      const user=await getCurrentUser(request,env);
+      if(!user) return unauthorizedResponse();
+      let body;try{body=await request.json();}catch{return jsonResponse({error:"Invalid request body."},400);}
+      let avatar=body.avatar_data_url||null;
+      if(avatar!==null){
+        if(typeof avatar!=="string" || !/^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(avatar)) return jsonResponse({error:"Please choose a PNG, JPEG, WebP, or GIF image."},400);
+        if(avatar.length>1400000) return jsonResponse({error:"Please choose an image under 1 MB."},400);
+      }
+      await env.pms_me_db.prepare(`UPDATE users SET avatar_data_url=? WHERE id=?`).bind(avatar,user.id).run();
+      return jsonResponse({ok:true,avatar_data_url:avatar});
     }
 
     /*
