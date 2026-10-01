@@ -1,7 +1,7 @@
 // HOA-PMS deployment trigger 4
 
 const SITE_URL =
-  "https://pms-me-site.epoliss.workers.dev";
+  "https://hoapms.com";
 
 const PBKDF2_ITERATIONS = 100000;
 
@@ -1874,8 +1874,16 @@ function accountPage(
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f4f4f4;color:#222;font-family:Arial,Helvetica,sans-serif}
-header{background:#fff;border-bottom:1px solid #ddd;padding:24px 15px;text-align:center}
-.logo{font-size:38px;font-weight:900;letter-spacing:-2px}
+header{background:rgba(64,224,208,.78);color:#a6a6a6;text-align:center;padding:18px 20px 22px;overflow:hidden}
+.header-home{display:block;width:max-content;margin:0 auto;color:inherit;text-decoration:none}
+.header-home:hover{text-decoration:none}
+.logo{display:block;width:max-content;margin:0 auto;text-align:left;font-size:42px;font-weight:800;letter-spacing:2px;line-height:.92;white-space:nowrap}
+.brand-line{display:block}
+.brand-management{margin-left:1.4em}
+.brand-stories{margin-left:calc(2.7em + 1ch)}
+.black{color:#000}
+.gray{color:#a6a6a6}
+.brand-tagline{color:#000;font-size:24px;letter-spacing:1px;margin-left:8px;vertical-align:middle}
 .container{width:min(680px,calc(100% - 30px));margin:30px auto}
 .card{background:#fff;border:1px solid #ddd;padding:28px;margin-bottom:20px}
 h1{margin-top:0} h2{font-size:20px;margin:28px 0 8px}
@@ -1888,10 +1896,37 @@ button.secondary{background:#777}
 a{color:#222}.small{color:#666;font-size:14px;line-height:1.5}.username{padding:11px;background:#f3f3f3;border:1px solid #ddd;border-radius:5px;overflow-wrap:anywhere}
 .danger{border-top:1px solid #ddd;margin-top:28px;padding-top:22px}
 .danger a{color:#8b0000}
+@media(max-width:900px){
+  .logo{font-size:38px;letter-spacing:1.5px}
+  .brand-tagline{font-size:22px}
+}
+@media(max-width:600px){
+  header{padding:16px 12px 18px}
+  .logo{font-size:27px;margin-left:auto;margin-right:auto}
+  .brand-management{margin-left:1.3em}
+  .brand-stories{margin-left:calc(2.5em + 1ch)}
+  .brand-tagline{font-size:15px;letter-spacing:.2px;margin-left:3px}
+  .card{padding:18px}
+}
 </style>
 </head>
 <body>
-<header><a href="/" style="color:inherit;text-decoration:none;"><div class="logo">HOA-PMS</div></a></header>
+<header>
+  <a href="/" class="header-home">
+    <div class="logo">
+      <div class="brand-line brand-property">
+        <span class="black">P</span><span class="gray">ROPERTY</span>
+      </div>
+      <div class="brand-line brand-management">
+        <span class="black">M</span><span class="gray">ANAGEMENT</span>
+      </div>
+      <div class="brand-line brand-stories">
+        <span class="black">S</span><span class="gray">TORIES</span>
+        <span class="brand-tagline">. . . for every day</span>
+      </div>
+    </div>
+  </a>
+</header>
 <div class="container">
 <div class="card">
 <h1>Account Settings</h1>
@@ -3314,12 +3349,12 @@ ${
 <p>
 <a href="${
   success
-    ? "/account"
+    ? "/"
     : "/login"
 }">
 ${
   success
-    ? "Go to My Account"
+    ? "Go to HOA-PMS"
     : "Go to Login"
 }
 </a>
@@ -3928,8 +3963,9 @@ export default {
         )
         .run();
 
-      return verifyEmailPage(
-        true
+      return Response.redirect(
+        `${SITE_URL}/`,
+        302
       );
     }
 
