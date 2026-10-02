@@ -64,6 +64,8 @@ async function setupTurnstile(){
     turnstileWidgetId=turnstile.render("#turnstileContainer",{
      sitekey:CONTACT_TURNSTILE_SITE_KEY,
      theme:document.documentElement.dataset.theme==="dark"?"dark":"auto",
+     size:"flexible",
+     appearance:"always",
      callback:()=>{status.textContent="Verification complete.";},
      "expired-callback":()=>{status.textContent="Verification expired. Please verify again.";},
      "error-callback":()=>{status.textContent="Human verification could not be completed. Please refresh the page.";}
