@@ -2145,6 +2145,19 @@ loadAccounts();
 loadPendingStories();
 loadPublishedStories();
 loadRejectedStories();
+async function silentlyCheckForNewMessages(){
+  try{
+    const response=await moderatorFetch('/api/moderator/contacts',{credentials:'same-origin'});
+    if(!response.ok)return;
+    const data=await response.json();
+    const items=data.results||[];
+    const newCount=items.filter(item=>item.status==='new').length;
+    contactTabCount.textContent='('+newCount+')';
+  }catch(error){
+    console.error('Silent contact-message check failed:',error);
+  }
+}
+
 async function silentlyCheckForNewStories(){
   try{
     const response=await moderatorFetch('/api/stories?status=pending',{credentials:'same-origin'});
@@ -2173,6 +2186,7 @@ async function silentlyCheckForNewStories(){
   }
 }
 setInterval(silentlyCheckForNewStories,15000);
+setInterval(silentlyCheckForNewMessages,15000);
 </script>
 </body>
 </html>
