@@ -20,7 +20,7 @@ input,textarea{width:100%;border:1px solid #ccc;border-radius:4px;padding:11px;f
 textarea{min-height:180px;resize:vertical}.field-note{margin-top:5px;color:#777;font-size:12px;text-align:right}.hp{position:absolute;left:-9999px}
 button{margin-top:20px;border:0;border-radius:5px;padding:12px 18px;font-size:14px;font-weight:bold;cursor:pointer;background:rgba(64,224,208,.78);color:#000}
 .message{display:none;margin-top:18px;padding:12px;border-radius:4px}.success{display:block;background:#e7f5e9;color:#176b2c}.error{display:block;background:#fdeaea;color:#9b1c1c}
-.turnstile{margin-top:18px}footer{text-align:center;color:#888;font-size:12px;padding:30px 15px 45px}footer a{color:inherit}
+.turnstile{margin-top:18px;min-height:70px}.verify-label{font-weight:bold;font-size:14px;margin-top:18px}.verify-status{font-size:12px;color:#777;margin-top:6px}footer{text-align:center;color:#888;font-size:12px;padding:30px 15px 45px}footer a{color:inherit}
 @media(max-width:900px){.logo{font-size:38px;letter-spacing:1.5px}.brand-tagline{font-size:22px}}
 @media(max-width:600px){header{padding:16px 12px 18px}.logo{font-size:27px}.brand-management{margin-left:1.3em}.brand-stories{margin-left:calc(2.5em + 1ch)}.brand-tagline{font-size:15px;letter-spacing:.2px;margin-left:3px}.card{padding:18px}}
 html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="dark"] .card{background:#242424;border-color:#444}html[data-theme="dark"] input,html[data-theme="dark"] textarea{background:#303030;color:#f2f2f2;border-color:#555}html[data-theme="dark"] .intro{color:#aaa}
@@ -41,7 +41,9 @@ html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="d
 <label for="subject">Subject</label><input id="subject" maxlength="150" required><div class="field-note"><span id="subjectCount">0</span> / 150 characters</div>
 <label for="messageText">Message</label><textarea id="messageText" maxlength="2000" required></textarea><div class="field-note"><span id="messageCount">0</span> / 2,000 characters</div>
 <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" tabindex="-1" autocomplete="off"></div>
+<div class="verify-label">Human Verification</div>
 <div class="turnstile" id="turnstileContainer"></div>
+<div class="verify-status" id="verifyStatus">Loading verification…</div>
 <button id="sendButton" type="submit">Send Message</button>
 <div id="formMessage" class="message" role="status"></div>
 </form></div></main>
@@ -49,14 +51,34 @@ html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="d
 <script>
 (function(){const saved=localStorage.getItem("pmsme_theme");if(saved==="dark")document.documentElement.dataset.theme="dark";})();
 let turnstileWidgetId=null;
+const CONTACT_TURNSTILE_SITE_KEY="0x4AAAAAAFIAtb7mGYRfxIcu";
 async function setupTurnstile(){
+ const status=document.getElementById("verifyStatus");
  try{
-  const r=await fetch("/api/turnstile-config",{cache:"no-store"});const c=await r.json();
-  if(!c.enabled)return;
-  const script=document.createElement("script");script.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";script.async=true;
-  script.onload=()=>{turnstileWidgetId=turnstile.render("#turnstileContainer",{sitekey:c.sitekey,theme:document.documentElement.dataset.theme==="dark"?"dark":"auto"});};
+  const script=document.createElement("script");
+  script.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+  script.async=true;
+  script.onerror=()=>{status.textContent="Human verification could not load. Please refresh the page.";};
+  script.onload=()=>{
+   try{
+    turnstileWidgetId=turnstile.render("#turnstileContainer",{
+     sitekey:CONTACT_TURNSTILE_SITE_KEY,
+     theme:document.documentElement.dataset.theme==="dark"?"dark":"auto",
+     callback:()=>{status.textContent="Verification complete.";},
+     "expired-callback":()=>{status.textContent="Verification expired. Please verify again.";},
+     "error-callback":()=>{status.textContent="Human verification could not be completed. Please refresh the page.";}
+    });
+    status.textContent="Please complete the verification above.";
+   }catch(error){
+    status.textContent="Human verification could not load. Please refresh the page.";
+    console.error("Contact Turnstile render failed:",error);
+   }
+  };
   document.head.appendChild(script);
- }catch(e){}
+ }catch(error){
+  status.textContent="Human verification could not load. Please refresh the page.";
+  console.error("Contact Turnstile setup failed:",error);
+ }
 }
 setupTurnstile();
 const subjectInput=document.getElementById("subject");
@@ -73,7 +95,7 @@ document.getElementById("contactForm").addEventListener("submit",async e=>{
  out.className="message";out.style.display="block";out.textContent="Sending...";btn.disabled=true;
  try{
   const token=(window.turnstile&&turnstileWidgetId!==null)?turnstile.getResponse(turnstileWidgetId):"";
-  if(window.turnstile&&turnstileWidgetId!==null&&!token)throw new Error("Please complete the human verification before sending your message.");
+  if(!window.turnstile||turnstileWidgetId===null||!token)throw new Error("Please complete the human verification before sending your message.");
   const r=await fetch("/api/contact",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
    name:document.getElementById("name").value,email:document.getElementById("email").value,subject:document.getElementById("subject").value,
    message:document.getElementById("messageText").value,website:document.getElementById("website").value,turnstile_token:token
