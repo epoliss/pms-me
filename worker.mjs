@@ -2090,16 +2090,92 @@ body {
 }
 
 header {
-  background:#fff;
-  border-bottom:1px solid #ddd;
-  padding:24px;
+  background:rgb(64,224,208);
+  color:#a6a6a6;
   text-align:center;
+  padding:18px 20px 22px;
+  overflow:hidden;
+}
+
+.header-home {
+  display:block;
+  width:max-content;
+  max-width:100%;
+  margin:0 auto;
+  color:inherit;
+  text-decoration:none;
 }
 
 .logo {
-  font-size:38px;
-  font-weight:900;
-  letter-spacing:-2px;
+  display:block;
+  width:max-content;
+  margin:0 auto;
+  text-align:left;
+  font-size:42px;
+  font-weight:800;
+  letter-spacing:2px;
+  line-height:.92;
+  white-space:nowrap;
+}
+
+.brand-line {
+  display:block;
+}
+
+.brand-management {
+  margin-left:1.4em;
+}
+
+.brand-stories {
+  margin-left:calc(2.7em + 1ch);
+}
+
+.black {
+  color:#000;
+}
+
+.gray {
+  color:#a6a6a6;
+}
+
+.brand-tagline {
+  color:#000;
+  font-size:24px;
+  letter-spacing:1px;
+  margin-left:8px;
+  vertical-align:middle;
+}
+
+@media(max-width:900px) {
+  .logo {
+    font-size:38px;
+    letter-spacing:1.5px;
+  }
+  .brand-tagline {
+    font-size:22px;
+  }
+}
+
+@media(max-width:600px) {
+  header {
+    padding:16px 12px 18px;
+  }
+  .logo {
+    font-size:27px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  .brand-management {
+    margin-left:1.3em;
+  }
+  .brand-stories {
+    margin-left:calc(2.5em + 1ch);
+  }
+  .brand-tagline {
+    font-size:15px;
+    letter-spacing:.2px;
+    margin-left:3px;
+  }
 }
 
 .container {
@@ -2248,10 +2324,20 @@ a {
 <body>
 
 <header>
-<a href="/"
-style="color:inherit;text-decoration:none;">
-<div class="logo">HOA-PMS</div>
-</a>
+  <a href="/" class="header-home" aria-label="HOA-PMS Home">
+    <div class="logo">
+      <div class="brand-line brand-property">
+        <span class="black">P</span><span class="gray">ROPERTY</span>
+      </div>
+      <div class="brand-line brand-management">
+        <span class="black">M</span><span class="gray">ANAGEMENT</span>
+      </div>
+      <div class="brand-line brand-stories">
+        <span class="black">S</span><span class="gray">TORIES</span>
+        <span class="brand-tagline">. . . for every day</span>
+      </div>
+    </div>
+  </a>
 </header>
 
 <div class="container">
@@ -2540,16 +2626,92 @@ body {
 }
 
 header {
-  background:#fff;
-  border-bottom:1px solid #ddd;
-  padding:24px;
+  background:rgb(64,224,208);
+  color:#a6a6a6;
   text-align:center;
+  padding:18px 20px 22px;
+  overflow:hidden;
+}
+
+.header-home {
+  display:block;
+  width:max-content;
+  max-width:100%;
+  margin:0 auto;
+  color:inherit;
+  text-decoration:none;
 }
 
 .logo {
-  font-size:38px;
-  font-weight:900;
-  letter-spacing:-2px;
+  display:block;
+  width:max-content;
+  margin:0 auto;
+  text-align:left;
+  font-size:42px;
+  font-weight:800;
+  letter-spacing:2px;
+  line-height:.92;
+  white-space:nowrap;
+}
+
+.brand-line {
+  display:block;
+}
+
+.brand-management {
+  margin-left:1.4em;
+}
+
+.brand-stories {
+  margin-left:calc(2.7em + 1ch);
+}
+
+.black {
+  color:#000;
+}
+
+.gray {
+  color:#a6a6a6;
+}
+
+.brand-tagline {
+  color:#000;
+  font-size:24px;
+  letter-spacing:1px;
+  margin-left:8px;
+  vertical-align:middle;
+}
+
+@media(max-width:900px) {
+  .logo {
+    font-size:38px;
+    letter-spacing:1.5px;
+  }
+  .brand-tagline {
+    font-size:22px;
+  }
+}
+
+@media(max-width:600px) {
+  header {
+    padding:16px 12px 18px;
+  }
+  .logo {
+    font-size:27px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  .brand-management {
+    margin-left:1.3em;
+  }
+  .brand-stories {
+    margin-left:calc(2.5em + 1ch);
+  }
+  .brand-tagline {
+    font-size:15px;
+    letter-spacing:.2px;
+    margin-left:3px;
+  }
 }
 
 .container {
@@ -2684,10 +2846,20 @@ a {
 <body>
 
 <header>
-<a href="/"
-style="color:inherit;text-decoration:none;">
-<div class="logo">HOA-PMS</div>
-</a>
+  <a href="/" class="header-home" aria-label="HOA-PMS Home">
+    <div class="logo">
+      <div class="brand-line brand-property">
+        <span class="black">P</span><span class="gray">ROPERTY</span>
+      </div>
+      <div class="brand-line brand-management">
+        <span class="black">M</span><span class="gray">ANAGEMENT</span>
+      </div>
+      <div class="brand-line brand-stories">
+        <span class="black">S</span><span class="gray">TORIES</span>
+        <span class="brand-tagline">. . . for every day</span>
+      </div>
+    </div>
+  </a>
 </header>
 
 <div class="container">
