@@ -14,6 +14,7 @@ header{background:rgba(64,224,208,.78);color:#a6a6a6;text-align:center;padding:1
 .black{color:#000}.gray{color:#a6a6a6}.brand-tagline{color:#000;font-size:24px;letter-spacing:1px;margin-left:8px;vertical-align:middle}
 .container{max-width:700px;margin:30px auto;padding:0 15px}
 .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:24px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.form-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.back-button{display:inline-flex;align-items:center;justify-content:center;min-width:126px;padding:12px 18px;border-radius:5px;background:rgba(64,224,208,.78);color:#000;text-decoration:none;font-size:14px;font-weight:bold;white-space:nowrap}
 h1{margin:0 0 8px;font-size:25px}.intro{color:#666;line-height:1.5;margin:0 0 22px}
 label{display:block;font-weight:bold;font-size:14px;margin:18px 0 7px}
 input,textarea{width:100%;border:1px solid #ccc;border-radius:4px;padding:11px;font:15px Arial,Helvetica,sans-serif}
@@ -22,7 +23,7 @@ button{margin-top:20px;border:0;border-radius:5px;padding:12px 18px;font-size:14
 .message{display:none;margin-top:18px;padding:12px;border-radius:4px}.success{display:block;background:#e7f5e9;color:#176b2c}.error{display:block;background:#fdeaea;color:#9b1c1c}
 .turnstile{margin-top:18px;min-height:70px}.verify-label{font-weight:bold;font-size:14px;margin-top:18px}.verify-status{font-size:12px;color:#777;margin-top:6px}footer{text-align:center;color:#888;font-size:12px;padding:30px 15px 45px}footer a{color:inherit}
 @media(max-width:900px){.logo{font-size:38px;letter-spacing:1.5px}.brand-tagline{font-size:22px}}
-@media(max-width:600px){header{padding:16px 12px 18px}.logo{font-size:27px}.brand-management{margin-left:1.3em}.brand-stories{margin-left:calc(2.5em + 1ch)}.brand-tagline{font-size:15px;letter-spacing:.2px;margin-left:3px}.card{padding:18px}}
+@media(max-width:600px){header{padding:16px 12px 18px}.logo{font-size:27px}.brand-management{margin-left:1.3em}.brand-stories{margin-left:calc(2.5em + 1ch)}.brand-tagline{font-size:15px;letter-spacing:.2px;margin-left:3px}.card{padding:18px}.form-header{gap:10px}.back-button{min-width:126px}}
 html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="dark"] .card{background:#242424;border-color:#444}html[data-theme="dark"] input,html[data-theme="dark"] textarea{background:#303030;color:#f2f2f2;border-color:#555}html[data-theme="dark"] .intro{color:#aaa}
 </style>
 </head>
@@ -33,7 +34,7 @@ html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="d
 <div class="brand-line brand-stories"><span class="black">S</span><span class="gray">TORIES</span><span class="brand-tagline">. . . for every day</span></div>
 </div></a></header>
 <main class="container"><div class="card">
-<h1>Contact Us</h1>
+<div class="form-header"><h1>Contact Us</h1><a class="back-button" href="/">Back to Stories</a></div>
 <p class="intro">Questions, comments, or something we should know? Send HOA-PMS a message below.</p>
 <form id="contactForm">
 <label for="name">Name</label><input id="name" maxlength="100" required autocomplete="name">
@@ -47,7 +48,7 @@ html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="d
 <button id="sendButton" type="submit">Send Message</button>
 <div id="formMessage" class="message" role="status"></div>
 </form></div></main>
-<footer>Property Manager Stories · HOA-PMS<br><a href="/">Back to Stories</a> · <a href="/privacy.html">Privacy Policy</a></footer>
+<footer>Property Manager Stories · HOA-PMS<br><a href="/privacy.html">Privacy Policy</a></footer>
 <script>
 (function(){const saved=localStorage.getItem("pmsme_theme");if(saved==="dark")document.documentElement.dataset.theme="dark";})();
 let turnstileWidgetId=null;
