@@ -453,6 +453,7 @@ footer{
   100%{opacity:0;transform:scaleY(.86)}
 }
 
+#stories,
 #publishedStories,
 #rejectedStories{
   position:relative;
@@ -892,225 +893,161 @@ const categories = [
 ];
 async function loadPendingStories() {
   try {
-    const response =
-      await moderatorFetch(
-        '/api/stories?status=pending',
-        {
-          credentials:'same-origin'
-        }
-      );
-    if (!response.ok) {
-      const errorText =
-        await response.text();
-      console.error(
-        'Pending stories request failed:',
-        response.status,
-        errorText
-      );
-      throw new Error(
-        'Unable to load pending stories.'
-      );
+    const response=await moderatorFetch('/api/stories?status=pending',{credentials:'same-origin'});
+    if(!response.ok){
+      const errorText=await response.text();
+      console.error('Pending stories request failed:',response.status,errorText);
+      throw new Error('Unable to load pending stories.');
     }
-    const data =
-      await response.json();
-    const stories =
-      Array.isArray(data)
-        ? data
-        : (data.results || []);
-    pendingCount.textContent =
-      '(' + stories.length + ')';
-    storiesContainer.innerHTML =
-      '';
-    if (!stories.length) {
-      storiesContainer.innerHTML =
-        '<div class="empty">There are no pending stories.</div>';
+    const data=await response.json();
+    const stories=Array.isArray(data)?data:(data.results||[]);
+    pendingCount.textContent='('+stories.length+')';
+    storiesContainer.innerHTML='';
+    if(!stories.length){
+      storiesContainer.innerHTML='<div class="empty">There are no pending stories.</div>';
       return;
     }
-    stories.forEach(
-      story => {
-        const article =
-          document.createElement('article');
-        article.className =
-          'story';
-        const meta =
-          document.createElement('div');
-        meta.className =
-          'meta';
-        meta.textContent =
-          `#${story.id} · ${story.category} · ${story.city || 'City not provided'} · ${story.created_at}`;
-        const titleRow =
-          document.createElement('div');
-        titleRow.className =
-          'title-row';
-        const titleLabel =
-          document.createElement('label');
-        titleLabel.textContent =
-          'Title';
-        const titleInput =
-          document.createElement('input');
-        titleInput.type =
-          'text';
-        titleInput.maxLength =
-          150;
-        titleInput.value =
-          story.title || '';
-        titleInput.placeholder =
-          'Enter a title if the submitter did not provide one';
-        const titleHelp =
-          document.createElement('div');
-        titleHelp.className =
-          'title-help';
-        titleHelp.textContent =
-          story.title
-            ? 'Edit the title here if needed before publication.'
-            : 'A title is required for publication. Enter one here to create/force a title.';
-        titleRow.appendChild(titleLabel);
-        titleRow.appendChild(titleInput);
-        titleRow.appendChild(titleHelp);
-        const text =
-          document.createElement('p');
-        setExpandableStoryText(text,story.story||'',false);
-        const details =
-          document.createElement('div');
-        details.className =
-          'details';
-        details.innerHTML =
-          `<strong>City:</strong> ${story.city || '(not provided)'}<br>` +
-          `<strong>Display name:</strong> ${story.display_name || '(none)'}<br>` +
-          `<strong>Public name:</strong> ${story.public_name || '(none)'}<br>` +
-          `<strong>Anonymous requested:</strong> ${story.anonymous_requested ? 'Yes' : 'No'}<br>` +
-          `<strong>Email:</strong> ${story.email || '(none)'}`;
-        const spamFlag =
-          document.createElement('div');
-        if (
-          story.moderator_notes &&
-          story.moderator_notes.startsWith('[SPAM ANALYST]')
-        ) {
-          spamFlag.className =
-            'spam-analyst-flag';
-          spamFlag.textContent =
-            '⚠ SUSPECTED SPAM — ' +
-            story.moderator_notes.replace('[SPAM ANALYST]', '').trim();
-        }
-        const moderation =
-          document.createElement('div');
-        moderation.className =
-          'moderation';
-        const categoryRow =
-          document.createElement('div');
-        categoryRow.className =
-          'category-row';
-        const categoryLabel =
-          document.createElement('label');
-        categoryLabel.textContent =
-          'Category';
-        const categorySelect =
-          document.createElement('select');
-        categorySelect.className =
-          'category-select';
-        categories.forEach(
-          category => {
-            const option =
-              document.createElement('option');
-            option.value =
-              category;
-            option.textContent =
-              category;
-            if (
-              category ===
-              story.category
-            ) {
-              option.selected =
-                true;
-            }
-            categorySelect.appendChild(option);
-          }
-        );
-        categoryRow.appendChild(categoryLabel);
-        categoryRow.appendChild(categorySelect);
-        const notes =
-          document.createElement('textarea');
-        notes.placeholder =
-          'Optional moderator comment / reason for rejection';
-        const actions =
-          document.createElement('div');
-        actions.className =
-          'actions';
-        const approve =
-          document.createElement('button');
-        approve.className =
-          'approve';
-        approve.textContent =
-          'Approve';
-        const approveAnonymous =
-          document.createElement('button');
-        approveAnonymous.className =
-          'approve-anonymous';
-        approveAnonymous.textContent =
-          'Approve Anonymously';
-        const reject =
-          document.createElement('button');
-        reject.className =
-          'reject';
-        reject.textContent =
-          'Reject';
-        approve.addEventListener(
-          'click',
-          () =>
-            updateStory(
-              story.id,
-              'approve',
-              notes.value,
-              categorySelect.value,
-              titleInput.value
-            )
-        );
-        approveAnonymous.addEventListener(
-          'click',
-          () =>
-            updateStory(
-              story.id,
-              'approve_anonymously',
-              notes.value,
-              categorySelect.value,
-              titleInput.value
-            )
-        );
-        reject.addEventListener(
-          'click',
-          () =>
-            updateStory(
-              story.id,
-              'reject',
-              notes.value,
-              story.category,
-              titleInput.value
-            )
-        );
-        actions.appendChild(approve);
-        actions.appendChild(approveAnonymous);
-        actions.appendChild(reject);
-        moderation.appendChild(categoryRow);
-        moderation.appendChild(notes);
-        moderation.appendChild(actions);
-        article.appendChild(meta);
-        article.appendChild(titleRow);
-        article.appendChild(text);
-        article.appendChild(details);
-        if (spamFlag.className) {
-          article.appendChild(spamFlag);
-        }
-        article.appendChild(moderation);
-        storiesContainer.appendChild(article);
+
+    stories.forEach(story=>{
+      const article=document.createElement('article');
+      article.className='archive-card';
+
+      const header=document.createElement('button');
+      header.type='button';
+      header.className='archive-card-header';
+      header.setAttribute('aria-expanded','false');
+
+      const title=document.createElement('span');
+      title.className='archive-card-title';
+      title.textContent=story.title||'(No title)';
+
+      const meta=document.createElement('span');
+      meta.className='archive-card-meta';
+      meta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided');
+
+      const arrow=document.createElement('span');
+      arrow.className='archive-card-arrow';
+      arrow.textContent='⌄';
+
+      const preview=document.createElement('span');
+      preview.className='archive-card-preview';
+      {
+        const previewWords=(story.story||'').trim().split(/\s+/);
+        preview.textContent=previewWords.length>75
+          ? previewWords.slice(0,75).join(' ')+' '+firstSyllableFragment(previewWords[75])+'…'
+          : (story.story||'');
       }
-    );
-  } catch (error) {
-    console.error(
-      'Pending stories error:',
-      error
-    );
-    storiesContainer.innerHTML =
-      '<div class="empty">Unable to load pending stories.</div>';
+
+      const status=document.createElement('span');
+      status.className='archive-card-status';
+      status.textContent='Pending';
+
+      header.append(title,meta,preview,status,arrow);
+
+      const body=document.createElement('div');
+      body.className='archive-card-body';
+
+      const fullMeta=document.createElement('div');
+      fullMeta.className='meta';
+      fullMeta.textContent='#'+story.id+' · '+story.category+' · '+(story.city||'City not provided')+' · Submitted '+story.created_at;
+
+      const titleRow=document.createElement('div');
+      titleRow.className='title-row';
+      const titleLabel=document.createElement('label');
+      titleLabel.textContent='Title';
+      const titleInput=document.createElement('input');
+      titleInput.type='text';
+      titleInput.maxLength=150;
+      titleInput.value=story.title||'';
+      titleInput.placeholder='Enter a title if the submitter did not provide one';
+      const titleHelp=document.createElement('div');
+      titleHelp.className='title-help';
+      titleHelp.textContent=story.title
+        ? 'Edit the title here if needed before publication.'
+        : 'A title is required for publication. Enter one here to create/force a title.';
+      titleRow.append(titleLabel,titleInput,titleHelp);
+
+      const text=document.createElement('p');
+      setExpandableStoryText(text,story.story||'',false);
+
+      const details=document.createElement('div');
+      details.className='details';
+      details.innerHTML=
+        '<strong>City:</strong> '+(story.city||'(not provided)')+'<br>'+
+        '<strong>Display name:</strong> '+(story.display_name||'(none)')+'<br>'+
+        '<strong>Public name:</strong> '+(story.public_name||'(none)')+'<br>'+
+        '<strong>Anonymous requested:</strong> '+(story.anonymous_requested?'Yes':'No')+'<br>'+
+        '<strong>Email:</strong> '+(story.email||'(none)');
+
+      const spamFlag=document.createElement('div');
+      if(story.moderator_notes&&story.moderator_notes.startsWith('[SPAM ANALYST]')){
+        spamFlag.className='spam-analyst-flag';
+        spamFlag.textContent='⚠ SUSPECTED SPAM — '+story.moderator_notes.replace('[SPAM ANALYST]','').trim();
+      }
+
+      const moderation=document.createElement('div');
+      moderation.className='moderation';
+
+      const categoryRow=document.createElement('div');
+      categoryRow.className='category-row';
+      const categoryLabel=document.createElement('label');
+      categoryLabel.textContent='Category';
+      const categorySelect=document.createElement('select');
+      categorySelect.className='category-select';
+      categories.forEach(category=>{
+        const option=document.createElement('option');
+        option.value=category;
+        option.textContent=category;
+        if(category===story.category) option.selected=true;
+        categorySelect.appendChild(option);
+      });
+      categoryRow.append(categoryLabel,categorySelect);
+
+      const notes=document.createElement('textarea');
+      notes.placeholder='Optional moderator comment / reason for rejection';
+
+      const actions=document.createElement('div');
+      actions.className='actions';
+
+      const approve=document.createElement('button');
+      approve.className='approve';
+      approve.textContent='Approve';
+      approve.addEventListener('click',event=>{
+        event.stopPropagation();
+        updateStory(story.id,'approve',notes.value,categorySelect.value,titleInput.value);
+      });
+
+      const approveAnonymous=document.createElement('button');
+      approveAnonymous.className='approve-anonymous';
+      approveAnonymous.textContent='Approve Anonymously';
+      approveAnonymous.addEventListener('click',event=>{
+        event.stopPropagation();
+        updateStory(story.id,'approve_anonymously',notes.value,categorySelect.value,titleInput.value);
+      });
+
+      const reject=document.createElement('button');
+      reject.className='reject';
+      reject.textContent='Reject';
+      reject.addEventListener('click',event=>{
+        event.stopPropagation();
+        updateStory(story.id,'reject',notes.value,story.category,titleInput.value);
+      });
+
+      actions.append(approve,approveAnonymous,reject);
+      moderation.append(categoryRow,notes,actions);
+
+      body.append(fullMeta,titleRow,text,details);
+      if(spamFlag.className) body.appendChild(spamFlag);
+      body.appendChild(moderation);
+
+      article.append(header,body);
+      storiesContainer.appendChild(article);
+    });
+
+    initializeArchiveDeck(storiesContainer);
+  } catch(error) {
+    console.error('Pending stories error:',error);
+    storiesContainer.innerHTML='<div class="empty">Unable to load pending stories.</div>';
   }
 }
 function initializeArchiveDeck(container) {
