@@ -499,6 +499,7 @@ footer{
   -webkit-user-select:text;
   box-shadow:0 12px 28px rgba(0,0,0,.22)
 }
+#stories:has(.archive-card.open),
 #publishedStories:has(.archive-card.open),
 #rejectedStories:has(.archive-card.open){
   height:auto;
@@ -581,6 +582,7 @@ footer{
 }
 .archive-card.open .archive-card-body{display:block}
 @media(max-width:600px){
+  #stories,
   #publishedStories,
   #rejectedStories{
     height:340px;
