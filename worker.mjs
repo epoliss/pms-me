@@ -5658,7 +5658,12 @@ ${SITE_URL}/moderate.html`;
             .all();
 
         return jsonResponse(
-          result.results || []
+          result.results || [],
+          200,
+          {
+            "Cache-Control":
+              "no-store"
+          }
         );
       }
 
@@ -5682,7 +5687,12 @@ ${SITE_URL}/moderate.html`;
           .all();
 
       return jsonResponse(
-        result.results || []
+        result.results || [],
+        200,
+        {
+          "Cache-Control":
+            "no-store"
+        }
       );
     }
 
@@ -6584,25 +6594,64 @@ ${SITE_URL}/moderate.html`;
         );
       }
 
-      const result =
+      const existingStory =
         await env.pms_me_db
           .prepare(
-            `DELETE FROM stories
+            `SELECT id
+             FROM stories
              WHERE id = ?`
           )
           .bind(id)
-          .run();
+          .first();
 
-      if (
-        !result.meta ||
-        result.meta.changes === 0
-      ) {
+      if (!existingStory) {
         return jsonResponse(
           {
             error:
               "Story not found"
           },
           404
+        );
+      }
+
+      await env.pms_me_db.batch([
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM email_deliveries
+             WHERE story_id = ?`
+          )
+          .bind(id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM user_story_interactions
+             WHERE story_id = ?`
+          )
+          .bind(id),
+        env.pms_me_db
+          .prepare(
+            `DELETE FROM stories
+             WHERE id = ?`
+          )
+          .bind(id)
+      ]);
+
+      const deletedStory =
+        await env.pms_me_db
+          .prepare(
+            `SELECT id
+             FROM stories
+             WHERE id = ?`
+          )
+          .bind(id)
+          .first();
+
+      if (deletedStory) {
+        return jsonResponse(
+          {
+            error:
+              "Story could not be deleted."
+          },
+          500
         );
       }
 
