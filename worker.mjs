@@ -5552,7 +5552,7 @@ export default {
       if(!name || name.length>100) return jsonResponse({error:"Please enter your name."},400);
       if(!validEmail(email)) return jsonResponse({error:"Please enter a valid email address."},400);
       if(!subject || subject.length>150) return jsonResponse({error:"Please enter a subject."},400);
-      if(!message || message.length>2000) return jsonResponse({error:"Please enter a message of 2,000 characters or fewer."},400);
+      if(message.length<20 || message.length>2000) return jsonResponse({error:"Please enter a message between 20 and 2,000 characters."},400);
 
       const clientIp=request.headers.get("CF-Connecting-IP")||"unknown";
       const ipHash=await sha256(clientIp);
