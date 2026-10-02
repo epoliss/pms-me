@@ -651,7 +651,7 @@ footer{
     </div>
   </div>
   <div class="mod-tabs" role="tablist" aria-label="Moderator sections">
-    <button class="mod-tab active" id="storiesTab" type="button" role="tab" aria-selected="true">Stories</button>
+    <button class="mod-tab active" id="storiesTab" type="button" role="tab" aria-selected="true">Stories <span id="storiesTabCount">(0)</span></button>
     <button class="mod-tab" id="accountsTab" type="button" role="tab" aria-selected="false">Registered Accounts <span id="accountTabCount">(0)</span></button>
     <button class="mod-tab" id="contactsTab" type="button" role="tab" aria-selected="false">Messages <span id="contactTabCount">(0)</span></button>
   </div>
@@ -835,6 +835,7 @@ const rejectedCount =
 const moderatorLogout =
   document.getElementById('moderatorLogout');
 const storiesTab=document.getElementById('storiesTab');
+const storiesTabCount=document.getElementById('storiesTabCount');
 const accountsTab=document.getElementById('accountsTab');
 const storiesPanel=document.getElementById('storiesPanel');
 const accountsPanel=document.getElementById('accountsPanel');
@@ -894,6 +895,7 @@ const categories = [
   "Legally Blunt",
   "Board to Tears"
 ];
+let lastPendingSignature='';
 async function loadPendingStories() {
   try {
     const response=await moderatorFetch('/api/stories?status=pending',{credentials:'same-origin'});
@@ -905,6 +907,8 @@ async function loadPendingStories() {
     const data=await response.json();
     const stories=Array.isArray(data)?data:(data.results||[]);
     pendingCount.textContent='('+stories.length+')';
+    storiesTabCount.textContent='('+stories.length+')';
+    lastPendingSignature=stories.map(story=>String(story.id)).join(',');
     storiesContainer.innerHTML='';
     if(!stories.length){
       storiesContainer.innerHTML='<div class="empty">There are no pending stories.</div>';
@@ -1790,7 +1794,7 @@ async function loadContacts(){
       left.append(subject,meta);
       const status=document.createElement('span');status.className='contact-status';status.textContent=item.status;
       head.append(left,status);
-      const msg=document.createElement('div');msg.className='contact-message';msg.textContent=item.message;
+      const msg=document.createElement('div');msg.className='contact-message';setExpandableStoryText(msg,item.message||'',false);
       const history=document.createElement('div');history.className='contact-history';
       if(Number(item.reply_count||0)>0){
         const rr=await moderatorFetch('/api/moderator/contacts/replies?inquiry_id='+encodeURIComponent(item.id),{credentials:'same-origin'});
@@ -2141,29 +2145,34 @@ loadAccounts();
 loadPendingStories();
 loadPublishedStories();
 loadRejectedStories();
-setInterval(
-  () => {
-    const activeElement =
-      document.activeElement;
-    if (
-      activeElement &&
-      (
-        activeElement.tagName ===
-          'TEXTAREA' ||
-        activeElement.tagName ===
-          'SELECT' ||
-        activeElement.tagName ===
-          'INPUT'
-      )
-    ) {
-      return;
+async function silentlyCheckForNewStories(){
+  try{
+    const response=await moderatorFetch('/api/stories?status=pending',{credentials:'same-origin'});
+    if(!response.ok)return;
+    const data=await response.json();
+    const stories=Array.isArray(data)?data:(data.results||[]);
+    const signature=stories.map(story=>String(story.id)).join(',');
+    storiesTabCount.textContent='('+stories.length+')';
+    pendingCount.textContent='('+stories.length+')';
+
+    if(signature===lastPendingSignature)return;
+
+    const activeElement=document.activeElement;
+    const editing=activeElement&&(
+      activeElement.tagName==='TEXTAREA' ||
+      activeElement.tagName==='SELECT' ||
+      activeElement.tagName==='INPUT'
+    );
+    const openCard=storiesContainer.querySelector('.archive-card.open');
+
+    if(!editing&&!openCard){
+      await loadPendingStories();
     }
-    loadPendingStories();
-    loadPublishedStories();
-    loadRejectedStories();
-  },
-  30000
-);
+  }catch(error){
+    console.error('Silent pending-story check failed:',error);
+  }
+}
+setInterval(silentlyCheckForNewStories,15000);
 </script>
 </body>
 </html>
