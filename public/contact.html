@@ -17,7 +17,7 @@ header{background:rgba(64,224,208,.78);color:#a6a6a6;text-align:center;padding:1
 h1{margin:0 0 8px;font-size:25px}.intro{color:#666;line-height:1.5;margin:0 0 22px}
 label{display:block;font-weight:bold;font-size:14px;margin:18px 0 7px}
 input,textarea{width:100%;border:1px solid #ccc;border-radius:4px;padding:11px;font:15px Arial,Helvetica,sans-serif}
-textarea{min-height:180px;resize:vertical}.hp{position:absolute;left:-9999px}
+textarea{min-height:180px;resize:vertical}.field-note{margin-top:5px;color:#777;font-size:12px;text-align:right}.hp{position:absolute;left:-9999px}
 button{margin-top:20px;border:0;border-radius:5px;padding:12px 18px;font-size:14px;font-weight:bold;cursor:pointer;background:rgba(64,224,208,.78);color:#000}
 .message{display:none;margin-top:18px;padding:12px;border-radius:4px}.success{display:block;background:#e7f5e9;color:#176b2c}.error{display:block;background:#fdeaea;color:#9b1c1c}
 .turnstile{margin-top:18px}footer{text-align:center;color:#888;font-size:12px;padding:30px 15px 45px}footer a{color:inherit}
@@ -38,8 +38,8 @@ html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="d
 <form id="contactForm">
 <label for="name">Name</label><input id="name" maxlength="100" required autocomplete="name">
 <label for="email">Email</label><input id="email" type="email" maxlength="254" required autocomplete="email">
-<label for="subject">Subject</label><input id="subject" maxlength="150" required>
-<label for="messageText">Message</label><textarea id="messageText" maxlength="4000" required></textarea>
+<label for="subject">Subject</label><input id="subject" maxlength="150" required><div class="field-note"><span id="subjectCount">0</span> / 150 characters</div>
+<label for="messageText">Message</label><textarea id="messageText" maxlength="2000" required></textarea><div class="field-note"><span id="messageCount">0</span> / 2,000 characters</div>
 <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" tabindex="-1" autocomplete="off"></div>
 <div class="turnstile" id="turnstileContainer"></div>
 <button id="sendButton" type="submit">Send Message</button>
@@ -59,17 +59,27 @@ async function setupTurnstile(){
  }catch(e){}
 }
 setupTurnstile();
+const subjectInput=document.getElementById("subject");
+const messageInput=document.getElementById("messageText");
+function updateCounts(){
+ document.getElementById("subjectCount").textContent=subjectInput.value.length;
+ document.getElementById("messageCount").textContent=messageInput.value.length;
+}
+subjectInput.addEventListener("input",updateCounts);
+messageInput.addEventListener("input",updateCounts);
+updateCounts();
 document.getElementById("contactForm").addEventListener("submit",async e=>{
  e.preventDefault();const out=document.getElementById("formMessage"),btn=document.getElementById("sendButton");
  out.className="message";out.style.display="block";out.textContent="Sending...";btn.disabled=true;
  try{
   const token=(window.turnstile&&turnstileWidgetId!==null)?turnstile.getResponse(turnstileWidgetId):"";
+  if(window.turnstile&&turnstileWidgetId!==null&&!token)throw new Error("Please complete the human verification before sending your message.");
   const r=await fetch("/api/contact",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
    name:document.getElementById("name").value,email:document.getElementById("email").value,subject:document.getElementById("subject").value,
    message:document.getElementById("messageText").value,website:document.getElementById("website").value,turnstile_token:token
   })});
   const d=await r.json();if(!r.ok)throw new Error(d.error||"Unable to send your message.");
-  e.target.reset();out.className="message success";out.textContent="Thank you. Your message has been sent to HOA-PMS.";
+  e.target.reset();updateCounts();out.className="message success";out.textContent="Thank you. Your message has been sent to HOA-PMS.";
  }catch(err){out.className="message error";out.textContent=err.message;}
  finally{btn.disabled=false;if(window.turnstile&&turnstileWidgetId!==null)turnstile.reset(turnstileWidgetId);}
 });
