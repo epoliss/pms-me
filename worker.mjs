@@ -5581,6 +5581,33 @@ export default {
       await env.pms_me_db.prepare(
         `INSERT INTO contact_inquiries (name,email,subject,message) VALUES (?,?,?,?)`
       ).bind(name,email,subject,message).run();
+
+      try{
+        const settings=await env.pms_me_db.prepare(
+          `SELECT email FROM notification_settings WHERE id=1`
+        ).first();
+        if(settings?.email){
+          const alertSubject="OH OH! New Contact Us Message — "+subject;
+          const alertText=
+`A new Contact Us message has been submitted to HOA-PMS.
+
+Topic: ${subject}
+Name: ${name}
+Email: ${email}
+
+Message:
+
+${message}
+
+Review and reply in the moderator dashboard:
+
+${SITE_URL}/moderate.html`;
+          await sendEmail(env,settings.email,alertSubject,alertText);
+        }
+      }catch(error){
+        console.error("Contact Us moderator notification failed:",error);
+      }
+
       return jsonResponse({ok:true},201);
     }
 
