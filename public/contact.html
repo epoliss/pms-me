@@ -17,14 +17,14 @@ header{background:rgba(64,224,208,.78);color:#a6a6a6;text-align:center;padding:1
 .form-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.back-button{display:inline-flex;align-items:center;justify-content:center;min-width:126px;padding:12px 18px;border-radius:5px;background:rgba(64,224,208,.78);color:#000;text-decoration:none;font-size:14px;font-weight:bold;white-space:nowrap}
 h1{margin:0 0 8px;font-size:25px}.intro{color:#666;line-height:1.5;margin:0 0 22px}
 label{display:block;font-weight:bold;font-size:14px;margin:18px 0 7px}
-input,textarea{width:100%;border:1px solid #ccc;border-radius:4px;padding:11px;font:15px Arial,Helvetica,sans-serif}
+input,textarea,select{width:100%;border:1px solid #ccc;border-radius:4px;padding:11px;font:15px Arial,Helvetica,sans-serif;background:#fff;color:#222}
 textarea{min-height:180px;resize:vertical}.field-note{margin-top:5px;color:#777;font-size:12px;text-align:right}.hp{position:absolute;left:-9999px}
 button{margin-top:20px;border:0;border-radius:5px;padding:12px 18px;font-size:14px;font-weight:bold;cursor:pointer;background:rgba(64,224,208,.78);color:#000}
 .message{display:none;margin-top:18px;padding:12px;border-radius:4px}.success{display:block;background:#e7f5e9;color:#176b2c}.error{display:block;background:#fdeaea;color:#9b1c1c}
 .turnstile{margin-top:18px;min-height:70px}.verify-label{font-weight:bold;font-size:14px;margin-top:18px}.verify-status{font-size:12px;color:#777;margin-top:6px}footer{text-align:center;color:#888;font-size:12px;padding:30px 15px 45px}footer a{color:inherit}
 @media(max-width:900px){.logo{font-size:38px;letter-spacing:1.5px}.brand-tagline{font-size:22px}}
 @media(max-width:600px){header{padding:16px 12px 18px}.logo{font-size:27px}.brand-management{margin-left:1.3em}.brand-stories{margin-left:calc(2.5em + 1ch)}.brand-tagline{font-size:15px;letter-spacing:.2px;margin-left:3px}.card{padding:18px}.form-header{gap:10px}.back-button{min-width:126px}}
-html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="dark"] .card{background:#242424;border-color:#444}html[data-theme="dark"] input,html[data-theme="dark"] textarea{background:#303030;color:#f2f2f2;border-color:#555}html[data-theme="dark"] .intro{color:#aaa}
+html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="dark"] .card{background:#242424;border-color:#444}html[data-theme="dark"] input,html[data-theme="dark"] textarea,html[data-theme="dark"] select{background:#303030;color:#f2f2f2;border-color:#555}html[data-theme="dark"] .intro{color:#aaa}
 </style>
 </head>
 <body>
@@ -39,7 +39,16 @@ html[data-theme="dark"] body{background:#181818;color:#e8e8e8}html[data-theme="d
 <form id="contactForm">
 <label for="name">Name</label><input id="name" maxlength="100" required autocomplete="name">
 <label for="email">Email</label><input id="email" type="email" maxlength="254" required autocomplete="email">
-<label for="subject">Subject</label><input id="subject" maxlength="150" required><div class="field-note"><span id="subjectCount">0</span> / 150 characters</div>
+<label for="subject">Help me resolve issues with</label><select id="subject" required>
+<option value="" selected disabled>Select A Topic Of Concern</option>
+<option value="The website">The website</option>
+<option value="My submission">My submission</option>
+<option value="My account">My account</option>
+<option value="My marriage">My marriage</option>
+<option value="My Board">My Board</option>
+<option value="My warden">My warden</option>
+<option value="Other">Other</option>
+</select>
 <label for="messageText">Message</label><textarea id="messageText" maxlength="2000" required></textarea><div class="field-note"><span id="messageCount">0</span> / 2,000 characters</div>
 <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" tabindex="-1" autocomplete="off"></div>
 <div class="verify-label">Human Verification</div>
@@ -86,11 +95,18 @@ async function setupTurnstile(){
 setupTurnstile();
 const subjectInput=document.getElementById("subject");
 const messageInput=document.getElementById("messageText");
+const topicLinks={
+ "My marriage":"https://www.wikihow.com/Join-a-Monastery",
+ "My Board":"https://www.spacex.com/humanspaceflight/submit",
+ "My warden":"https://www.whitecollaradvice.com/early-release-from-federal-prison"
+};
+subjectInput.addEventListener("change",()=>{
+ const link=topicLinks[subjectInput.value];
+ if(link)window.open(link,"_blank","noopener,noreferrer");
+});
 function updateCounts(){
- document.getElementById("subjectCount").textContent=subjectInput.value.length;
  document.getElementById("messageCount").textContent=messageInput.value.length;
 }
-subjectInput.addEventListener("input",updateCounts);
 messageInput.addEventListener("input",updateCounts);
 updateCounts();
 document.getElementById("contactForm").addEventListener("submit",async e=>{
