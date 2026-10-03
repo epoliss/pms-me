@@ -156,6 +156,14 @@ input[type="text"]{
 .mod-panel[hidden]{display:none!important}
 .account-summary{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}
 .account-count{background:#eee;border-radius:999px;padding:7px 11px;font-size:13px;font-weight:700}
+.registered-accounts-toggle{display:flex;align-items:center;gap:8px;width:100%;padding:0;margin:0 0 6px;background:transparent;color:#222;text-align:left;font-size:18px}
+.registered-accounts-toggle:hover{opacity:.85}
+.registered-accounts-icon{display:inline-block;width:18px;font-size:18px;line-height:1;transition:transform .15s ease}
+.registered-accounts-toggle[aria-expanded="true"] .registered-accounts-icon{transform:rotate(90deg)}
+.registered-accounts-body[hidden]{display:none!important}
+.account-search{margin:0 0 14px}
+.account-search input{width:100%}
+.account-search-status{font-size:12px;color:#666;margin-top:6px}
 .account-list{display:grid;gap:10px;margin-bottom:20px}
 .account-row{background:#fff;border:1px solid #ddd;border-radius:6px;padding:14px}
 .account-row-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
@@ -740,14 +748,23 @@ footer{
 
   <div class="mod-panel" id="accountsPanel" hidden>
     <section class="settings">
-      <h2>Registered Accounts</h2>
-      <p class="settings-description">View verified accounts and accounts still awaiting email verification. Pending accounts can be approved manually by a moderator.</p>
-      <div class="account-summary">
-        <span class="account-count" id="totalAccounts">Total: 0</span>
-        <span class="account-count" id="verifiedAccounts">Verified: 0</span>
-        <span class="account-count" id="pendingAccounts">Pending: 0</span>
+      <button class="registered-accounts-toggle" id="registeredAccountsToggle" type="button" aria-expanded="false" aria-controls="registeredAccountsBody">
+        <span class="registered-accounts-icon" aria-hidden="true">▶</span>
+        <span>Registered Accounts</span>
+      </button>
+      <div class="registered-accounts-body" id="registeredAccountsBody" hidden>
+        <p class="settings-description">View verified accounts and accounts still awaiting email verification. Pending accounts can be approved manually by a moderator.</p>
+        <div class="account-summary">
+          <span class="account-count" id="totalAccounts">Total: 0</span>
+          <span class="account-count" id="verifiedAccounts">Verified: 0</span>
+          <span class="account-count" id="pendingAccounts">Pending: 0</span>
+        </div>
+        <div class="account-search">
+          <input type="text" id="accountSearch" placeholder="Search account or notification email" autocomplete="off" aria-label="Search registered accounts">
+          <div class="account-search-status" id="accountSearchStatus"></div>
+        </div>
+        <div id="accountsList" class="account-list"><div class="empty">Loading...</div></div>
       </div>
-      <div id="accountsList" class="account-list"><div class="empty">Loading...</div></div>
     </section>
 
     <section class="settings">
@@ -873,6 +890,11 @@ const accountsList=document.getElementById('accountsList');
 const totalAccounts=document.getElementById('totalAccounts');
 const verifiedAccounts=document.getElementById('verifiedAccounts');
 const pendingAccounts=document.getElementById('pendingAccounts');
+const registeredAccountsToggle=document.getElementById('registeredAccountsToggle');
+const registeredAccountsBody=document.getElementById('registeredAccountsBody');
+const accountSearch=document.getElementById('accountSearch');
+const accountSearchStatus=document.getElementById('accountSearchStatus');
+let loadedAccounts=[];
 const newAccountEmail=document.getElementById('newAccountEmail');
 const newAccountNotificationEmail=document.getElementById('newAccountNotificationEmail');
 const newAccountFrequency=document.getElementById('newAccountFrequency');
@@ -1864,24 +1886,27 @@ async function loadContacts(){
   }catch(error){contactsList.innerHTML='<div class="empty">'+error.message+'</div>';}
 }
 
-async function loadAccounts(){
-  accountsList.innerHTML='<div class="empty">Loading accounts...</div>';
-  try{
-    const response=await moderatorFetch('/api/moderator/accounts',{credentials:'same-origin'});
-    const data=await response.json();
-    if(!response.ok) throw new Error(data.error||'Unable to load accounts.');
-    const accounts=Array.isArray(data)?data:(data.results||[]);
-    const verified=accounts.filter(account=>!!account.email_verified).length;
-    const pending=accounts.length-verified;
-    accountTabCount.textContent='('+accounts.length+')';
-    totalAccounts.textContent='Total: '+accounts.length;
-    verifiedAccounts.textContent='Verified: '+verified;
-    pendingAccounts.textContent='Pending: '+pending;
+function renderAccounts(){
+    const query=(accountSearch.value||'').trim().toLowerCase();
+    const accounts=query
+      ? loadedAccounts.filter(account=>
+          String(account.email||'').toLowerCase().includes(query) ||
+          String(account.notification_email||'').toLowerCase().includes(query)
+        )
+      : loadedAccounts;
+
     accountsList.innerHTML='';
+    accountSearchStatus.textContent=query
+      ? accounts.length+' matching account'+(accounts.length===1?'':'s')
+      : '';
+
     if(!accounts.length){
-      accountsList.innerHTML='<div class="empty">There are no registered accounts.</div>';
+      accountsList.innerHTML='<div class="empty">'+
+        (loadedAccounts.length?'No accounts match your search.':'There are no registered accounts.')+
+        '</div>';
       return;
     }
+
     accounts.forEach(account=>{
       const row=document.createElement('div');
       row.className='account-row';
@@ -2043,10 +2068,42 @@ async function loadAccounts(){
       row.append(top,meta,stats,controls,saveStatus,actions);
       accountsList.appendChild(row);
     });
+}
+
+async function loadAccounts(){
+  if(!registeredAccountsBody.hidden){
+    accountsList.innerHTML='<div class="empty">Loading accounts...</div>';
+  }
+  try{
+    const response=await moderatorFetch('/api/moderator/accounts',{credentials:'same-origin'});
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error||'Unable to load accounts.');
+    loadedAccounts=Array.isArray(data)?data:(data.results||[]);
+    const verified=loadedAccounts.filter(account=>!!account.email_verified).length;
+    const pending=loadedAccounts.length-verified;
+    accountTabCount.textContent='('+loadedAccounts.length+')';
+    totalAccounts.textContent='Total: '+loadedAccounts.length;
+    verifiedAccounts.textContent='Verified: '+verified;
+    pendingAccounts.textContent='Pending: '+pending;
+    if(!registeredAccountsBody.hidden) renderAccounts();
   }catch(error){
-    accountsList.innerHTML='<div class="empty">'+(error.message||'Unable to load accounts.')+'</div>';
+    if(!registeredAccountsBody.hidden){
+      accountsList.innerHTML='<div class="empty">'+(error.message||'Unable to load accounts.')+'</div>';
+    }
   }
 }
+
+registeredAccountsToggle.addEventListener('click',()=>{
+  const expanded=registeredAccountsToggle.getAttribute('aria-expanded')==='true';
+  registeredAccountsToggle.setAttribute('aria-expanded',String(!expanded));
+  registeredAccountsBody.hidden=expanded;
+  if(!expanded){
+    renderAccounts();
+    accountSearch.focus();
+  }
+});
+
+accountSearch.addEventListener('input',renderAccounts);
 
 async function loadNotificationSettings() {
   try {
