@@ -3040,6 +3040,15 @@ form.addEventListener(
         );
       }
 
+      if (
+        data.password_change_required &&
+        data.redirect
+      ) {
+        window.location.href =
+          data.redirect;
+        return;
+      }
+
       window.location.href =
         "/";
 
@@ -3739,6 +3748,19 @@ export default {
       }
     }
 
+    try {
+      await env.pms_me_db
+        .prepare(
+          `ALTER TABLE users
+           ADD COLUMN force_password_change INTEGER NOT NULL DEFAULT 0`
+        )
+        .run();
+    } catch (error) {
+      if (!String(error && error.message || error).toLowerCase().includes("duplicate column")) {
+        console.error("force_password_change schema check failed:",error);
+      }
+    }
+
     await env.pms_me_db.prepare(
       `CREATE TABLE IF NOT EXISTS contact_inquiries (
          id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -4302,6 +4324,41 @@ export default {
         );
       }
 
+      if (user.force_password_change) {
+        const token = randomToken();
+        const tokenHash = await sha256(token);
+        const expires = new Date(
+          Date.now() + 60 * 60 * 1000
+        ).toISOString();
+
+        await env.pms_me_db.batch([
+          env.pms_me_db
+            .prepare(`DELETE FROM password_reset_tokens WHERE user_id = ?`)
+            .bind(user.id),
+          env.pms_me_db
+            .prepare(
+              `INSERT INTO password_reset_tokens
+               (user_id, token_hash, expires_at)
+               VALUES (?, ?, ?)`
+            )
+            .bind(user.id,tokenHash,expires)
+        ]);
+
+        return jsonResponse(
+          {
+            ok:true,
+            password_change_required:true,
+            redirect:
+              "/reset-password?token=" +
+              encodeURIComponent(token)
+          },
+          200,
+          {
+            "Cache-Control":"no-store"
+          }
+        );
+      }
+
       const session =
         await createUserSession(
           env,
@@ -4718,7 +4775,8 @@ export default {
       await env.pms_me_db
         .prepare(
           `UPDATE users
-           SET password_hash = ?
+           SET password_hash = ?,
+               force_password_change = 0
            WHERE id = ?`
         )
         .bind(
@@ -5032,6 +5090,10 @@ export default {
       url.pathname ===
         "/api/moderator/accounts/update" ||
       url.pathname ===
+        "/api/moderator/accounts/create" ||
+      url.pathname ===
+        "/api/moderator/accounts/reset-password" ||
+      url.pathname ===
         "/api/moderator/accounts/purge" ||
       (
         url.pathname.startsWith(
@@ -5138,6 +5200,7 @@ export default {
                COALESCE(u.notification_email, u.email) AS notification_email,
                u.email_verified,
                u.story_frequency,
+               COALESCE(u.force_password_change,0) AS force_password_change,
                u.created_at,
                u.last_login_at,
                (
@@ -5211,6 +5274,131 @@ export default {
         frequency,
         notification_email:notificationEmail
       });
+    }
+
+    if (
+      url.pathname === "/api/moderator/accounts/create" &&
+      request.method === "POST"
+    ) {
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse({error:"Invalid request body."},400);
+      }
+
+      const email = normalizeEmail(body.email);
+      const frequency = ["weekly","immediate","off"].includes(body.frequency)
+        ? body.frequency
+        : "weekly";
+      const notificationEmail = normalizeEmail(body.notification_email || email);
+
+      if (!validEmail(email)) {
+        return jsonResponse({error:"Please enter a valid email address."},400);
+      }
+      if (!validEmail(notificationEmail)) {
+        return jsonResponse({error:"Please enter a valid notification email address."},400);
+      }
+
+      const existing = await env.pms_me_db
+        .prepare(`SELECT id FROM users WHERE email = ?`)
+        .bind(email)
+        .first();
+
+      if (existing) {
+        return jsonResponse({error:"An account already exists for this email address."},409);
+      }
+
+      const temporaryPassword = randomToken().slice(0,16);
+      const passwordHash = await hashPassword(temporaryPassword);
+      const unsubscribeToken = randomToken();
+      const rssToken = randomToken();
+
+      await env.pms_me_db
+        .prepare(
+          `INSERT INTO users
+           (
+             email,
+             password_hash,
+             email_verified,
+             story_frequency,
+             notification_email,
+             sponsor_emails,
+             rss_enabled,
+             unsubscribe_token,
+             rss_token,
+             terms_accepted_at,
+             force_password_change
+           )
+           VALUES (?, ?, 1, ?, ?, 0, 1, ?, ?, CURRENT_TIMESTAMP, 1)`
+        )
+        .bind(
+          email,
+          passwordHash,
+          frequency,
+          notificationEmail,
+          unsubscribeToken,
+          rssToken
+        )
+        .run();
+
+      return jsonResponse({
+        ok:true,
+        email,
+        temporary_password:temporaryPassword
+      },201,{"Cache-Control":"no-store"});
+    }
+
+    if (
+      url.pathname === "/api/moderator/accounts/reset-password" &&
+      request.method === "POST"
+    ) {
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return jsonResponse({error:"Invalid request body."},400);
+      }
+
+      const userId = Number(body.user_id);
+      if (!Number.isInteger(userId) || userId < 1) {
+        return jsonResponse({error:"Invalid account."},400);
+      }
+
+      const user = await env.pms_me_db
+        .prepare(`SELECT id,email FROM users WHERE id = ?`)
+        .bind(userId)
+        .first();
+
+      if (!user) {
+        return jsonResponse({error:"Account not found."},404);
+      }
+
+      const temporaryPassword = randomToken().slice(0,16);
+      const passwordHash = await hashPassword(temporaryPassword);
+
+      await env.pms_me_db.batch([
+        env.pms_me_db
+          .prepare(
+            `UPDATE users
+             SET password_hash = ?,
+                 force_password_change = 1
+             WHERE id = ?`
+          )
+          .bind(passwordHash,userId),
+        env.pms_me_db
+          .prepare(`DELETE FROM user_sessions WHERE user_id = ?`)
+          .bind(userId),
+        env.pms_me_db
+          .prepare(`DELETE FROM password_reset_tokens WHERE user_id = ?`)
+          .bind(userId)
+      ]);
+
+      return jsonResponse({
+        ok:true,
+        email:user.email,
+        temporary_password:temporaryPassword
+      },200,{"Cache-Control":"no-store"});
     }
 
     if (
