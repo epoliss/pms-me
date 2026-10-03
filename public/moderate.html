@@ -751,6 +751,29 @@ footer{
     </section>
 
     <section class="settings">
+      <h2>Register New User</h2>
+      <p class="settings-description">Create a verified account directly. The user will receive a temporary password to use for first login and will be required to choose a new password.</p>
+      <div class="setting-row">
+        <label for="newAccountEmail">Login email address</label>
+        <input type="email" id="newAccountEmail" placeholder="user@example.com">
+      </div>
+      <div class="setting-row">
+        <label for="newAccountNotificationEmail">Notification email</label>
+        <input type="email" id="newAccountNotificationEmail" placeholder="user@example.com">
+      </div>
+      <div class="setting-row">
+        <label for="newAccountFrequency">Notification option</label>
+        <select id="newAccountFrequency">
+          <option value="weekly">Weekly Digest</option>
+          <option value="immediate">Individual Post</option>
+          <option value="off">No Emails</option>
+        </select>
+      </div>
+      <button class="approve-account" id="createAccountButton" type="button">Create Account</button>
+      <div class="settings-status" id="createAccountStatus"></div>
+    </section>
+
+    <section class="settings">
       <h2>Account Purge</h2>
       <p class="settings-description">Permanently purge a user account by email address. Stories submitted by the user are not deleted.</p>
       <div class="setting-row">
@@ -850,6 +873,11 @@ const accountsList=document.getElementById('accountsList');
 const totalAccounts=document.getElementById('totalAccounts');
 const verifiedAccounts=document.getElementById('verifiedAccounts');
 const pendingAccounts=document.getElementById('pendingAccounts');
+const newAccountEmail=document.getElementById('newAccountEmail');
+const newAccountNotificationEmail=document.getElementById('newAccountNotificationEmail');
+const newAccountFrequency=document.getElementById('newAccountFrequency');
+const createAccountButton=document.getElementById('createAccountButton');
+const createAccountStatus=document.getElementById('createAccountStatus');
 
 function moderatorLoginRedirect() {
   window.location.replace('/moderate.html');
@@ -1972,6 +2000,35 @@ async function loadAccounts(){
         actions.appendChild(approve);
       }
 
+      const resetPassword=document.createElement('button');
+      resetPassword.type='button';
+      resetPassword.textContent='Reset Password';
+      resetPassword.addEventListener('click',async()=>{
+        if(!window.confirm('Reset the password for '+account.email+' and generate a temporary password? Existing login sessions for this user will be ended.')) return;
+        resetPassword.disabled=true;
+        try{
+          const response=await moderatorFetch('/api/moderator/accounts/reset-password',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            credentials:'same-origin',
+            body:JSON.stringify({user_id:account.id})
+          });
+          const result=await response.json();
+          if(!response.ok) throw new Error(result.error||'Unable to reset password.');
+          window.alert(
+            'Temporary password for '+result.email+':\n\n'+
+            result.temporary_password+
+            '\n\nCopy this password now. The user must choose a new password after logging in with it.'
+          );
+          await loadAccounts();
+        }catch(error){
+          window.alert(error.message||'Unable to reset password.');
+        }finally{
+          resetPassword.disabled=false;
+        }
+      });
+      actions.appendChild(resetPassword);
+
       const purge=document.createElement('button');
       purge.type='button';
       purge.className='delete';
@@ -2068,6 +2125,50 @@ async function saveNotificationSettings() {
 saveSettingsButton.addEventListener(
   'click',
   saveNotificationSettings
+);
+
+createAccountButton.addEventListener(
+  'click',
+  async () => {
+    const email=newAccountEmail.value.trim();
+    const notificationEmail=(newAccountNotificationEmail.value.trim()||email);
+    if(!email){
+      createAccountStatus.style.display='block';
+      createAccountStatus.textContent='Enter the login email address.';
+      return;
+    }
+    createAccountButton.disabled=true;
+    createAccountStatus.style.display='block';
+    createAccountStatus.textContent='Creating account...';
+    try{
+      const response=await moderatorFetch('/api/moderator/accounts/create',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'same-origin',
+        body:JSON.stringify({
+          email,
+          notification_email:notificationEmail,
+          frequency:newAccountFrequency.value
+        })
+      });
+      const result=await response.json();
+      if(!response.ok) throw new Error(result.error||'Unable to create account.');
+      createAccountStatus.textContent='Account created and verified: '+result.email;
+      window.alert(
+        'Account created for '+result.email+'.\n\nTemporary password:\n\n'+
+        result.temporary_password+
+        '\n\nCopy this password now. The user must choose a new password after logging in with it.'
+      );
+      newAccountEmail.value='';
+      newAccountNotificationEmail.value='';
+      newAccountFrequency.value='weekly';
+      await loadAccounts();
+    }catch(error){
+      createAccountStatus.textContent=error.message||'Unable to create account.';
+    }finally{
+      createAccountButton.disabled=false;
+    }
+  }
 );
 
 purgeAccountButton.addEventListener(
