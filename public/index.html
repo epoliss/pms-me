@@ -1821,7 +1821,25 @@ function setExpandableStoryText(element,storyText,appendPms=false,storyHtml=''){
   function showFull(){
     if(html){
       element.innerHTML=html;
-      if(pmsSuffix) element.appendChild(document.createTextNode(pmsSuffix));
+      if(pmsSuffix){
+        let last=element.lastChild;
+        while(last && last.nodeType===Node.TEXT_NODE && !last.nodeValue.trim()){
+          const previous=last.previousSibling;
+          last.remove();
+          last=previous;
+        }
+        let target=last;
+        while(target && target.nodeType===Node.ELEMENT_NODE && target.lastChild){
+          target=target.lastChild;
+        }
+        if(target && target.nodeType===Node.TEXT_NODE){
+          target.nodeValue=target.nodeValue.replace(/\s+$/,'')+pmsSuffix;
+        }else if(last && last.nodeType===Node.ELEMENT_NODE){
+          last.appendChild(document.createTextNode(pmsSuffix));
+        }else{
+          element.appendChild(document.createTextNode(raw+pmsSuffix));
+        }
+      }
     }else{
       element.textContent=raw+pmsSuffix;
     }
