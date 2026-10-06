@@ -3712,6 +3712,35 @@ ${items}
 </rss>`;
 }
 
+function sanitizeStoryHtml(value) {
+  let html = typeof value === "string" ? value : "";
+  if (!html) return "";
+
+  html = html
+    .replace(/<\/?(?:script|style|iframe|object|embed|svg|math)[^>]*>/gi,"")
+    .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,"")
+    .replace(/\s(?:href|src)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,"");
+
+  html = html.replace(/<(\/?)\s*([a-z0-9]+)([^>]*)>/gi,(match,closing,tag,attrs)=>{
+    tag=tag.toLowerCase();
+    const allowed=["b","strong","i","em","u","s","strike","br","div","p","span","font"];
+    if(!allowed.includes(tag)) return "";
+    if(closing) return tag==="br" ? "" : "</"+tag+">";
+    if(tag==="br") return "<br>";
+    if(tag==="font"){
+      const sizeMatch=attrs.match(/\bsize\s*=\s*["']?([2-5])["']?/i);
+      return sizeMatch ? '<font size="'+sizeMatch[1]+'">' : "<font>";
+    }
+    if(tag==="span"){
+      const sizeMatch=attrs.match(/font-size\s*:\s*(12|14|16|17|18|20|22|24|26|28|30|32)px/i);
+      return sizeMatch ? '<span style="font-size:'+sizeMatch[1]+'px">' : "<span>";
+    }
+    return "<"+tag+">";
+  });
+
+  return html;
+}
+
 export default {
 
   async fetch(
@@ -3801,6 +3830,19 @@ export default {
     } catch (error) {
       if (!String(error && error.message || error).toLowerCase().includes("duplicate column")) {
         console.error("story user_id schema check failed:",error);
+      }
+    }
+
+    try {
+      await env.pms_me_db
+        .prepare(
+          `ALTER TABLE stories
+           ADD COLUMN story_html TEXT`
+        )
+        .run();
+    } catch (error) {
+      if (!String(error && error.message || error).toLowerCase().includes("duplicate column")) {
+        console.error("story_html schema check failed:",error);
       }
     }
 
@@ -4896,6 +4938,7 @@ export default {
                title,
                city,
                story,
+               story_html,
                category,
                public_name,
                published_at
@@ -5826,6 +5869,7 @@ ${SITE_URL}/moderate.html`;
                  title,
                  city,
                  story,
+                 story_html,
                  category,
                  display_name,
                  email,
@@ -5863,6 +5907,7 @@ ${SITE_URL}/moderate.html`;
                title,
                city,
                story,
+               story_html,
                category,
                public_name,
                published_at,
@@ -6119,6 +6164,11 @@ ${SITE_URL}/moderate.html`;
           ? body.story.trim()
           : "";
 
+      const storyHtml =
+        sanitizeStoryHtml(
+          body.story_html
+        );
+
       const category =
         typeof body.category ===
         "string"
@@ -6252,6 +6302,7 @@ ${SITE_URL}/moderate.html`;
                title,
                city,
                story,
+               story_html,
                category,
                display_name,
                email,
@@ -6261,13 +6312,14 @@ ${SITE_URL}/moderate.html`;
                user_id
              )
              VALUES (
-               ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?
+               ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?
              )`
           )
           .bind(
             title || null,
             city,
             story,
+            storyHtml || null,
             category,
             displayName || null,
             email || null,
@@ -6721,6 +6773,7 @@ ${SITE_URL}/moderate.html`;
                title,
                city,
                story,
+               story_html,
                category,
                public_name,
                published_at
