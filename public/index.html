@@ -233,7 +233,9 @@ nav button.active{
 .story p{
   font-size:17px;
   line-height:1.55;
-  margin:0 0 14px
+  margin:0 0 14px;
+  white-space:pre-wrap;
+  tab-size:4
 }
 
 .actions{
@@ -1290,7 +1292,7 @@ function renderStories(
       const storyText =
         story.story || '';
 
-      setExpandableStoryText(text,storyText,true);
+      setExpandableStoryText(text,storyText,true,story.story_html||'');
 
       const actions =
         document.createElement(
@@ -1810,32 +1812,59 @@ function firstSyllableFragment(word){
   return (m&&m[0]) ? m[0] : clean.slice(0,3);
 }
 
-function setExpandableStoryText(element,storyText,appendPms=false){
+function setExpandableStoryText(element,storyText,appendPms=false,storyHtml=''){
   const raw=(storyText||'').trim();
+  const html=(storyHtml||'').trim();
   const words=raw ? raw.split(/\s+/) : [];
-  const full=appendPms
-    ? raw + (/[.!?]$/.test(raw) ? ' PMS' : '. PMS')
-    : raw;
+  const pmsSuffix=appendPms ? (/[.!?]$/.test(raw) ? ' PMS' : '. PMS') : '';
 
-  if(words.length<=75){
-    element.textContent=full;
-    return;
+  function showFull(){
+    if(html){
+      element.innerHTML=html;
+      if(pmsSuffix) element.appendChild(document.createTextNode(pmsSuffix));
+    }else{
+      element.textContent=raw+pmsSuffix;
+    }
   }
 
-  const prefix=words.slice(0,75).join(' ');
-  const fragment=firstSyllableFragment(words[75]);
-  element.textContent=prefix+' '+fragment+'… ';
+  if(words.length<=75){showFull();return;}
+
+  if(html){
+    const source=document.createElement('div');
+    source.innerHTML=html;
+    const output=document.createDocumentFragment();
+    let used=0,finished=false;
+    function copyNode(node,parent){
+      if(finished)return;
+      if(node.nodeType===Node.TEXT_NODE){
+        const parts=node.nodeValue.match(/\s+|\S+/g)||[];
+        let value='';
+        for(const part of parts){
+          if(/^\s+$/.test(part)){if(used<=75)value+=part;continue;}
+          if(used<75){value+=part;used++;}
+          else{value+=firstSyllableFragment(part)+'… ';finished=true;break;}
+        }
+        if(value)parent.appendChild(document.createTextNode(value));
+        return;
+      }
+      if(node.nodeType===Node.ELEMENT_NODE){
+        const clone=node.cloneNode(false);
+        parent.appendChild(clone);
+        for(const child of node.childNodes)copyNode(child,clone);
+      }
+    }
+    for(const child of source.childNodes)copyNode(child,output);
+    element.replaceChildren(output);
+  }else{
+    element.textContent=words.slice(0,75).join(' ')+' '+firstSyllableFragment(words[75])+'… ';
+  }
 
   const more=document.createElement('button');
   more.type='button';
   more.className='story-more';
   more.textContent='more';
   more.style.cssText='border:0;background:none;padding:0;color:inherit;text-decoration:underline;font:inherit;font-weight:700;cursor:pointer';
-  more.addEventListener('click',event=>{
-    event.preventDefault();
-    event.stopPropagation();
-    element.textContent=full;
-  });
+  more.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();showFull();});
   element.appendChild(more);
 }
 
