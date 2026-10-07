@@ -2239,11 +2239,13 @@ createAccountButton.addEventListener(
       });
       const result=await response.json();
       if(!response.ok) throw new Error(result.error||'Unable to create account.');
-      createAccountStatus.textContent='Account created and verified: '+result.email;
+      createAccountStatus.textContent='Account created and verified. Temporary password emailed to: '+result.email;
       window.alert(
-        'Account created for '+result.email+'.\n\nTemporary password:\n\n'+
-        result.temporary_password+
-        '\n\nCopy this password now. The user must choose a new password after logging in with it.'
+        'Account created for '+result.email+'.\n\nThe temporary password was emailed to the user.'+
+        (result.moderator_bcc
+          ? '\n\nA BCC copy was sent to the moderator email address.'
+          : '\n\nNo moderator BCC was sent because no valid moderator notification email is configured.')+
+        '\n\nThe user must choose a new password after logging in with the temporary password.'
       );
       newAccountEmail.value='';
       newAccountNotificationEmail.value='';
