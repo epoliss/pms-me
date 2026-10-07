@@ -686,7 +686,8 @@ async function sendEmail(
   to,
   subject,
   text,
-  html = null
+  html = null,
+  bcc = null
 ) {
   if (!env.RESEND_API_KEY) {
     throw new Error(
@@ -704,6 +705,10 @@ async function sendEmail(
 
   if (html) {
     emailBody.html = html;
+  }
+
+  if (bcc) {
+    emailBody.bcc = [bcc];
   }
 
   const response =
@@ -1210,6 +1215,67 @@ If you did not create this account, you can ignore this email.
     "HOA-PMS — Verify Your Email",
     text,
     html
+  );
+}
+
+async function sendModeratorCreatedAccountEmail(
+  env,
+  email,
+  temporaryPassword,
+  moderatorEmail
+) {
+  const loginUrl =
+    accountLink("/login");
+
+  const text =
+`Welcome to HOA-PMS.
+
+A moderator has created an HOA-PMS account for you.
+
+Login email: ${email}
+Temporary password: ${temporaryPassword}
+
+Sign in here:
+
+${loginUrl}
+
+You will be required to choose a new password after signing in with this temporary password.`;
+
+  const html =
+`<!doctype html>
+<html>
+<body style="margin:0;padding:30px;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+
+<div style="max-width:650px;margin:auto;background:#fff;border:1px solid #ddd;padding:32px;">
+
+<h2>Welcome to HOA-PMS</h2>
+
+<p>A moderator has created an HOA-PMS account for you.</p>
+
+<p><strong>Login email:</strong> ${escapeHtml(email)}<br>
+<strong>Temporary password:</strong> ${escapeHtml(temporaryPassword)}</p>
+
+<p>
+<a href="${escapeHtml(loginUrl)}"
+style="display:inline-block;padding:12px 18px;background:#222;color:#fff;text-decoration:none;border-radius:5px;">
+Sign In to HOA-PMS
+</a>
+</p>
+
+<p>You will be required to choose a new password after signing in with this temporary password.</p>
+
+</div>
+
+</body>
+</html>`;
+
+  await sendEmail(
+    env,
+    email,
+    "HOA-PMS — Your Account Has Been Created",
+    text,
+    html,
+    moderatorEmail || null
   );
 }
 
@@ -5385,10 +5451,53 @@ export default {
         )
         .run();
 
+      const moderatorSettings =
+        await env.pms_me_db
+          .prepare(
+            `SELECT email
+             FROM notification_settings
+             WHERE id = 1`
+          )
+          .first();
+
+      const moderatorEmail =
+        moderatorSettings &&
+        validEmail(
+          normalizeEmail(
+            moderatorSettings.email
+          )
+        )
+          ? normalizeEmail(
+              moderatorSettings.email
+            )
+          : null;
+
+      try {
+        await sendModeratorCreatedAccountEmail(
+          env,
+          email,
+          temporaryPassword,
+          moderatorEmail
+        );
+      } catch (error) {
+        console.error(
+          "Moderator-created account email failed:",
+          error
+        );
+
+        return jsonResponse({
+          error:
+            "Account was created, but the temporary-password email could not be sent. Temporary password: " +
+            temporaryPassword
+        },500,{"Cache-Control":"no-store"});
+      }
+
       return jsonResponse({
         ok:true,
         email,
-        temporary_password:temporaryPassword
+        temporary_password:temporaryPassword,
+        email_sent:true,
+        moderator_bcc:!!moderatorEmail
       },201,{"Cache-Control":"no-store"});
     }
 
