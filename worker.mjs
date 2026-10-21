@@ -5952,6 +5952,46 @@ ${SITE_URL}/moderate.html`;
     }
 
     /*
+     * STORY PHOTOS — PRIVATE R2 STORAGE
+     * =========================================================
+     */
+    if (url.pathname === "/api/story-images/upload" && request.method === "POST") {
+      if (!env.STORY_IMAGES) return jsonResponse({error:"Photo storage is not configured."},503);
+      const type=(request.headers.get("content-type")||"").split(";")[0].toLowerCase();
+      const accepted=["image/jpeg","image/png","image/bmp","image/x-ms-bmp","image/heic","image/heif","image/webp","image/gif"];
+      const length=Number(request.headers.get("content-length")||0);
+      if(!accepted.includes(type)) return jsonResponse({error:"Unsupported image format."},415);
+      if(length>10485760) return jsonResponse({error:"Each photo must be 10 MB or smaller."},413);
+      const bytes=await request.arrayBuffer();
+      if(!bytes.byteLength||bytes.byteLength>10485760) return jsonResponse({error:"Each photo must be 10 MB or smaller."},413);
+      const signature=new Uint8Array(bytes.slice(0,16));
+      const ascii=String.fromCharCode(...signature);
+      const jpeg=signature[0]===255&&signature[1]===216&&signature[2]===255;
+      const png=signature[0]===137&&ascii.slice(1,4)==="PNG";
+      const gif=ascii.startsWith("GIF8");
+      const bmp=ascii.startsWith("BM");
+      const webp=ascii.slice(0,4)==="RIFF"&&ascii.slice(8,12)==="WEBP";
+      const heif=ascii.slice(4,8)==="ftyp"&&/heic|heix|hevc|hevx|mif1|msf1/.test(ascii.slice(8,16));
+      if(![jpeg,png,gif,bmp,webp,heif].some(Boolean)) return jsonResponse({error:"Invalid image file."},415);
+      const key="staged/"+crypto.randomUUID();
+      await env.STORY_IMAGES.put(key,bytes,{httpMetadata:{contentType:type}});
+      return jsonResponse({ok:true,key},201);
+    }
+
+    if (url.pathname.startsWith("/api/story-images/view/") && request.method==="GET") {
+      const parts=url.pathname.split("/");
+      const id=Number(parts[4]),slot=Number(parts[5]);
+      if(!Number.isSafeInteger(id)||id<1||!Number.isInteger(slot)||slot<0||slot>2) return new Response("Not found",{status:404});
+      const record=await env.pms_me_db.prepare(
+        "SELECT i.object_key,s.status FROM story_images i JOIN stories s ON s.id=i.story_id WHERE i.story_id=? AND i.slot=?"
+      ).bind(id,slot).first();
+      if(!record || (record.status!=="published" && !(await isModeratorAuthenticated(request,env)))) return new Response("Not found",{status:404});
+      const object=await env.STORY_IMAGES.get(record.object_key);
+      if(!object)return new Response("Not found",{status:404});
+      return new Response(object.body,{headers:{"Content-Type":object.httpMetadata?.contentType||"application/octet-stream","Cache-Control":record.status==="published"?"public,max-age=3600":"no-store","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'; sandbox"}});
+    }
+
+    /*
      * =========================================================
      * STORIES — GET
      * =========================================================
@@ -5962,6 +6002,10 @@ ${SITE_URL}/moderate.html`;
         "/api/stories" &&
       request.method === "GET"
     ) {
+      await env.pms_me_db.prepare(
+        "CREATE TABLE IF NOT EXISTS story_images (story_id INTEGER NOT NULL, slot INTEGER NOT NULL, object_key TEXT NOT NULL, PRIMARY KEY(story_id,slot))"
+      ).run();
+
 
       const status =
         url.searchParams.get(
@@ -5979,6 +6023,7 @@ ${SITE_URL}/moderate.html`;
                  city,
                  story,
                  story_html,
+                 (SELECT COUNT(*) FROM story_images si WHERE si.story_id=stories.id) AS image_count,
                  category,
                  display_name,
                  email,
@@ -6017,6 +6062,7 @@ ${SITE_URL}/moderate.html`;
                city,
                story,
                story_html,
+                 (SELECT COUNT(*) FROM story_images si WHERE si.story_id=stories.id) AS image_count,
                category,
                public_name,
                published_at,
@@ -6401,6 +6447,18 @@ ${SITE_URL}/moderate.html`;
         );
       }
 
+      const photoKeys=Array.isArray(body.image_keys)?body.image_keys:[];
+      if(photoKeys.length>3 || new Set(photoKeys).size!==photoKeys.length ||
+         photoKeys.some(k=>typeof k!=="string" || !/^staged\/[0-9a-f-]{36}$/.test(k))) {
+        return jsonResponse({error:"You may attach up to 3 valid photos."},400);
+      }
+      if(photoKeys.length) {
+        if(!env.STORY_IMAGES)return jsonResponse({error:"Photo storage is not configured."},503);
+        for(const key of photoKeys) {
+          if(!(await env.STORY_IMAGES.head(key)))return jsonResponse({error:"A selected photo upload is missing. Please reselect your photos."},400);
+        }
+      }
+
       const submittingUser =
         await getCurrentUser(request,env);
 
@@ -6442,6 +6500,15 @@ ${SITE_URL}/moderate.html`;
 
       const insertedId =
         result.meta.last_row_id;
+      if(photoKeys.length){
+        await env.pms_me_db.prepare(
+          "CREATE TABLE IF NOT EXISTS story_images (story_id INTEGER NOT NULL, slot INTEGER NOT NULL, object_key TEXT NOT NULL, PRIMARY KEY(story_id,slot))"
+        ).run();
+        for(let slot=0;slot<photoKeys.length;slot++){
+          await env.pms_me_db.prepare("INSERT INTO story_images (story_id,slot,object_key) VALUES (?,?,?)").bind(insertedId,slot,photoKeys[slot]).run();
+        }
+      }
+
 
       const insertedStory =
         await env.pms_me_db
