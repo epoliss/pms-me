@@ -655,9 +655,89 @@ html[data-theme="dark"] #pmsThemeToggle{background:#2d2d2d;color:#fff;border-col
 .theme-toggle-wrap #pmsThemeToggle{margin:0}
 .theme-toggle-label{font-size:10px;line-height:1.2;margin-top:3px;color:#777;white-space:nowrap}
 html[data-theme="dark"] .theme-toggle-label{color:#aaa}
+
+/* HOA-PMS story photo attachments */
+.story-photo-controls{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 5px}.story-photo-controls button{border:1px solid #aaa;border-radius:5px;background:#f5f5f5;color:#222;padding:8px 12px;cursor:pointer;font:inherit}.story-photo-controls button:disabled{opacity:.45;cursor:not-allowed}.story-photo-list,.story-photo-thumbs{display:flex;flex-wrap:wrap;gap:9px;margin:9px 0}.story-photo-tile{position:relative;width:100px;max-width:30%;}.story-photo-tile img,.story-photo-thumbs img{width:100px;height:88px;object-fit:cover;border:1px solid #ccc;border-radius:6px;display:block}.story-photo-tile button{position:absolute;top:2px;right:2px;border:0;background:#222;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer}.story-photo-thumbs button{padding:0;border:0;background:none;cursor:zoom-in}.story-photo-help{font-size:12px;color:#777}.story-photo-lightbox{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.87);display:none;align-items:center;justify-content:center;padding:45px 16px}.story-photo-lightbox.open{display:flex}.story-photo-lightbox img{max-width:94vw;max-height:83vh;object-fit:contain}.story-photo-lightbox .close-photo{position:absolute;top:12px;right:16px;background:transparent;border:0;color:#fff;font-size:34px;cursor:pointer}.story-photo-lightbox .photo-nav{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:15px}.story-photo-lightbox .photo-nav button{background:#fff;border:0;border-radius:5px;padding:8px 14px;cursor:pointer}@media(max-width:480px){.story-photo-tile,.story-photo-tile img,.story-photo-thumbs img{width:82px;height:76px}.story-photo-controls button{flex:1 1 120px}}
 </style>
 
-<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "295908aca52842f8b3cf49bc507c63b6"}'></script>
+<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "295908aca52842f8b3cf49bc507c63b6"}'>
+function initStoryPhotoInput(editor){
+  const wrapper=editor.closest('.story-entry-wrap');
+  const panel=document.createElement('div');
+  panel.innerHTML='<div class="story-photo-controls"><button type="button" class="choose-photo">🖼 Add Photos</button><button type="button" class="take-photo">📷 Take Photo</button></div><div class="story-photo-help">Up to 3 photos · 10 MB each · JPEG, PNG, BMP, HEIC, HEIF, WebP, GIF</div><div class="story-photo-list"></div><input type="file" class="photo-picker" accept="image/jpeg,image/png,image/bmp,image/heic,image/heif,image/webp,image/gif,.heic,.heif" multiple hidden><input type="file" class="photo-camera" accept="image/*" capture="environment" hidden>';
+  wrapper.appendChild(panel);
+  const photos=[],list=panel.querySelector('.story-photo-list');
+  const choose=panel.querySelector('.choose-photo'),camera=panel.querySelector('.take-photo');
+  function render(){
+    list.replaceChildren();
+    photos.forEach((file,i)=>{
+      const tile=document.createElement('div');tile.className='story-photo-tile';
+      const img=document.createElement('img');img.alt='Selected photo '+(i+1);
+      const objectUrl=URL.createObjectURL(file);img.src=objectUrl;img.onload=()=>URL.revokeObjectURL(objectUrl);
+      const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove photo');remove.onclick=()=>{photos.splice(i,1);render()};
+      tile.append(img,remove);list.appendChild(tile);
+    });
+    choose.disabled=camera.disabled=photos.length>=3;
+  }
+  async function addFiles(input){
+    for(const file of Array.from(input.files||[])){
+      if(photos.length>=3){alert('Maximum 3 photos per story.');break}
+      if(file.size>10485760){alert(file.name+' exceeds the 10 MB limit.');continue}
+      if(!/^(image\/(jpeg|png|bmp|x-ms-bmp|heic|heif|webp|gif))$/i.test(file.type) && !/\.(jpg|jpeg|png|bmp|heic|heif|webp|gif)$/i.test(file.name)){alert('Unsupported photo format: '+file.name);continue}
+      photos.push(file);
+    }
+    input.value='';render();
+  }
+  const picker=panel.querySelector('.photo-picker'),capture=panel.querySelector('.photo-camera');
+  choose.onclick=()=>picker.click();camera.onclick=()=>capture.click();
+  picker.onchange=()=>addFiles(picker);capture.onchange=()=>addFiles(capture);
+  render();
+  return {
+    async upload(){
+      const keys=[];
+      for(const file of photos){
+        const response=await fetch('/api/story-images/upload',{method:'POST',headers:{'Content-Type':file.type||'image/jpeg'},body:file});
+        const result=await response.json();
+        if(!response.ok)throw new Error(result.error||'Photo upload failed.');
+        keys.push(result.key);
+      }
+      return keys;
+    },
+    clear(){photos.length=0;render()}
+  };
+}
+function addStoryPhotoThumbnails(container,story){
+  const count=Math.min(3,Number(story.image_count||0));
+  if(!count)return;
+  const urls=Array.from({length:count},(_,i)=>'/api/story-images/view/'+encodeURIComponent(story.id)+'/'+i);
+  const strip=document.createElement('div');strip.className='story-photo-thumbs';
+  urls.forEach((src,i)=>{
+    const button=document.createElement('button');button.type='button';button.setAttribute('aria-label','Enlarge photo '+(i+1));
+    const img=document.createElement('img');img.src=src;img.alt='Story photo '+(i+1);img.loading='lazy';
+    button.appendChild(img);button.onclick=()=>openStoryPhotoViewer(urls,i);strip.appendChild(button);
+  });
+  container.insertAdjacentElement('afterend',strip);
+}
+function openStoryPhotoViewer(urls,index){
+  let overlay=document.querySelector('.story-photo-lightbox');
+  if(!overlay){
+    overlay=document.createElement('div');overlay.className='story-photo-lightbox';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
+    overlay.innerHTML='<button type="button" class="close-photo" aria-label="Close photo">×</button><img alt="Enlarged story photo"><div class="photo-nav"><button type="button" class="previous-photo">❮ Previous</button><button type="button" class="next-photo">Next ❯</button></div>';
+    document.body.appendChild(overlay);
+  }
+  let current=index;
+  const img=overlay.querySelector('img');
+  const update=()=>{img.src=urls[current];overlay.querySelector('.previous-photo').hidden=current===0;overlay.querySelector('.next-photo').hidden=current===urls.length-1};
+  const close=()=>{overlay.classList.remove('open');document.removeEventListener('keydown',keys);document.body.style.overflow=''};
+  const keys=e=>{if(e.key==='Escape')close();if(e.key==='ArrowLeft'&&current>0){current--;update()}if(e.key==='ArrowRight'&&current<urls.length-1){current++;update()}};
+  overlay.querySelector('.close-photo').onclick=close;
+  overlay.querySelector('.previous-photo').onclick=()=>{if(current>0){current--;update()}};
+  overlay.querySelector('.next-photo').onclick=()=>{if(current<urls.length-1){current++;update()}};
+  overlay.onclick=e=>{if(e.target===overlay)close()};
+  document.body.style.overflow='hidden';overlay.classList.add('open');document.addEventListener('keydown',keys);update();
+}
+
+</script>
 
 
 <script>
@@ -1293,6 +1373,7 @@ function renderStories(
         story.story || '';
 
       setExpandableStoryText(text,storyText,true,story.story_html||'');
+      addStoryPhotoThumbnails(text,story);
 
       const actions =
         document.createElement(
@@ -1542,6 +1623,7 @@ const storyForm = document.getElementById('storyForm');
 const submitMessage = document.getElementById('submitMessage');
 const submitName = document.getElementById('submitName');
 const submitStoryField = document.getElementById('submitStory');
+const submitPhotos=initStoryPhotoInput(submitStoryField);
 const submitEmojiToggle = document.getElementById('submitEmojiToggle');
 const submitEmojiPicker = document.getElementById('submitEmojiPicker');
 
@@ -1768,6 +1850,7 @@ storyForm.addEventListener('submit', async event => {
         city,
         story,
         story_html:storyHtml,
+        image_keys:await submitPhotos.upload(),
         category,
         display_name:displayName,
         email,
@@ -1788,6 +1871,7 @@ storyForm.addEventListener('submit', async event => {
     submitMessage.textContent = 'Thank you! Your story has been submitted for review.';
     storyForm.reset();
     submitStoryField.innerHTML='';
+    submitPhotos.clear();
     updateSubmitDisplayNameRequirement();
     submissionSessionToken='';
     turnstileToken='';
