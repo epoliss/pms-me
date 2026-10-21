@@ -716,7 +716,7 @@ function addStoryPhotoThumbnails(container,story){
     const img=document.createElement('img');img.src=src;img.alt='Story photo '+(i+1);img.loading='lazy';
     button.appendChild(img);button.onclick=()=>openStoryPhotoViewer(urls,i);strip.appendChild(button);
   });
-  container.insertAdjacentElement('afterend',strip);
+  queueMicrotask(()=>{if(container.isConnected)container.insertAdjacentElement('afterend',strip)});
 }
 function openStoryPhotoViewer(urls,index){
   let overlay=document.querySelector('.story-photo-lightbox');
