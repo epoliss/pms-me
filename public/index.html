@@ -12,10 +12,18 @@
 if(!new URLSearchParams(location.search).has('story')){
   if('scrollRestoration' in history) history.scrollRestoration='manual';
   window.scrollTo(0,0);
-  window.addEventListener('pageshow',()=>window.scrollTo(0,0));
+  window.__pmsUserScrolled=false;
+  const markUserScroll=()=>{window.__pmsUserScrolled=true;};
+  window.addEventListener('wheel',markUserScroll,{passive:true,once:true});
+  window.addEventListener('touchmove',markUserScroll,{passive:true,once:true});
+  window.addEventListener('keydown',e=>{if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' '].includes(e.key))markUserScroll();});
+  window.addEventListener('pageshow',()=>{if(!window.__pmsUserScrolled)window.scrollTo(0,0);});
 }
 </script>
 <style>
+/* Avoid scroll anchoring jumps while story cards and their images are inserted. */
+#storiesContainer,.story{overflow-anchor:none}
+
 *{box-sizing:border-box}
 
 :root{
@@ -1586,6 +1594,14 @@ async function loadStories(){
     renderStories(
       'All'
     );
+
+    // Story cards are inserted asynchronously. Reset the initial viewport only
+    // after they have been laid out, unless a deep link or user scroll exists.
+    if(!new URLSearchParams(location.search).has('story') && !window.__pmsUserScrolled){
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        if(!window.__pmsUserScrolled) window.scrollTo({top:0,left:0,behavior:'instant'});
+      }));
+    }
 
   }catch(error){
 
