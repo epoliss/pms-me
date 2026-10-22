@@ -6,6 +6,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HOA-PMS — Property Manager Stories</title>
+<script>
+// Prevent browser scroll restoration from jumping down after async story cards load.
+// Preserve intentional deep links to a specific story.
+if(!new URLSearchParams(location.search).has('story')){
+  if('scrollRestoration' in history) history.scrollRestoration='manual';
+  window.scrollTo(0,0);
+  window.addEventListener('pageshow',()=>window.scrollTo(0,0));
+}
+</script>
 <style>
 *{box-sizing:border-box}
 
