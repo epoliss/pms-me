@@ -629,6 +629,11 @@ footer{
 
 /* HOA-PMS story photo attachments */
 .story-photo-controls{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 5px}.story-photo-controls button{border:1px solid #aaa;border-radius:5px;background:#f5f5f5;color:#222;padding:8px 12px;cursor:pointer;font:inherit}.story-photo-controls button:disabled{opacity:.45;cursor:not-allowed}.story-photo-list,.story-photo-thumbs{display:flex;flex-wrap:wrap;gap:9px;margin:9px 0}.story-photo-tile{position:relative;width:100px;max-width:30%;}.story-photo-tile img,.story-photo-thumbs img{width:100px;height:88px;object-fit:cover;border:1px solid #ccc;border-radius:6px;display:block}.story-photo-tile button{position:absolute;top:2px;right:2px;border:0;background:#222;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer}.story-photo-thumbs button{padding:0;border:0;background:none;cursor:zoom-in}.story-photo-help{font-size:12px;color:#777}.story-photo-lightbox{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.87);display:none;align-items:center;justify-content:center;padding:45px 16px}.story-photo-lightbox.open{display:flex}.story-photo-lightbox img{max-width:94vw;max-height:83vh;object-fit:contain}.story-photo-lightbox .close-photo{position:absolute;top:12px;right:16px;background:transparent;border:0;color:#fff;font-size:34px;cursor:pointer}.story-photo-lightbox .photo-nav{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:15px}.story-photo-lightbox .photo-nav button{background:#fff;border:0;border-radius:5px;padding:8px 14px;cursor:pointer}@media(max-width:480px){.story-photo-tile,.story-photo-tile img,.story-photo-thumbs img{width:82px;height:76px}.story-photo-controls button{flex:1 1 120px}}
+
+/* Photo previews remain visible on collapsed moderation cards. */
+.archive-card-photo-preview{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:8px 0;max-width:100%}
+.archive-card-photo-preview img{width:76px;height:68px;object-fit:cover;border:1px solid #bbb;border-radius:5px;background:#eee;display:block}
+@media(max-width:480px){.archive-card-photo-preview img{width:62px;height:58px}}
 </style>
 </head>
 <body>
@@ -1033,6 +1038,20 @@ async function loadPendingStories() {
       status.className='archive-card-status';
       status.textContent='Pending';
 
+      // Show attached photos on the collapsed card, before the moderator opens it.
+      if(story.image_count>0 && (story.status==='pending'||story.status==='published'||status.textContent==='Pending'||status.textContent==='Published')){
+        const photoPreview=document.createElement('span');
+        photoPreview.className='archive-card-photo-preview';
+        const photoCount=Math.min(3,Number(story.image_count)||0);
+        for(let i=0;i<photoCount;i++){
+          const thumb=document.createElement('img');
+          thumb.src='/api/story-images/view/'+encodeURIComponent(story.id)+'/'+i;
+          thumb.alt='Attached story photo '+(i+1);
+          thumb.loading='lazy';
+          photoPreview.appendChild(thumb);
+        }
+        header.appendChild(photoPreview);
+      }
       header.append(title,meta,preview,status,arrow);
 
       const body=document.createElement('div');
@@ -1392,6 +1411,20 @@ async function loadPublishedStories() {
       status.className='archive-card-status';
       status.textContent='Published';
 
+      // Show attached photos on the collapsed card, before the moderator opens it.
+      if(story.image_count>0 && (story.status==='pending'||story.status==='published'||status.textContent==='Pending'||status.textContent==='Published')){
+        const photoPreview=document.createElement('span');
+        photoPreview.className='archive-card-photo-preview';
+        const photoCount=Math.min(3,Number(story.image_count)||0);
+        for(let i=0;i<photoCount;i++){
+          const thumb=document.createElement('img');
+          thumb.src='/api/story-images/view/'+encodeURIComponent(story.id)+'/'+i;
+          thumb.alt='Attached story photo '+(i+1);
+          thumb.loading='lazy';
+          photoPreview.appendChild(thumb);
+        }
+        header.appendChild(photoPreview);
+      }
       header.append(title,meta,preview,status,arrow);
 
       const body=document.createElement('div');
@@ -1698,6 +1731,20 @@ async function loadRejectedStories() {
       status.className='archive-card-status';
       status.textContent='Rejected';
 
+      // Show attached photos on the collapsed card, before the moderator opens it.
+      if(story.image_count>0 && (story.status==='pending'||story.status==='published'||status.textContent==='Pending'||status.textContent==='Published')){
+        const photoPreview=document.createElement('span');
+        photoPreview.className='archive-card-photo-preview';
+        const photoCount=Math.min(3,Number(story.image_count)||0);
+        for(let i=0;i<photoCount;i++){
+          const thumb=document.createElement('img');
+          thumb.src='/api/story-images/view/'+encodeURIComponent(story.id)+'/'+i;
+          thumb.alt='Attached story photo '+(i+1);
+          thumb.loading='lazy';
+          photoPreview.appendChild(thumb);
+        }
+        header.appendChild(photoPreview);
+      }
       header.append(title,meta,preview,status,arrow);
 
       const body=document.createElement('div');
