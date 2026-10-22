@@ -1039,7 +1039,7 @@ async function loadPendingStories() {
       status.textContent='Pending';
 
       // Show attached photos on the collapsed card, before the moderator opens it.
-      if(story.image_count>0 && (story.status==='pending'||story.status==='published'||status.textContent==='Pending'||status.textContent==='Published')){
+      if(story.image_count>0 && (['Pending','Published','Rejected'].includes(status.textContent))){
         const photoPreview=document.createElement('span');
         photoPreview.className='archive-card-photo-preview';
         const photoCount=Math.min(3,Number(story.image_count)||0);
@@ -1412,7 +1412,7 @@ async function loadPublishedStories() {
       status.textContent='Published';
 
       // Show attached photos on the collapsed card, before the moderator opens it.
-      if(story.image_count>0 && (story.status==='pending'||story.status==='published'||status.textContent==='Pending'||status.textContent==='Published')){
+      if(story.image_count>0 && (['Pending','Published','Rejected'].includes(status.textContent))){
         const photoPreview=document.createElement('span');
         photoPreview.className='archive-card-photo-preview';
         const photoCount=Math.min(3,Number(story.image_count)||0);
@@ -1732,7 +1732,7 @@ async function loadRejectedStories() {
       status.textContent='Rejected';
 
       // Show attached photos on the collapsed card, before the moderator opens it.
-      if(story.image_count>0 && (story.status==='pending'||story.status==='published'||status.textContent==='Pending'||status.textContent==='Published')){
+      if(story.image_count>0 && (['Pending','Published','Rejected'].includes(status.textContent))){
         const photoPreview=document.createElement('span');
         photoPreview.className='archive-card-photo-preview';
         const photoCount=Math.min(3,Number(story.image_count)||0);
