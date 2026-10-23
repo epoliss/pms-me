@@ -634,6 +634,9 @@ footer{
 .archive-card-photo-preview{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:8px 0;max-width:100%}
 .archive-card-photo-preview img{width:76px;height:68px;object-fit:cover;border:1px solid #bbb;border-radius:5px;background:#eee;display:block}
 @media(max-width:480px){.archive-card-photo-preview img{width:62px;height:58px}}
+
+/* Story photo attachments */
+.story-photo-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 5px}.story-photo-tools button{padding:8px 12px;border:1px solid #bbb;border-radius:6px;background:#eee;color:#222;cursor:pointer}.story-photo-help{font-size:12px;color:#666}.story-photo-grid{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0}.story-photo-grid .story-photo-item{position:relative;display:inline-block}.story-photo-grid img{width:110px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #bbb;cursor:pointer}.story-photo-grid .remove-photo{position:absolute;top:2px;right:2px;background:#222;color:white;border:0;border-radius:50%;width:25px;height:25px;cursor:pointer}.story-photo-viewer{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;align-items:center;justify-content:center;padding:45px 12px 22px}.story-photo-viewer[hidden]{display:none}.story-photo-viewer img{max-width:94vw;max-height:85vh;object-fit:contain}.story-photo-viewer .photo-close{position:absolute;right:14px;top:10px;font-size:32px;background:none;border:0;color:white;cursor:pointer}.story-photo-viewer .photo-nav{position:absolute;bottom:8px;display:flex;gap:16px}.story-photo-viewer .photo-nav button{background:#fff;color:#222;border:0;border-radius:5px;padding:8px 18px;cursor:pointer}@media(max-width:600px){.story-photo-grid img{width:90px;height:78px}.story-photo-viewer{padding:50px 8px 52px}.story-photo-viewer img{max-width:98vw;max-height:78vh}}
 </style>
 </head>
 <body>
@@ -1079,6 +1082,7 @@ async function loadPendingStories() {
 
       const text=document.createElement('p');
       setExpandableStoryText(text,story.story||'',false,story.story_html||'');
+      appendStoryPhotos(text,story);
       addStoryPhotoThumbnails(text,story);
 
       const details=document.createElement('div');
@@ -1436,6 +1440,7 @@ async function loadPublishedStories() {
 
       const text=document.createElement('p');
       setExpandableStoryText(text,story.story||'',false,story.story_html||'');
+      appendStoryPhotos(text,story);
       addStoryPhotoThumbnails(text,story);
 
       const details=document.createElement('div');
@@ -1756,6 +1761,7 @@ async function loadRejectedStories() {
 
       const text=document.createElement('p');
       setExpandableStoryText(text,story.story||'',false,story.story_html||'');
+      appendStoryPhotos(text,story);
       addStoryPhotoThumbnails(text,story);
 
       const details=document.createElement('div');
@@ -2508,6 +2514,24 @@ function openStoryPhotoViewer(urls,index){
   document.body.style.overflow='hidden';overlay.classList.add('open');document.addEventListener('keydown',keys);update();
 }
 
+
+function appendStoryPhotos(container,story){
+  const count=Math.min(3,Number(story.image_count)||0);
+  if(!count)return;
+  const grid=document.createElement('div');grid.className='story-photo-grid';
+  const urls=Array.from({length:count},(_,i)=>'/api/story-images/view/'+story.id+'/'+i);
+  urls.forEach((url,i)=>{const b=document.createElement('button');b.type='button';b.className='story-photo-item';b.style.cssText='border:0;background:none;padding:0;cursor:pointer';const img=document.createElement('img');img.src=url;img.alt='Story photo '+(i+1);img.loading='lazy';b.appendChild(img);b.addEventListener('click',()=>openStoryPhotoViewer(urls,i));grid.appendChild(b);});
+  container.appendChild(grid);
+}
+function openStoryPhotoViewer(urls,start){
+  let current=start;const overlay=document.createElement('div');overlay.className='story-photo-viewer';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Story photo viewer');
+  const image=document.createElement('img');image.alt='Enlarged story photo';const close=document.createElement('button');close.className='photo-close';close.type='button';close.textContent='×';close.setAttribute('aria-label','Close photo');
+  const nav=document.createElement('div');nav.className='photo-nav';const prev=document.createElement('button');prev.type='button';prev.textContent='‹ Previous';const next=document.createElement('button');next.type='button';next.textContent='Next ›';nav.append(prev,next);overlay.append(image,close,nav);
+  const previousFocus=document.activeElement;function show(){image.src=urls[current];prev.hidden=next.hidden=urls.length<2;}
+  function dismiss(){document.removeEventListener('keydown',keys);overlay.remove();previousFocus?.focus?.();}
+  function keys(e){if(e.key==='Escape')dismiss();else if(e.key==='ArrowLeft'){current=(current+urls.length-1)%urls.length;show();}else if(e.key==='ArrowRight'){current=(current+1)%urls.length;show();}}
+  close.onclick=dismiss;overlay.addEventListener('click',e=>{if(e.target===overlay)dismiss();});prev.onclick=()=>{current=(current+urls.length-1)%urls.length;show();};next.onclick=()=>{current=(current+1)%urls.length;show();};document.body.appendChild(overlay);document.addEventListener('keydown',keys);show();close.focus();
+}
 </script>
 </body>
 </html>
