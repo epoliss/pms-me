@@ -16,6 +16,8 @@
     {"binding":"STORY_IMAGES","bucket_name":"hoapms-images"}
   ],
 
+  "r2_buckets": [{"binding":"STORY_IMAGES","bucket_name":"hoapms-images"}],
+
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
