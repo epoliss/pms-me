@@ -1678,10 +1678,28 @@ const submitPhotos=initStoryPhotoInput(submitStoryField);
 const submitEmojiToggle = document.getElementById('submitEmojiToggle');
 const submitEmojiPicker = document.getElementById('submitEmojiPicker');
 
+function closeSubmitEmojiPicker(){
+  submitEmojiPicker.classList.remove('open');
+  submitEmojiToggle.setAttribute('aria-expanded','false');
+}
+
 submitEmojiToggle.addEventListener('click',()=>{
   const open=submitEmojiPicker.classList.toggle('open');
   submitEmojiToggle.setAttribute('aria-expanded',String(open));
 });
+
+document.addEventListener('pointerdown',event=>{
+  if(!submitEmojiPicker.classList.contains('open')) return;
+  if(submitEmojiPicker.contains(event.target)||submitEmojiToggle.contains(event.target)) return;
+  closeSubmitEmojiPicker();
+});
+
+document.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||!submitEmojiPicker.classList.contains('open')) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  closeSubmitEmojiPicker();
+},true);
 
 submitEmojiPicker.addEventListener('click',event=>{
   const button=event.target.closest('.story-emoji-option');
