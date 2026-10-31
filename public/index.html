@@ -1831,6 +1831,8 @@ async function saveSubmissionDraftNow(){
   if(!submissionHasContent())return;
   const status=document.getElementById('submissionDraftStatus');
   const record={id:'current',savedAt:Date.now(),fields:draftFields(),photos:submitPhotos.getFiles()};
+  // Synchronous text snapshot protects the latest typing even if the browser or PC closes abruptly.
+  try{localStorage.setItem(SUBMISSION_DRAFT_KEY,JSON.stringify({savedAt:record.savedAt,fields:record.fields}));}catch(e){}
   try{
     const db=await openDraftDb();
     await new Promise((resolve,reject)=>{
@@ -1848,7 +1850,8 @@ function scheduleSubmissionDraftSave(){
   clearTimeout(draftSaveTimer);draftSaveTimer=setTimeout(saveSubmissionDraftNow,450);
 }
 async function restoreSubmissionDraft(){
-  let record=null;
+  let record=null,fallback=null;
+  try{fallback=JSON.parse(localStorage.getItem(SUBMISSION_DRAFT_KEY)||'null');}catch(e){}
   try{
     const db=await openDraftDb();
     record=await new Promise((resolve,reject)=>{
@@ -1856,9 +1859,7 @@ async function restoreSubmissionDraft(){
       req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
     });db.close();
   }catch(e){}
-  if(!record){
-    try{const fallback=JSON.parse(localStorage.getItem(SUBMISSION_DRAFT_KEY)||'null');if(fallback)record=fallback;}catch(e){}
-  }
+  if(!record || (fallback && Number(fallback.savedAt)>Number(record.savedAt)))record=fallback;
   if(!record||!record.fields)return;
   const f=record.fields;
   document.getElementById('submitTitle').value=f.title||'';
