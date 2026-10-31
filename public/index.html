@@ -742,7 +742,9 @@ function initStoryPhotoInput(editor){
       }
       return keys;
     },
-    clear(){photos.length=0;render()}
+    clear(){photos.length=0;render()},
+    getFiles(){return photos.slice()},
+    restoreFiles(files){photos.splice(0,photos.length,...(files||[]).slice(0,3));render()}
   };
 }
 function addStoryPhotoThumbnails(container,story){
@@ -879,12 +881,13 @@ function openStoryPhotoViewer(urls,index){
     <h1 id="submitStoryHeading">Submit a Story</h1>
 
     <form id="storyForm">
+      <div id="submissionDraftStatus" class="submit-help" role="status" aria-live="polite">Your draft is saved automatically on this device.</div>
       <label for="submitTitle">Story Title</label>
-      <input id="submitTitle" maxlength="150" placeholder="Give your story a title">
+      <input id="submitTitle" spellcheck="true" lang="en-US" maxlength="150" placeholder="Give your story a title">
       <div class="submit-help">A title is requested, but if you leave it blank, a moderator may create one before publication.</div>
 
       <label for="submitCity">City or County</label>
-      <input id="submitCity" maxlength="100" required placeholder="Where this happened">
+      <input id="submitCity" spellcheck="true" lang="en-US" maxlength="100" required placeholder="Where this happened">
       <div class="submit-help">Please provide the city or county where the property or incident is located.</div>
 
       <label for="submitStory">Your Story</label>
@@ -901,7 +904,7 @@ function openStoryPhotoViewer(urls,index){
         <div id="submitStory" class="story-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Tell us what happened..."></div>
         <div class="story-emoji-tools">
           <button type="button" class="story-emoji-toggle" id="submitEmojiToggle" aria-expanded="false" aria-controls="submitEmojiPicker" title="Add emoji" aria-label="Add emoji"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4c4.9 0 8.5 3.6 8.5 8.3 0 4.8-3.7 8.8-8.6 8.8-4.8 0-8.4-3.8-8.4-8.6 0-4.7 3.5-8.5 8.5-8.5Z"/><path d="M8.2 9.4c.5-.5 1.2-.5 1.7 0"/><path d="M14.2 9.4c.5-.5 1.2-.5 1.7 0"/><path d="M8.3 14.2c1.1 1.6 2.4 2.3 3.9 2.3 1.5 0 2.8-.7 3.7-2.2"/></svg></button>
-          <div class="story-emoji-picker" id="submitEmojiPicker" aria-label="Story emojis"><button type="button" class="story-emoji-option" aria-label="Insert 😂">😂</button><button type="button" class="story-emoji-option" aria-label="Insert 🤣">🤣</button><button type="button" class="story-emoji-option" aria-label="Insert 😭">😭</button><button type="button" class="story-emoji-option" aria-label="Insert 😡">😡</button><button type="button" class="story-emoji-option" aria-label="Insert 🤬">🤬</button><button type="button" class="story-emoji-option" aria-label="Insert 😳">😳</button><button type="button" class="story-emoji-option" aria-label="Insert 🙄">🙄</button><button type="button" class="story-emoji-option" aria-label="Insert 🤦">🤦</button><button type="button" class="story-emoji-option" aria-label="Insert 🤷">🤷</button><button type="button" class="story-emoji-option" aria-label="Insert 😱">😱</button><button type="button" class="story-emoji-option" aria-label="Insert 😬">😬</button><button type="button" class="story-emoji-option" aria-label="Insert 😏">😏</button><button type="button" class="story-emoji-option" aria-label="Insert 🤔">🤔</button><button type="button" class="story-emoji-option" aria-label="Insert 👀">👀</button><button type="button" class="story-emoji-option" aria-label="Insert 💀">💀</button><button type="button" class="story-emoji-option" aria-label="Insert 🏠">🏠</button><button type="button" class="story-emoji-option" aria-label="Insert 🏡">🏡</button><button type="button" class="story-emoji-option" aria-label="Insert 🏢">🏢</button><button type="button" class="story-emoji-option" aria-label="Insert 🏘️">🏘️</button><button type="button" class="story-emoji-option" aria-label="Insert 🏗️">🏗️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚪">🚪</button><button type="button" class="story-emoji-option" aria-label="Insert 🔑">🔑</button><button type="button" class="story-emoji-option" aria-label="Insert 🔧">🔧</button><button type="button" class="story-emoji-option" aria-label="Insert 🛠️">🛠️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚧">🚧</button><button type="button" class="story-emoji-option" aria-label="Insert 🧱">🧱</button><button type="button" class="story-emoji-option" aria-label="Insert 🪜">🪜</button><button type="button" class="story-emoji-option" aria-label="Insert 🧹">🧹</button><button type="button" class="story-emoji-option" aria-label="Insert 🗑️">🗑️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚽">🚽</button><button type="button" class="story-emoji-option" aria-label="Insert 💧">💧</button><button type="button" class="story-emoji-option" aria-label="Insert 🔥">🔥</button><button type="button" class="story-emoji-option" aria-label="Insert ❄️">❄️</button><button type="button" class="story-emoji-option" aria-label="Insert 👨‍💼">👨‍💼</button><button type="button" class="story-emoji-option" aria-label="Insert 👩‍💼">👩‍💼</button><button type="button" class="story-emoji-option" aria-label="Insert 👷">👷</button><button type="button" class="story-emoji-option" aria-label="Insert 👮">👮</button><button type="button" class="story-emoji-option" aria-label="Insert 🧑‍⚖️">🧑‍⚖️</button><button type="button" class="story-emoji-option" aria-label="Insert 📋">📋</button><button type="button" class="story-emoji-option" aria-label="Insert 📞">📞</button><button type="button" class="story-emoji-option" aria-label="Insert ✉️">✉️</button><button type="button" class="story-emoji-option" aria-label="Insert 💰">💰</button><button type="button" class="story-emoji-option" aria-label="Insert ⚖️">⚖️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚨">🚨</button></div>
+          <div class="story-emoji-picker" id="submitEmojiPicker" aria-label="Story emojis"><button type="button" class="story-emoji-option" aria-label="Insert 😂">😂</button><button type="button" class="story-emoji-option" aria-label="Insert 🙂">🙂</button><button type="button" class="story-emoji-option" aria-label="Insert 😉">😉</button><button type="button" class="story-emoji-option" aria-label="Insert 😛">😛</button><button type="button" class="story-emoji-option" aria-label="Insert 🤣">🤣</button><button type="button" class="story-emoji-option" aria-label="Insert 😭">😭</button><button type="button" class="story-emoji-option" aria-label="Insert 😡">😡</button><button type="button" class="story-emoji-option" aria-label="Insert 🤬">🤬</button><button type="button" class="story-emoji-option" aria-label="Insert 😳">😳</button><button type="button" class="story-emoji-option" aria-label="Insert 🙄">🙄</button><button type="button" class="story-emoji-option" aria-label="Insert 🤦">🤦</button><button type="button" class="story-emoji-option" aria-label="Insert 🤷">🤷</button><button type="button" class="story-emoji-option" aria-label="Insert 😱">😱</button><button type="button" class="story-emoji-option" aria-label="Insert 😬">😬</button><button type="button" class="story-emoji-option" aria-label="Insert 😏">😏</button><button type="button" class="story-emoji-option" aria-label="Insert 🤔">🤔</button><button type="button" class="story-emoji-option" aria-label="Insert 👀">👀</button><button type="button" class="story-emoji-option" aria-label="Insert 💀">💀</button><button type="button" class="story-emoji-option" aria-label="Insert 🏠">🏠</button><button type="button" class="story-emoji-option" aria-label="Insert 🏡">🏡</button><button type="button" class="story-emoji-option" aria-label="Insert 🏢">🏢</button><button type="button" class="story-emoji-option" aria-label="Insert 🏘️">🏘️</button><button type="button" class="story-emoji-option" aria-label="Insert 🏗️">🏗️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚪">🚪</button><button type="button" class="story-emoji-option" aria-label="Insert 🔑">🔑</button><button type="button" class="story-emoji-option" aria-label="Insert 🔧">🔧</button><button type="button" class="story-emoji-option" aria-label="Insert 🛠️">🛠️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚧">🚧</button><button type="button" class="story-emoji-option" aria-label="Insert 🧱">🧱</button><button type="button" class="story-emoji-option" aria-label="Insert 🪜">🪜</button><button type="button" class="story-emoji-option" aria-label="Insert 🧹">🧹</button><button type="button" class="story-emoji-option" aria-label="Insert 🗑️">🗑️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚽">🚽</button><button type="button" class="story-emoji-option" aria-label="Insert 💧">💧</button><button type="button" class="story-emoji-option" aria-label="Insert 🔥">🔥</button><button type="button" class="story-emoji-option" aria-label="Insert ❄️">❄️</button><button type="button" class="story-emoji-option" aria-label="Insert 👨‍💼">👨‍💼</button><button type="button" class="story-emoji-option" aria-label="Insert 👩‍💼">👩‍💼</button><button type="button" class="story-emoji-option" aria-label="Insert 👷">👷</button><button type="button" class="story-emoji-option" aria-label="Insert 👮">👮</button><button type="button" class="story-emoji-option" aria-label="Insert 🧑‍⚖️">🧑‍⚖️</button><button type="button" class="story-emoji-option" aria-label="Insert 📋">📋</button><button type="button" class="story-emoji-option" aria-label="Insert 📞">📞</button><button type="button" class="story-emoji-option" aria-label="Insert ✉️">✉️</button><button type="button" class="story-emoji-option" aria-label="Insert 💰">💰</button><button type="button" class="story-emoji-option" aria-label="Insert ⚖️">⚖️</button><button type="button" class="story-emoji-option" aria-label="Insert 🚨">🚨</button></div>
       </div>
       </div>
       <div class="submit-help">Maximum 2,000 characters.</div>
@@ -1687,21 +1690,14 @@ submitEmojiPicker.addEventListener('click',event=>{
   submitStoryField.focus();
   document.execCommand('insertText',false,emoji);
 });
+submitStoryField.setAttribute('spellcheck','true');
+submitStoryField.setAttribute('lang','en-US');
+submitStoryField.setAttribute('autocorrect','on');
+submitStoryField.setAttribute('autocapitalize','sentences');
 submitStoryField.addEventListener('keydown',event=>{
   if(event.key==='Tab'){event.preventDefault();document.execCommand('insertText',false,'\t');}
 });
 submitStoryField.addEventListener('input',()=>{if(submitStoryField.innerText.length>2000)document.execCommand('undo');});
-
-const storyPhotoFiles=[];
-const storyPhotoSection=document.createElement('div');storyPhotoSection.className='story-photo-section';storyPhotoSection.innerHTML='<div class="story-photo-tools"><button type="button" class="pick-photos">▧ Add Photos</button><button type="button" class="take-photo">📷 Take Photo</button><span class="story-photo-help">Up to 3 photos · 10 MB each</span></div><div class="story-photo-grid"></div><input class="pick-input" type="file" accept="image/jpeg,image/png,image/bmp,image/heic,image/heif,image/webp,image/gif,.heic,.heif,.bmp" multiple hidden><input class="camera-input" type="file" accept="image/*" capture="environment" hidden>';
-submitStoryField.closest('.story-entry-wrap').insertAdjacentElement('afterend',storyPhotoSection);
-const photoPick=storyPhotoSection.querySelector('.pick-input');const photoCamera=storyPhotoSection.querySelector('.camera-input');
-storyPhotoSection.querySelector('.pick-photos').onclick=()=>photoPick.click();storyPhotoSection.querySelector('.take-photo').onclick=()=>photoCamera.click();
-function refreshStoryPhotoPreviews(){const grid=storyPhotoSection.querySelector('.story-photo-grid');grid.replaceChildren();storyPhotoFiles.forEach((file,i)=>{const item=document.createElement('div');item.className='story-photo-item';const img=document.createElement('img');const url=URL.createObjectURL(file);img.src=url;img.alt='Attached photo '+(i+1);img.onload=()=>URL.revokeObjectURL(url);const remove=document.createElement('button');remove.className='remove-photo';remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove photo '+(i+1));remove.onclick=()=>{storyPhotoFiles.splice(i,1);refreshStoryPhotoPreviews();};item.append(img,remove);grid.appendChild(item);});}
-function addStoryPhotos(event){for(const file of event.target.files){if(storyPhotoFiles.length>=3){alert('Maximum 3 photos per story.');break;}if(file.size>10485760){alert(file.name+' exceeds 10 MB.');continue;}if(!(/\.(jpe?g|png|bmp|heic|heif|webp|gif)$/i.test(file.name)||/^image\//.test(file.type))){alert('Unsupported image format: '+file.name);continue;}storyPhotoFiles.push(file);}event.target.value='';refreshStoryPhotoPreviews();}
-photoPick.addEventListener('change',addStoryPhotos);photoCamera.addEventListener('change',addStoryPhotos);
-async function uploadStoryPhotos(){const keys=[];for(const file of storyPhotoFiles){const type=file.type||({'heic':'image/heic','heif':'image/heif','bmp':'image/bmp'}[file.name.split('.').pop().toLowerCase()])||'application/octet-stream';const response=await fetch('/api/story-images/upload',{method:'POST',headers:{'Content-Type':type},body:file});const data=await response.json();if(!response.ok)throw new Error(data.error||'Photo upload failed.');keys.push(data.key);}return keys;}
-function clearStoryPhotos(){storyPhotoFiles.length=0;refreshStoryPhotoPreviews();}
 
 submitStoryField.closest('.story-entry-wrap').querySelectorAll('.story-format-toolbar button[data-format]').forEach(button=>{
   button.addEventListener('mousedown',event=>{event.preventDefault();submitStoryField.focus();document.execCommand(button.dataset.format,false,null);});
@@ -1787,15 +1783,100 @@ function openStorySubmission(){
 }
 
 function closeStorySubmission(){
+  if(submissionHasContent() && !window.confirm('Close the story submission window? Your draft is saved on this device and will be available when you return.')) return;
+  saveSubmissionDraftNow();
   submitStoryModal.classList.remove('open');
   submitStoryModal.setAttribute('aria-hidden','true');
   document.body.classList.remove('submit-modal-open');
 }
 
+function closeStorySubmissionAfterSuccess(){
+  submitStoryModal.classList.remove('open');submitStoryModal.setAttribute('aria-hidden','true');
+  document.body.classList.remove('submit-modal-open');
+}
 function updateSubmitDisplayNameRequirement(){
   submitName.required = !submitAnonymous.checked;
 }
 
+// Guest drafts are stored locally in this browser (including selected photo files where supported).
+const SUBMISSION_DRAFT_KEY='pms_me_guest_story_draft_v1';
+let draftSaveTimer=null;
+function submissionHasContent(){
+  return !!(document.getElementById('submitTitle').value.trim() ||
+    document.getElementById('submitCity').value.trim() || submitStoryField.innerText.trim() ||
+    submitName.value.trim() || document.getElementById('submitEmail').value.trim() ||
+    submitPhotos.getFiles().length);
+}
+function draftFields(){
+  return {
+    title:document.getElementById('submitTitle').value,
+    city:document.getElementById('submitCity').value,
+    storyHtml:submitStoryField.innerHTML,
+    category:document.getElementById('submitCategory').value,
+    displayName:submitName.value,
+    email:document.getElementById('submitEmail').value,
+    anonymous:submitAnonymous.checked
+  };
+}
+function openDraftDb(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB){reject(new Error('Local draft storage unavailable'));return;}
+    const request=indexedDB.open('PMSMEGuestDrafts',1);
+    request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('drafts'))request.result.createObjectStore('drafts',{keyPath:'id'});};
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error);
+  });
+}
+async function saveSubmissionDraftNow(){
+  if(!submissionHasContent())return;
+  const status=document.getElementById('submissionDraftStatus');
+  const record={id:'current',savedAt:Date.now(),fields:draftFields(),photos:submitPhotos.getFiles()};
+  try{
+    const db=await openDraftDb();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction('drafts','readwrite');tx.objectStore('drafts').put(record);
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+    });
+    db.close();status.textContent='Draft saved on this device · '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  }catch(error){
+    try{localStorage.setItem(SUBMISSION_DRAFT_KEY,JSON.stringify({savedAt:record.savedAt,fields:record.fields}));status.textContent='Text draft saved on this device. Photo files may need to be selected again.';}
+    catch(e){status.textContent='Unable to save draft in this browser. Please keep this page open.';}
+  }
+}
+function scheduleSubmissionDraftSave(){
+  document.getElementById('submissionDraftStatus').textContent='Saving draft…';
+  clearTimeout(draftSaveTimer);draftSaveTimer=setTimeout(saveSubmissionDraftNow,450);
+}
+async function restoreSubmissionDraft(){
+  let record=null;
+  try{
+    const db=await openDraftDb();
+    record=await new Promise((resolve,reject)=>{
+      const tx=db.transaction('drafts','readonly'),req=tx.objectStore('drafts').get('current');
+      req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
+    });db.close();
+  }catch(e){}
+  if(!record){
+    try{const fallback=JSON.parse(localStorage.getItem(SUBMISSION_DRAFT_KEY)||'null');if(fallback)record=fallback;}catch(e){}
+  }
+  if(!record||!record.fields)return;
+  const f=record.fields;
+  document.getElementById('submitTitle').value=f.title||'';
+  document.getElementById('submitCity').value=f.city||'';
+  submitStoryField.innerHTML=f.storyHtml||'';
+  document.getElementById('submitCategory').value=f.category||document.getElementById('submitCategory').value;
+  submitName.value=f.displayName||'';
+  document.getElementById('submitEmail').value=f.email||'';
+  submitAnonymous.checked=!!f.anonymous;updateSubmitDisplayNameRequirement();
+  if(record.photos&&record.photos.length)submitPhotos.restoreFiles(record.photos);
+  document.getElementById('submissionDraftStatus').textContent='We restored your unfinished draft from this device.';
+}
+function clearSubmissionDraft(){
+  clearTimeout(draftSaveTimer);
+  try{localStorage.removeItem(SUBMISSION_DRAFT_KEY);}catch(e){}
+  openDraftDb().then(db=>new Promise(resolve=>{const tx=db.transaction('drafts','readwrite');tx.objectStore('drafts').delete('current');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();resolve();};})).catch(()=>{});
+  document.getElementById('submissionDraftStatus').textContent='Submission complete.';
+}
 openSubmitStory.addEventListener('click', openStorySubmission);
 closeSubmitStory.addEventListener('click', closeStorySubmission);
 cancelSubmitStory.addEventListener('click', closeStorySubmission);
@@ -1910,7 +1991,6 @@ storyForm.addEventListener('submit', async event => {
         city,
         story,
         story_html:storyHtml,
-        image_keys:await uploadStoryPhotos(),
         image_keys:await submitPhotos.upload(),
         category,
         display_name:displayName,
@@ -1930,13 +2010,15 @@ storyForm.addEventListener('submit', async event => {
     }
 
     submitMessage.textContent = 'Thank you! Your story has been submitted for review.';
+    clearSubmissionDraft();
     storyForm.reset();
     submitStoryField.innerHTML='';
-    clearStoryPhotos();
     submitPhotos.clear();
+    clearSubmissionDraft();
     updateSubmitDisplayNameRequirement();
     submissionSessionToken='';
     turnstileToken='';
+    closeStorySubmissionAfterSuccess();
     if(window.turnstile && turnstileWidgetId !== null){
       window.turnstile.reset(turnstileWidgetId);
     }
@@ -1946,6 +2028,11 @@ storyForm.addEventListener('submit', async event => {
   }
 });
 
+storyForm.addEventListener('input',scheduleSubmissionDraftSave);
+storyForm.addEventListener('change',scheduleSubmissionDraftSave);
+submitStoryField.addEventListener('input',scheduleSubmissionDraftSave);
+window.addEventListener('pagehide',()=>{if(submissionHasContent())saveSubmissionDraftNow();});
+restoreSubmissionDraft();
 loadStories();
 </script>
 
